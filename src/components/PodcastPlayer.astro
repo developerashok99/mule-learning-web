@@ -14,6 +14,7 @@ const { episode: ep, headingLevel = 2 } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const H = `h${headingLevel}` as "h2";
 const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
+const EMPTY = !ep.videoUrl;
 const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
 ---
 <section class="card" aria-label={`Summary podcast: ${ep.title}`}>
@@ -30,7 +31,7 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
   {ep.description && <p class="muted" style="margin:0 0 .8rem">{ep.description}</p>}
 
   <h4 class="small" style="margin:.4rem 0"><Icon name="video" /> Video podcast</h4>
-  <div class="media-frame">
+  <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {ep.videoUrl ? (
       <video controls playsinline preload="metadata" data-episode-video={ep.id} aria-label={`Video podcast: ${ep.title}`}>
         <source src={withBase(base, ep.videoUrl)} type={videoType} />

@@ -19,7 +19,7 @@ const src = (file: string) => rewriteLink(file, "slides", lesson.id, base).href;
 <LessonShell lesson={lesson} view="slides" viewLabel="Slides">
   <div data-pagefind-body data-pagefind-filter="type:Slides" data-pagefind-meta={`lesson:${lesson.label}`}>
     <h1 class="visually-hidden">{lesson.label} slides — {lesson.title}</h1>
-    <span class="visually-hidden" data-pagefind-meta="title">{lesson.label} · Slides — {lesson.title}</span>
+    <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lesson.label} · Slides — {lesson.title}</span>
     <div class="doc-tools"><span><span class="badge badge--accent">Slides</span> · {data.slides.length} screens captured from the class recording · select one to enlarge</span></div>
     {intro && <div class="prose" style="margin-bottom:1.25rem" set:html={intro.html} />}
     <ul class="slides-grid">

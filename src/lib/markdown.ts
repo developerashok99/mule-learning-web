@@ -109,6 +109,9 @@ function rehypeSite(kind: SourceKind, sid: string, base: string, known: Set<stri
           children: [node],
         };
         return SKIP;
+      } else if (node.tagName === "h1") {
+        // the document title is the page itself; no anchor (keeps it out of search sub-results)
+        delete node.properties.id;
       } else if ((node.tagName === "h2" || node.tagName === "h3") && typeof node.properties.id === "string") {
         const text = node.children.filter((c) => !(c.type === "element" && c.tagName === "a" && (c.properties.className as string[] | undefined)?.includes("anchor"))).map(textOf).join("").trim();
         toc.push({ depth: node.tagName === "h2" ? 2 : 3, text, id: node.properties.id });
@@ -142,7 +145,7 @@ async function render(source: string, opts: { kind: SourceKind; sid: string; bas
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: "append",
-      properties: { className: ["anchor"], ariaHidden: "true", tabIndex: -1 },
+      properties: { className: ["anchor"], ariaHidden: "true", tabIndex: -1, dataPagefindIgnore: "" },
       content: { type: "text", value: "#" },
       test: ["h2", "h3", "h4"],
     })

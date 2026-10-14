@@ -9,6 +9,7 @@ interface Props {
   title: string;
 }
 const { lecture, title } = Astro.props;
+const EMPTY = !lecture?.youtubeId;
 ---
 <section aria-labelledby="lecture-h">
   <div class="btn-row" style="justify-content: space-between; margin-bottom: .5rem">
@@ -18,7 +19,7 @@ const { lecture, title } = Astro.props;
       {lecture?.duration != null && <span><Icon name="clock" /> {formatLength(lecture.duration)}</span>}
     </span>
   </div>
-  <div class="media-frame">
+  <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {lecture?.youtubeId ? (
       <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${title}`} aria-label={`Play lecture video: ${title}`}>
         <span class="yt-facade__play"><Icon name="play" /></span>

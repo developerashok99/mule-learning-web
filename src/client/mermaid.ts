@@ -8,6 +8,8 @@ import { pageSignal } from "./page";
 type Mermaid = typeof import("mermaid").default;
 let lib: Promise<Mermaid> | null = null;
 let seq = 0;
+// A concrete font (not "inherit"): Mermaid measures label widths with it, so it must match what is drawn.
+const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif';
 
 function load(): Promise<Mermaid> {
   lib ??= import("mermaid").then((m) => m.default);
@@ -22,7 +24,7 @@ function source(block: HTMLElement): string {
 async function draw(block: HTMLElement) {
   const mermaid = await load();
   const dark = document.documentElement.dataset.theme === "dark";
-  mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default", fontFamily: "inherit" });
+  mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default", fontFamily: FONT });
   const src = source(block);
   try {
     const { svg } = await mermaid.render(`mmd-${++seq}`, src);

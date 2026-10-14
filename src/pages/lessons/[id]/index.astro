@@ -32,7 +32,7 @@ const slides = readSlides(lesson.id);
 <LessonShell lesson={lesson} view="lecture" viewLabel="Lecture">
   <div class="lesson-grid">
     <div data-pagefind-body data-pagefind-filter="type:Lesson" data-pagefind-meta={`lesson:${lesson.label}`}>
-      <span class="visually-hidden" data-pagefind-meta="title">{lesson.label} — {lesson.title}</span>
+      <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lesson.label} — {lesson.title}</span>
       <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} />
 
       {topics.length > 0 && (

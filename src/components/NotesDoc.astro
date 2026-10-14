@@ -36,7 +36,7 @@ const toc = doc.toc;
 )}
 <div class="doc-layout">
   <article class="prose" data-doc={docKey} data-pagefind-body data-pagefind-filter={`type:${typeLabel}`} data-pagefind-meta={`lesson:${lessonLabel}`}>
-    <span class="visually-hidden" data-pagefind-meta="title">{lessonLabel} · {typeLabel} — {lessonTitle}</span>
+    <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lessonLabel} · {typeLabel} — {lessonTitle}</span>
     <Fragment set:html={doc.html} />
   </article>
   {toc.length > 2 && (
