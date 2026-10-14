@@ -1,0 +1,109 @@
+# Builds the study site from this repo + the notes repo (read-only), runs every check, and publishes to GitHub Pages.
+name: Build, test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # daily, to pick up new or edited notes in green-c-mule-notes
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the notes (read-only source of truth)
+        uses: actions/checkout@v4
+        with:
+          repository: developerashok99/green-c-mule-notes
+          path: notes-src
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            detailed-notes
+            super-detailed-notes
+            slides
+            transcripts
+            transcripts-cleaned
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Sync notes
+        run: npm run sync
+        env:
+          NOTES_SRC: notes-src
+
+      - name: Type check
+        run: npm run check
+
+      - name: Unit tests and content/config validation
+        run: npm test
+
+      - name: Build site and search index
+        run: npm run build:site
+
+      - name: Check internal links and assets
+        run: npm run test:links
+
+      - name: Browser tests (desktop, phone, tablet)
+        # Google Chrome (preinstalled on ubuntu-latest) rather than Playwright's Chromium,
+        # which lacks the H.264/AAC codecs needed for MP4 video podcasts.
+        run: |
+          which google-chrome || npx playwright install --with-deps chrome
+          npm run test:e2e
+        env:
+          PW_CHANNEL: chrome
+          CI: "true"
+
+      - name: Keep the test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Smoke test the published site
+        run: |
+          set -e
+          url="${{ steps.deployment.outputs.page_url }}"
+          for path in "" "lessons/day04/detailed/" "search/" "pagefind/pagefind.js" "manifest.webmanifest" "test-media/fixture-audio.mp3"; do
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" "${url}${path}") && [ "$code" = "200" ] && break
+              sleep 10
+            done
+            echo "${url}${path} -> ${code}"
+            [ "$code" = "200" ]
+          done
