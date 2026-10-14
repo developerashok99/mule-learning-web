@@ -1,0 +1,21 @@
+---
+import LessonShell from "../../../components/LessonShell.astro";
+import NotesDoc from "../../../components/NotesDoc.astro";
+import { getLessons, knownIds, readNote, type Lesson } from "../../../lib/content";
+import { renderMarkdown } from "../../../lib/markdown";
+import { NOTE_LEVELS, VIEWS, type NoteLevel } from "../../../lib/routes";
+
+export function getStaticPaths() {
+  return getLessons().flatMap((lesson) =>
+    NOTE_LEVELS.filter(({ level }) => lesson.notes[level]).map(({ level, label }) => ({
+      params: { id: lesson.id, level: VIEWS[level].replace(/\/$/, "") },
+      props: { lesson, level, label },
+    })),
+  );
+}
+const { lesson, level, label } = Astro.props as { lesson: Lesson; level: NoteLevel; label: string };
+const doc = await renderMarkdown(readNote(lesson.id, level)!, { kind: level, sid: lesson.id, base: import.meta.env.BASE_URL, known: knownIds() });
+---
+<LessonShell lesson={lesson} view={level} viewLabel={label}>
+  <NotesDoc doc={doc} docKey={`${lesson.id}/${level}`} typeLabel={label} lessonLabel={lesson.label} lessonTitle={lesson.title} />
+</LessonShell>

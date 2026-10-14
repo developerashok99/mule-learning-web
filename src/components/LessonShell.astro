@@ -1,0 +1,84 @@
+---
+/** Shared frame for every lesson view: breadcrumb, title, complete/bookmark, resource tabs, prev/next. */
+import Base from "../layouts/Base.astro";
+import Icon from "./Icon.astro";
+import { getCourses, getLesson, getLessons, type Lesson } from "../lib/content";
+import { lessonPath, withBase, type View } from "../lib/routes";
+
+interface Props {
+  lesson: Lesson;
+  view: View;
+  /** Page title prefix, e.g. "Detailed notes" */
+  viewLabel: string;
+}
+const { lesson, view, viewLabel } = Astro.props;
+const compact = view !== "lecture" && view !== "podcast";
+const base = import.meta.env.BASE_URL;
+const u = (v: View, id = lesson.id) => withBase(base, lessonPath(id, v));
+const course = getCourses().find((c) => c.id === lesson.courseId)!;
+const hasPodcast = lesson.podcasts.length > 0;
+const tabs: { view: View; label: string; icon: "lecture" | "podcast" | "text" | "notes" | "file" | "slides"; on: boolean; why: string }[] = [
+  { view: "lecture", label: "Lecture", icon: "lecture", on: true, why: "" },
+  { view: "podcast", label: "Podcast", icon: "podcast", on: hasPodcast, why: "No summary podcast is linked to this lesson" },
+  { view: "simple", label: "Simple", icon: "text", on: lesson.notes.simple, why: "No simple notes for this lesson" },
+  { view: "detailed", label: "Detailed", icon: "notes", on: lesson.notes.detailed, why: "No detailed notes for this lesson" },
+  { view: "super", label: "Super-detailed", icon: "file", on: lesson.notes.super, why: "No super-detailed notes for this lesson" },
+  { view: "slides", label: `Slides${lesson.slides ? ` (${lesson.slides})` : ""}`, icon: "slides", on: lesson.slides > 0, why: "No slides for this lesson" },
+];
+const prev = lesson.prev ? getLesson(lesson.prev) : null;
+const next = lesson.next ? getLesson(lesson.next) : null;
+// Keep the same tab when moving between lessons, if the other lesson has it.
+const hasView = (l: Lesson, v: View) => tabs.find((t) => t.view === v) && (v === "lecture" || (v === "podcast" ? l.podcasts.length > 0 : v === "slides" ? l.slides > 0 : l.notes[v as "simple"]));
+const navHref = (l: Lesson) => u(hasView(l, view) ? view : "lecture", l.id);
+const all = getLessons();
+---
+<Base title={`${viewLabel} · ${lesson.label}: ${lesson.title}`} description={`${lesson.label} — ${lesson.title}`} nav="lessons">
+  <div class="container" data-lesson-page={lesson.id} data-view={view} data-title={`${lesson.label} — ${lesson.title}`}>
+    <ol class="breadcrumb">
+      <li><a href={withBase(base, "courses/")}>Courses</a></li>
+      <li><a href={withBase(base, `courses/${course.id}/`)}>{course.title}</a></li>
+      <li><a href={withBase(base, `courses/${course.id}/#${lesson.sectionId}`)}>{lesson.sectionTitle}</a></li>
+    </ol>
+    <div class:list={["lesson-head", { "lesson-head--compact": compact }]}>
+      <div>
+        <p class="eyebrow">{lesson.label}{compact && <> · {lesson.title}</>}</p>
+        {/* Notes and slides views have their own main heading (the document title), so the lesson title is not repeated as h1 there. */}
+        {!compact && <h1>{lesson.title}</h1>}
+      </div>
+      <div class="btn-row">
+        <button class="btn btn--sm" type="button" data-toggle-done aria-pressed="false"><Icon name="check" /><span data-text class="label-collapse">Mark complete</span></button>
+        <button class="btn btn--sm" type="button" data-toggle-bookmark aria-pressed="false"><Icon name="bookmark" /><span data-text class="label-collapse">Bookmark</span></button>
+        <button class="btn btn--sm" type="button" data-open-jump aria-haspopup="dialog"><Icon name="list" /><span class="label-collapse">All lessons</span></button>
+      </div>
+    </div>
+
+    <nav class="lesson-tabs" aria-label="Lesson resources">
+      {tabs.map((t, i) => (
+        <>
+          {i === 2 && <span class="tab-group-sep" aria-hidden="true" />}
+          {t.on
+            ? <a href={u(t.view)} aria-current={t.view === view ? "page" : undefined}><Icon name={t.icon} />{t.label}</a>
+            : <span aria-disabled="true" title={t.why}><Icon name={t.icon} />{t.label}<span class="visually-hidden"> (not available)</span></span>}
+        </>
+      ))}
+    </nav>
+
+    <slot />
+
+    <nav class="pager" aria-label="Previous and next lesson">
+      {prev && <a class="prev" href={navHref(prev)} rel="prev"><small>← Previous lesson</small><span>{prev.label} — {prev.title}</span></a>}
+      {next && <a class="next" href={navHref(next)} rel="next"><small>Next lesson →</small><span>{next.label} — {next.title}</span></a>}
+    </nav>
+  </div>
+
+  <dialog class="jump-dialog" data-jump-dialog aria-label="Jump to a lesson">
+    <header>
+      <label class="visually-hidden" for="jump-filter">Filter lessons</label>
+      <input id="jump-filter" class="input" type="search" placeholder="Filter lessons…" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close aria-label="Close"><Icon name="close" /></button>
+    </header>
+    <ul>
+      {all.map((l) => <li><a href={navHref(l)} aria-current={l.id === lesson.id ? "page" : undefined}><b>{l.label}</b><span>{l.title}</span></a></li>)}
+    </ul>
+  </dialog>
+</Base>

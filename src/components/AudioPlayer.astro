@@ -1,0 +1,52 @@
+---
+/**
+ * The one audio player for the whole site. `transition:persist` keeps this element (and the playing
+ * <audio>) alive while you move between pages, so listening continues while you browse.
+ * Logic: src/client/player.ts
+ */
+import Icon from "./Icon.astro";
+import { getLesson, getPodcasts } from "../lib/content";
+import { lessonPath, podcastPath, withBase } from "../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+// Every episode that has audio, in site order: used for next/previous and for restoring the last episode.
+const episodes = getPodcasts()
+  .filter((p) => p.audioUrl)
+  .map((p) => ({
+    id: p.id,
+    title: p.title,
+    src: withBase(base, p.audioUrl!),
+    href: withBase(base, podcastPath(p.id)),
+    duration: p.duration,
+    lessons: p.lessons.map((l) => ({ id: l, label: getLesson(l)?.label ?? l, href: withBase(base, lessonPath(l)) })),
+    test: p.test,
+  }));
+---
+<div id="audio-player" class="player" data-player hidden transition:persist aria-label="Audio podcast player" role="region">
+  <script is:inline type="application/json" data-episodes set:html={JSON.stringify(episodes).replace(/</g, "\\u003c")} />
+  <audio preload="metadata" data-audio></audio>
+  <div class="player__inner">
+    <div class="player__controls">
+      <button class="icon-btn hide-xs" type="button" data-act="prev" aria-label="Previous episode"><Icon name="prev" /></button>
+      <button class="icon-btn" type="button" data-act="back" aria-label="Back 10 seconds"><Icon name="back10" /></button>
+      <button class="play-btn play-main" type="button" data-act="toggle" aria-label="Play">
+        <Icon name="play" class="play" /><Icon name="pause" class="pause" />
+      </button>
+      <button class="icon-btn" type="button" data-act="fwd" aria-label="Forward 30 seconds"><Icon name="fwd30" /></button>
+      <button class="icon-btn hide-xs" type="button" data-act="next" aria-label="Next episode"><Icon name="next" /></button>
+    </div>
+    <div class="player__info">
+      <a class="player__title" data-title href="#">—</a>
+      <span class="player__status" data-status aria-live="polite"></span>
+    </div>
+    <div class="player__seek">
+      <span data-elapsed>0:00</span>
+      <input type="range" min="0" max="0" step="1" value="0" data-seek aria-label="Seek" aria-valuetext="0:00 of 0:00" />
+      <span data-total>0:00</span>
+    </div>
+    <div class="player__extra">
+      <button class="icon-btn speed-btn" type="button" data-act="speed" aria-label="Playback speed 1x">1×</button>
+      <button class="icon-btn" type="button" data-act="close" aria-label="Close player"><Icon name="close" /></button>
+    </div>
+  </div>
+</div>

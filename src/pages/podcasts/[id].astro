@@ -1,0 +1,28 @@
+---
+import Base from "../../layouts/Base.astro";
+import PodcastPlayer from "../../components/PodcastPlayer.astro";
+import { getPodcasts } from "../../lib/content";
+import type { Episode } from "../../lib/config";
+import { podcastPath, withBase } from "../../lib/routes";
+
+export function getStaticPaths() {
+  const all = getPodcasts();
+  return all.map((episode, i) => ({ params: { id: episode.id }, props: { episode, prev: all[i - 1] ?? null, next: all[i + 1] ?? null } }));
+}
+const { episode, prev, next } = Astro.props as { episode: Episode; prev: Episode | null; next: Episode | null };
+const base = import.meta.env.BASE_URL;
+---
+<Base title={episode.title} nav="podcasts" description={episode.description || `Summary podcast: ${episode.title}`}>
+  <div class="container container--narrow">
+    <ol class="breadcrumb"><li><a href={withBase(base, "podcasts/")}>Podcasts</a></li><li>{episode.title}</li></ol>
+    {/* Only episodes with media are indexed for search; empty slots would just clutter results. */}
+    <div data-pagefind-body={episode.audioUrl || episode.videoUrl ? "" : undefined} data-pagefind-filter={episode.audioUrl || episode.videoUrl ? "type:Podcast" : undefined}>
+      <h1 class="visually-hidden">{episode.title}</h1>
+      <PodcastPlayer episode={episode} headingLevel={2} />
+    </div>
+    <nav class="pager" aria-label="Previous and next episode">
+      {prev && <a class="prev" href={withBase(base, podcastPath(prev.id))}><small>← Previous episode</small><span>{prev.title}</span></a>}
+      {next && <a class="next" href={withBase(base, podcastPath(next.id))}><small>Next episode →</small><span>{next.title}</span></a>}
+    </nav>
+  </div>
+</Base>

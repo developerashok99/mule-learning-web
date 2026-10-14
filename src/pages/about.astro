@@ -1,0 +1,51 @@
+---
+import Base from "../layouts/Base.astro";
+import { getManifest } from "../lib/content";
+const m = getManifest();
+const synced = new Date(m.syncedAt).toUTCString().replace(/:\d\d GMT/, " UTC");
+---
+<Base title="About & help" nav="about">
+  <div class="container container--narrow">
+    <div class="page-head">
+      <h1>About &amp; help</h1>
+      <p>A personal study site for the MuleSoft (Mule 4) course: the full lecture, a short summary podcast and three levels of notes for every lesson.</p>
+    </div>
+    <div class="prose">
+      <h2>How to study a lesson</h2>
+      <ol>
+        <li><b>Simple notes</b> (5 min) — know what's coming.</li>
+        <li><b>Lecture</b> — watch the full class with the <b>Detailed notes</b> open.</li>
+        <li><b>Slides</b> — the exact screens from the class, with timestamps into the video.</li>
+        <li><b>Super-detailed notes</b> — the complete reference: demos, troubleshooting, interview Q&amp;A.</li>
+        <li><b>Summary podcast</b> — revise the next day, or listen on a walk. Audio keeps playing while you browse the site.</li>
+        <li>Press <b>Mark complete</b> when you're done.</li>
+      </ol>
+
+      <h2>Lecture vs. podcast</h2>
+      <p>The <b>main lecture</b> is the original, full-length class on YouTube (often 1–2 hours). The <b>summary podcast</b> is a separate, much shorter recap (about 10–12 minutes) in two formats with the same content: a <b>video podcast</b> with slides or animation, and an <b>audio podcast</b>.</p>
+
+      <h2>Your progress stays in this browser</h2>
+      <p>Completed lessons, bookmarks, recently opened lessons, podcast positions, playback speed, reading progress and display settings are saved in this browser's local storage. There is no account: <b>progress does not sync between devices or browsers</b>, and clearing site data or using a private window resets it.</p>
+
+      <h2>Keyboard</h2>
+      <ul>
+        <li><kbd>/</kbd> — search</li>
+        <li><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> — move between links and buttons; all controls are keyboard-operable</li>
+        <li>Slides viewer: <kbd>←</kbd> <kbd>→</kbd> to move, <kbd>Esc</kbd> to close</li>
+        <li>Audio seek bar: <kbd>←</kbd> <kbd>→</kbd> when focused</li>
+      </ul>
+
+      <h2>Listening on phones</h2>
+      <ul>
+        <li>The audio player stays at the bottom of the screen and keeps playing while you open other pages of this site.</li>
+        <li>Lock-screen / notification controls (play, pause, skip) are provided where the browser supports the Media Session API (Chrome on Android, Safari on iOS 15+).</li>
+        <li>Background playback with the screen off depends on the phone and browser. Android Chrome and iOS Safari normally continue; some browsers, battery savers or in-app browsers pause audio. If it stops, your position is saved — press play to continue.</li>
+        <li>Install the site (browser menu → <i>Add to Home screen</i> / <i>Install app</i>) for a full-screen app-like window.</li>
+      </ul>
+
+      <h2>Content source</h2>
+      <p>The notes and slides come unchanged from the <a href="https://github.com/developerashok99/green-c-mule-notes">green-c-mule-notes</a> repository{m.commit && <> (commit <code>{m.commit.slice(0, 7)}</code>)</>}, synchronised when this site was built ({synced}). The original notes website is at <a href="https://developerashok99.github.io/green-c-mule-notes/">developerashok99.github.io/green-c-mule-notes</a> and also has quizzes, flashcards and mind maps.</p>
+      <p>Lecture video and podcast links are configured in <code>config/media.json</code> of the <a href="https://github.com/developerashok99/mule-learning-web">mule-learning-web</a> repository — see its README.</p>
+    </div>
+  </div>
+</Base>

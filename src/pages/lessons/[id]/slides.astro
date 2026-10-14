@@ -1,0 +1,48 @@
+---
+import LessonShell from "../../../components/LessonShell.astro";
+import Icon from "../../../components/Icon.astro";
+import { getLessons, knownIds, readSlides, type Lesson } from "../../../lib/content";
+import { renderMarkdown } from "../../../lib/markdown";
+import { rewriteLink } from "../../../lib/links";
+
+export function getStaticPaths() {
+  return getLessons()
+    .filter((l) => l.slides > 0)
+    .map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+const base = import.meta.env.BASE_URL;
+const data = readSlides(lesson.id)!;
+const intro = data.intro ? await renderMarkdown(data.intro, { kind: "slides", sid: lesson.id, base, known: knownIds() }) : null;
+const src = (file: string) => rewriteLink(file, "slides", lesson.id, base).href;
+---
+<LessonShell lesson={lesson} view="slides" viewLabel="Slides">
+  <div data-pagefind-body data-pagefind-filter="type:Slides" data-pagefind-meta={`lesson:${lesson.label}`}>
+    <h1 class="visually-hidden">{lesson.label} slides — {lesson.title}</h1>
+    <span class="visually-hidden" data-pagefind-meta="title">{lesson.label} · Slides — {lesson.title}</span>
+    <div class="doc-tools"><span><span class="badge badge--accent">Slides</span> · {data.slides.length} screens captured from the class recording · select one to enlarge</span></div>
+    {intro && <div class="prose" style="margin-bottom:1.25rem" set:html={intro.html} />}
+    <ul class="slides-grid">
+      {data.slides.map((s, i) => (
+        <li>
+          <figure class="slide-card">
+            <button type="button" data-slide={i} data-full={src(s.file)} data-alt={s.alt} data-caption={`${s.n} — ${s.caption}`} aria-label={`Enlarge slide ${s.n}: ${s.caption}`}>
+              <img src={src(s.file)} alt={s.alt} loading={i < 4 ? "eager" : "lazy"} decoding="async" width="640" height="360" />
+            </button>
+            <figcaption><b>{s.n}</b>{s.caption}{s.time && <time>at {s.time} in the class video</time>}</figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+  <dialog class="lightbox" data-lightbox aria-label="Slide viewer">
+    <div class="lightbox__bar">
+      <button class="icon-btn" type="button" data-prev aria-label="Previous slide"><Icon name="left" /></button>
+      <button class="icon-btn" type="button" data-next aria-label="Next slide"><Icon name="right" /></button>
+      <span class="lightbox__count" data-count></span>
+      <button class="icon-btn" type="button" data-close aria-label="Close slide viewer"><Icon name="close" /></button>
+    </div>
+    <div class="lightbox__stage"><img alt="" /></div>
+    <p class="lightbox__caption" data-caption></p>
+  </dialog>
+</LessonShell>

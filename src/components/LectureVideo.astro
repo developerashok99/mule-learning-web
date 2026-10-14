@@ -1,0 +1,42 @@
+---
+/** Main lecture: privacy-enhanced YouTube embed, loaded only when you press play. */
+import Icon from "./Icon.astro";
+import type { Lecture } from "../lib/config";
+import { formatLength } from "../lib/duration";
+
+interface Props {
+  lecture: Lecture | null;
+  title: string;
+}
+const { lecture, title } = Astro.props;
+---
+<section aria-labelledby="lecture-h">
+  <div class="btn-row" style="justify-content: space-between; margin-bottom: .5rem">
+    <h2 id="lecture-h" class="kind-label kind-label--lecture" style="margin:0"><Icon name="lecture" /> Main lecture · full length</h2>
+    <span class="btn-row small muted">
+      {lecture?.demo && <span class="badge badge--warn">Demo video</span>}
+      {lecture?.duration != null && <span><Icon name="clock" /> {formatLength(lecture.duration)}</span>}
+    </span>
+  </div>
+  <div class="media-frame">
+    {lecture?.youtubeId ? (
+      <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${title}`} aria-label={`Play lecture video: ${title}`}>
+        <span class="yt-facade__play"><Icon name="play" /></span>
+        <span>Play lecture on YouTube</span>
+        <small>Loads from youtube-nocookie.com when you press play</small>
+      </button>
+    ) : lecture?.invalid ? (
+      <div class="media-state" role="status">
+        <strong>The lecture link is not a valid YouTube URL</strong>
+        <p>config/media.json has “{lecture.invalid}” for this lesson. Use a youtube.com/watch?v=… or youtu.be/… link, or the 11-character video id.</p>
+      </div>
+    ) : (
+      <div class="media-state" role="status">
+        <strong>Lecture video not added yet</strong>
+        <p>When the YouTube link for this lesson is added to config/media.json it will play here. The notes and slides below are available now.</p>
+      </div>
+    )}
+  </div>
+  {lecture?.description && <p class="muted small" style="margin:.6rem 0 0">{lecture.description}</p>}
+  {lecture?.watchUrl && <p class="small" style="margin:.4rem 0 0"><a href={lecture.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a></p>}
+</section>

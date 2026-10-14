@@ -1,0 +1,19 @@
+---
+import Base from "../layouts/Base.astro";
+import Icon from "../components/Icon.astro";
+const base = import.meta.env.BASE_URL;
+---
+<Base title="Page not found">
+  <div class="container container--narrow">
+    <div class="page-head">
+      <p class="eyebrow">404</p>
+      <h1>This page doesn't exist</h1>
+      <p>The link may be old, or the lesson resource (for example a podcast or slides) isn't available for that lesson.</p>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn--primary" href={base}><Icon name="home" /> Home</a>
+      <a class="btn" href={`${base}lessons/`}><Icon name="lessons" /> All lessons</a>
+      <a class="btn" href={`${base}search/`}><Icon name="search" /> Search</a>
+    </div>
+  </div>
+</Base>

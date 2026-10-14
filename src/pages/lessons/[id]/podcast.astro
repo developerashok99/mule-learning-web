@@ -1,0 +1,21 @@
+---
+import LessonShell from "../../../components/LessonShell.astro";
+import PodcastPlayer from "../../../components/PodcastPlayer.astro";
+import { getLessons, type Lesson } from "../../../lib/content";
+
+export function getStaticPaths() {
+  return getLessons()
+    .filter((l) => l.podcasts.length > 0)
+    .map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+---
+<LessonShell lesson={lesson} view="podcast" viewLabel="Podcast">
+  <p class="muted" style="margin-top:0;max-width:56rem">
+    A short summary of this lesson, as a video (slides and narration) and as audio only. Use it for revision —
+    the full lecture and the notes have the complete material.
+  </p>
+  <div class="grid" style="max-width:56rem">
+    {lesson.podcasts.map((ep) => <PodcastPlayer episode={ep} />)}
+  </div>
+</LessonShell>

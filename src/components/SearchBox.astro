@@ -1,0 +1,27 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  scope: "all" | "notes";
+  syncUrl?: boolean;
+  autofocus?: boolean;
+  placeholder?: string;
+}
+const { scope, syncUrl = false, autofocus = false, placeholder = "Search…" } = Astro.props;
+const types = scope === "notes"
+  ? ["Simple notes", "Detailed notes", "Super-detailed notes"]
+  : ["Simple notes", "Detailed notes", "Super-detailed notes", "Slides", "Lesson", "Podcast"];
+const id = `q-${scope}`;
+---
+<div data-search={scope} data-sync-url={String(syncUrl)} data-autofocus={String(autofocus)}>
+  <form role="search" class="hero-search" style="max-width:none;margin-bottom:.75rem">
+    <label class="visually-hidden" for={id}>{scope === "notes" ? "Search the notes" : "Search notes and lessons"}</label>
+    <input id={id} class="input" type="search" name="q" placeholder={placeholder} autocomplete="off" data-search-input />
+    <button class="btn btn--primary" type="submit"><Icon name="search" /><span class="visually-hidden">Search</span></button>
+  </form>
+  <div class="chips" role="group" aria-label="Limit to">
+    {types.map((t) => <button class="chip" type="button" data-search-type={t} aria-pressed="false">{t}</button>)}
+  </div>
+  <p class="small muted" data-search-status aria-live="polite" style="margin:.75rem 0 0"></p>
+  <ol class="search-results" data-search-results></ol>
+</div>

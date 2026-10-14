@@ -1,0 +1,48 @@
+---
+/** A notes document: reading tools, table of contents (sidebar on wide screens, collapsible on phones), the text. */
+import Icon from "./Icon.astro";
+import type { RenderedDoc } from "../lib/markdown";
+
+interface Props {
+  doc: RenderedDoc;
+  docKey: string;
+  typeLabel: string;
+  lessonLabel: string;
+  lessonTitle: string;
+}
+const { doc, docKey, typeLabel, lessonLabel, lessonTitle } = Astro.props;
+const minutes = Math.max(1, Math.round(doc.words / 220));
+const toc = doc.toc;
+---
+<div class="reading-bar" data-reading-bar aria-hidden="true"></div>
+<div class="doc-tools">
+  <span><span class="badge badge--accent">{typeLabel}</span> · {minutes} min read · {doc.words.toLocaleString("en")} words</span>
+  <div class="btn-row" role="group" aria-label="Reading options">
+    <button class="btn btn--sm btn--ghost" type="button" data-scale="down" aria-label="Smaller text">A−</button>
+    <button class="btn btn--sm btn--ghost" type="button" data-scale="up" aria-label="Larger text">A+</button>
+    <button class="btn btn--sm btn--ghost" type="button" data-width-toggle aria-pressed="false" aria-label="Use the full width for text">↔ Wide</button>
+  </div>
+</div>
+<div class="notice" data-reading-resume hidden style="margin-bottom:1rem">
+  <Icon name="info" />
+  <div style="flex:1"><strong>You read <span data-pct></span> of this before</strong></div>
+  <button class="btn btn--sm" type="button">Jump back</button>
+</div>
+{toc.length > 2 && (
+  <details class="toc-mobile">
+    <summary>On this page ({toc.filter((t) => t.depth === 2).length} sections)</summary>
+    <ul class="toc-list">{toc.map((t) => <li class={`d${t.depth}`}><a href={`#${t.id}`}>{t.text}</a></li>)}</ul>
+  </details>
+)}
+<div class="doc-layout">
+  <article class="prose" data-doc={docKey} data-pagefind-body data-pagefind-filter={`type:${typeLabel}`} data-pagefind-meta={`lesson:${lessonLabel}`}>
+    <span class="visually-hidden" data-pagefind-meta="title">{lessonLabel} · {typeLabel} — {lessonTitle}</span>
+    <Fragment set:html={doc.html} />
+  </article>
+  {toc.length > 2 && (
+    <nav class="doc-toc" aria-label="On this page">
+      <h2>On this page</h2>
+      <ul class="toc-list">{toc.map((t) => <li class={`d${t.depth}`}><a href={`#${t.id}`}>{t.text}</a></li>)}</ul>
+    </nav>
+  )}
+</div>

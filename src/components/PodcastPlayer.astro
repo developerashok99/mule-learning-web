@@ -1,0 +1,66 @@
+---
+/** Both formats of one summary episode: the video podcast (<video>) and the same summary as audio. */
+import Icon from "./Icon.astro";
+import type { Episode } from "../lib/config";
+import { getLesson } from "../lib/content";
+import { formatLength } from "../lib/duration";
+import { lessonPath, withBase } from "../lib/routes";
+
+interface Props {
+  episode: Episode;
+  headingLevel?: 2 | 3;
+}
+const { episode: ep, headingLevel = 2 } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const H = `h${headingLevel}` as "h2";
+const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
+const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
+---
+<section class="card" aria-label={`Summary podcast: ${ep.title}`}>
+  <div class="btn-row" style="justify-content: space-between; margin-bottom:.6rem">
+    <div>
+      <span class="kind-label kind-label--summary"><Icon name="podcast" /> Summary podcast — not the full lecture</span>
+      <H style="margin:.2rem 0 0; font-size:1.15rem">{ep.title}</H>
+    </div>
+    <div class="btn-row small muted">
+      {ep.test && <span class="badge badge--warn">Test media — not lesson content</span>}
+      {ep.duration != null && <span><Icon name="clock" /> {formatLength(ep.duration)}</span>}
+    </div>
+  </div>
+  {ep.description && <p class="muted" style="margin:0 0 .8rem">{ep.description}</p>}
+
+  <h4 class="small" style="margin:.4rem 0"><Icon name="video" /> Video podcast</h4>
+  <div class="media-frame">
+    {ep.videoUrl ? (
+      <video controls playsinline preload="metadata" data-episode-video={ep.id} aria-label={`Video podcast: ${ep.title}`}>
+        <source src={withBase(base, ep.videoUrl)} type={videoType} />
+        Your browser can't play this video. <a href={withBase(base, ep.videoUrl)}>Download it</a> instead.
+      </video>
+    ) : (
+      <div class="media-state" role="status">
+        <strong>Video podcast not added yet</strong>
+        <p>The video version of this summary will play here once its MP4 link is added to config/media.json.</p>
+      </div>
+    )}
+  </div>
+  <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>
+
+  <h4 class="small" style="margin:1rem 0 .4rem"><Icon name="podcast" /> Audio podcast (same summary, audio only)</h4>
+  {ep.audioUrl ? (
+    <div class="btn-row">
+      <button class="play-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>
+      <div style="flex:1;min-width:10rem">
+        <div class="small muted">Plays in the player at the bottom of the screen — keeps playing while you open notes. Your position is remembered.</div>
+        <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened" style="margin-top:.4rem"><span></span></div>
+      </div>
+    </div>
+  ) : (
+    <div class="notice"><Icon name="info" /><div><strong>Audio podcast not added yet</strong><p>Once the MP3 link is added to config/media.json, a play button appears here.</p></div></div>
+  )}
+
+  {lessons.length > 0 && (
+    <p class="small" style="margin:1rem 0 0">
+      Covers: {lessons.map((l, i) => <>{i > 0 && " · "}<a href={withBase(base, lessonPath(l.id))}>{l.label} — {l.title}</a></>)}
+    </p>
+  )}
+</section>

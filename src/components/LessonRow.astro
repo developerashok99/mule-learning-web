@@ -1,0 +1,27 @@
+---
+import Icon from "./Icon.astro";
+import type { Lesson } from "../lib/content";
+import { lessonPath, withBase } from "../lib/routes";
+
+interface Props {
+  lesson: Lesson;
+}
+const { lesson: l } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const res = [
+  { on: !!l.lecture?.youtubeId, icon: "lecture", label: "Lecture video" },
+  { on: l.podcasts.some((p) => p.audioUrl || p.videoUrl), icon: "podcast", label: "Podcast" },
+  { on: l.notes.simple || l.notes.detailed || l.notes.super, icon: "notes", label: "Notes" },
+  { on: l.slides > 0, icon: "slides", label: "Slides" },
+] as const;
+---
+<li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
+  <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+  <div class="lesson-row__main">
+    <span class="lesson-row__label">{l.label}</span>
+    <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>
+  </div>
+  <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
+    {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
+  </span>
+</li>

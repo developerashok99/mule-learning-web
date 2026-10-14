@@ -1,0 +1,13 @@
+---
+import Base from "../layouts/Base.astro";
+import SearchBox from "../components/SearchBox.astro";
+---
+<Base title="Search" nav="search">
+  <div class="container container--narrow">
+    <div class="page-head">
+      <h1>Search</h1>
+      <p>Searches every lesson's notes, slide captions and podcast descriptions. Press <kbd>/</kbd> anywhere to come here.</p>
+    </div>
+    <SearchBox scope="all" syncUrl autofocus placeholder="e.g. “On Error Continue”, “vCore”, “mapObject”" />
+  </div>
+</Base>

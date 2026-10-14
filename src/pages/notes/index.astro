@@ -1,0 +1,54 @@
+---
+import Base from "../../layouts/Base.astro";
+import SearchBox from "../../components/SearchBox.astro";
+import { getCourses, getLesson, type Lesson } from "../../lib/content";
+import { NOTE_LEVELS, lessonPath, withBase } from "../../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const sections = getCourses().flatMap((c) => c.sections);
+---
+<Base title="Notes" nav="notes">
+  <div class="container container--narrow">
+    <div class="page-head">
+      <h1>Notes library</h1>
+      <p>Three levels for every lesson. Start with <b>Simple</b> for a quick review, read <b>Detailed</b> while studying, and use <b>Super-detailed</b> as the full reference with demos, troubleshooting and interview Q&amp;A.</p>
+    </div>
+    <section class="card" style="margin-bottom:2rem" aria-label="Search the notes">
+      <SearchBox scope="notes" placeholder="Search inside all notes…" />
+    </section>
+
+    <div data-filter-scope>
+      <div class="filters">
+        <label class="visually-hidden" for="notes-filter">Filter lessons</label>
+        <input id="notes-filter" class="input" style="max-width:24rem" type="search" placeholder="Filter lessons by day or title" data-filter-text />
+        <span class="small muted" data-filter-count aria-live="polite"></span>
+      </div>
+      {sections.map((s) => (
+        <section class="section-block" data-filter-group aria-labelledby={`n-${s.id}`}>
+          <div class="section-block__head"><h2 id={`n-${s.id}`}>{s.title}</h2></div>
+          <ul class="lesson-list">
+            {s.lessons.map((id) => {
+              const l = getLesson(id) as Lesson;
+              return (
+                <li class="lesson-row" data-filter-item={`${l.label} ${l.title}`}>
+                  <div class="lesson-row__main">
+                    <span class="lesson-row__label">{l.label}</span>
+                    <span class="lesson-row__title">{l.title}</span>
+                    <div class="lesson-row__meta">
+                      {NOTE_LEVELS.map(({ level, short }) =>
+                        l.notes[level]
+                          ? <a class="btn btn--sm" href={withBase(base, lessonPath(l.id, level))}>{short}</a>
+                          : <span class="btn btn--sm" aria-disabled="true" title="Not available">{short}</span>)}
+                      {l.slides > 0 && <a class="btn btn--sm btn--ghost" href={withBase(base, lessonPath(l.id, "slides"))}>Slides</a>}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      <p class="empty" data-filter-empty hidden>No lessons match the filter.</p>
+    </div>
+  </div>
+</Base>

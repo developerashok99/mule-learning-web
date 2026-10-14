@@ -1,0 +1,34 @@
+---
+import Base from "../../layouts/Base.astro";
+import LessonRow from "../../components/LessonRow.astro";
+import { getCourses, getLesson, type Lesson } from "../../lib/content";
+
+const courses = getCourses();
+const sections = courses.flatMap((c) => c.sections);
+const total = sections.reduce((n, s) => n + s.lessons.length, 0);
+---
+<Base title="Lessons" nav="lessons">
+  <div class="container container--narrow" data-filter-scope>
+    <div class="page-head">
+      <h1>All lessons</h1>
+      <p>Every lesson has its lecture, summary podcast, three levels of notes and the class slides. Icons show what is available.</p>
+    </div>
+    <div class="filters">
+      <label class="visually-hidden" for="lesson-filter">Filter lessons</label>
+      <input id="lesson-filter" class="input" style="max-width:24rem" type="search" placeholder="Filter by day or topic, e.g. “Day 12” or “batch”" data-filter-text />
+      <label class="visually-hidden" for="lesson-section">Section</label>
+      <select id="lesson-section" data-filter-section>
+        <option value="">All sections</option>
+        {sections.map((s) => <option value={s.id}>{s.title}</option>)}
+      </select>
+      <span class="small muted" data-filter-count aria-live="polite">{total} shown</span>
+    </div>
+    {sections.map((s) => (
+      <section class="section-block" data-filter-group aria-labelledby={`${s.id}-h`}>
+        <div class="section-block__head"><h2 id={`${s.id}-h`}>{s.title}</h2></div>
+        <ul class="lesson-list">{s.lessons.map((id) => <LessonRow lesson={getLesson(id) as Lesson} />)}</ul>
+      </section>
+    ))}
+    <p class="empty" data-filter-empty hidden>No lessons match. Clear the filter to see all {total}.</p>
+  </div>
+</Base>
