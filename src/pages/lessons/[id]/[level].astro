@@ -3,7 +3,7 @@ import LessonShell from "../../../components/LessonShell.astro";
 import NotesDoc from "../../../components/NotesDoc.astro";
 import { getLessons, knownIds, readNote, type Lesson } from "../../../lib/content";
 import { renderMarkdown } from "../../../lib/markdown";
-import { NOTE_LEVELS, VIEWS, type NoteLevel } from "../../../lib/routes";
+import { NOTE_LEVELS, VIEWS, lessonPath, withBase, type NoteLevel, type View } from "../../../lib/routes";
 
 export function getStaticPaths() {
   return getLessons().flatMap((lesson) =>
@@ -14,8 +14,23 @@ export function getStaticPaths() {
   );
 }
 const { lesson, level, label } = Astro.props as { lesson: Lesson; level: NoteLevel; label: string };
+const base = import.meta.env.BASE_URL;
+// Suggested next resources within the same lesson (only ones that exist).
+const order: { view: View; label: string; on: boolean }[] = [
+  { view: "detailed", label: "Detailed notes", on: lesson.notes.detailed },
+  { view: "super", label: "Super-detailed notes", on: lesson.notes.super },
+  { view: "slides", label: "Slides", on: lesson.slides > 0 },
+];
+const nextSteps = order.filter((o) => o.on && o.view !== level && !(level === "super" && o.view === "detailed")).slice(0, 2);
 const doc = await renderMarkdown(readNote(lesson.id, level)!, { kind: level, sid: lesson.id, base: import.meta.env.BASE_URL, known: knownIds() });
 ---
 <LessonShell lesson={lesson} view={level} viewLabel={label}>
   <NotesDoc doc={doc} docKey={`${lesson.id}/${level}`} typeLabel={label} lessonLabel={lesson.label} lessonTitle={lesson.title} />
+  {nextSteps.length > 0 && (
+    <div class="notice" style="margin-top:2.5rem;max-width:var(--measure)">
+      <div><strong>Next step for {lesson.label}</strong>
+        <p>{nextSteps.map((s, i) => <>{i > 0 && " · "}<a href={withBase(base, lessonPath(lesson.id, s.view))}>{s.label} →</a></>)}</p>
+      </div>
+    </div>
+  )}
 </LessonShell>

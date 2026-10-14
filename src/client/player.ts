@@ -148,7 +148,7 @@ export function load(id: string, autoplay: boolean): boolean {
   }
   save(true);
   current = ep;
-  titleEl.textContent = ep.title + (ep.test ? " (test media)" : "");
+  titleEl.textContent = ep.title;
   titleEl.href = ep.href;
   audio.src = ep.src;
   const saved = mediaProgress("audio", ep.id);
