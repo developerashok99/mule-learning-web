@@ -1,0 +1,121 @@
+{
+  "$comment": "Courses and their sections. A lesson id is the notes file name without .md (day04, interview-part1). Lessons found in the notes repo but not listed here appear automatically in an 'Other lessons' section at the end.",
+  "courses": [
+    {
+      "id": "mulesoft",
+      "title": "MuleSoft Foundations (Mule 4)",
+      "description": "The Green Cloud batch: from what MuleSoft is, through HTTP and REST, Anypoint Studio, API design with RAML, security policies, DataWeave, connectors, deployment and interview preparation.",
+      "sections": [
+        {
+          "id": "foundations",
+          "title": "Foundations",
+          "description": "API vs integration, REST, HTTP, the Mule event, your first Listener → DB → Transform app",
+          "lessons": [
+            "day01",
+            "day02",
+            "day03",
+            "day04",
+            "day05",
+            "day06",
+            "day07",
+            "day08",
+            "day09",
+            "day10"
+          ]
+        },
+        {
+          "id": "core-building",
+          "title": "Core Building",
+          "description": "Calling APIs, properties and secure properties, error handling, deployment models",
+          "lessons": [
+            "day11",
+            "day12",
+            "day13",
+            "day14",
+            "day15",
+            "day16",
+            "day17",
+            "day18",
+            "day19",
+            "day20"
+          ]
+        },
+        {
+          "id": "api-design",
+          "title": "API Design",
+          "description": "RAML, Exchange, scaffolding, full CRUD, Database connector, Validation",
+          "lessons": [
+            "day21",
+            "day22",
+            "day23",
+            "day24",
+            "day25",
+            "day26",
+            "day27",
+            "day28",
+            "day29",
+            "day30"
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Security & Policies",
+          "description": "API Manager, OAuth 2.0, JWT, rate limiting, client ID, caching, threat protection",
+          "lessons": [
+            "day31",
+            "day32",
+            "day33",
+            "day34",
+            "day35",
+            "day36",
+            "day37",
+            "day38"
+          ]
+        },
+        {
+          "id": "testing-processing",
+          "title": "Testing & Processing",
+          "description": "MUnit, SOAP, Scatter-Gather, Async, DataWeave, Salesforce, For Each, Batch",
+          "lessons": [
+            "day39",
+            "day40",
+            "day41",
+            "day42",
+            "day43",
+            "day44",
+            "day45",
+            "day46",
+            "day47",
+            "day48",
+            "day49",
+            "day50"
+          ]
+        },
+        {
+          "id": "connectors-devops",
+          "title": "Connectors & DevOps",
+          "description": "JMS, Object Store, FTP/SFTP/File, CI/CD with Jenkins, Amazon S3, logging",
+          "lessons": [
+            "day51",
+            "day52",
+            "day53",
+            "day54",
+            "day55",
+            "day57",
+            "day58"
+          ]
+        },
+        {
+          "id": "interview",
+          "title": "Interview Preparation",
+          "description": "Résumé, self-introduction and the full interview Q&A",
+          "lessons": [
+            "interview-part1",
+            "interview-part2",
+            "interview-part3"
+          ]
+        }
+      ]
+    }
+  ]
+}

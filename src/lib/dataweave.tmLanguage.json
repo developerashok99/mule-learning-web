@@ -1,0 +1,20 @@
+{
+  "name": "dataweave",
+  "scopeName": "source.dataweave",
+  "patterns": [
+    { "name": "comment.line.double-slash.dataweave", "match": "//.*$" },
+    { "name": "comment.block.dataweave", "begin": "/\\*", "end": "\\*/" },
+    { "name": "keyword.other.header.dataweave", "match": "%dw\\s+[0-9.]+" },
+    { "name": "keyword.control.dataweave", "match": "\\b(output|input|import|var|fun|type|ns|if|else|do|match|case|unless|using|default|as|is|and|or|not|from|update|at)\\b" },
+    { "name": "support.function.dataweave", "match": "\\b(map|mapObject|filter|filterObject|groupBy|reduce|orderBy|pluck|flatten|flatMap|sizeOf|upper|lower|now|splitBy|joinBy|contains|distinctBy|isEmpty|log|read|write|mask|keysOf|valuesOf|max|min|sum|avg|startsWith|endsWith|replace|trim|capitalize|camelize|dasherize|uuid|random|abs|ceil|floor|round|typeOf|isBlank|entriesOf|namesOf|scan|match|matches|indexOf|find)\\b(?=\\s*[\\(\\s])" },
+    { "name": "constant.language.dataweave", "match": "\\b(true|false|null|payload|attributes|vars|message|error|flow|app)\\b" },
+    { "name": "string.quoted.double.dataweave", "begin": "\"", "end": "\"", "patterns": [{ "name": "constant.character.escape.dataweave", "match": "\\\\." }] },
+    { "name": "string.quoted.single.dataweave", "begin": "'", "end": "'", "patterns": [{ "name": "constant.character.escape.dataweave", "match": "\\\\." }] },
+    { "name": "string.template.dataweave", "begin": "`", "end": "`" },
+    { "name": "entity.name.type.dataweave", "match": "\\b(application|text|multipart)/[a-z0-9.+-]+" },
+    { "name": "constant.numeric.dataweave", "match": "\\b\\d+(\\.\\d+)?\\b" },
+    { "name": "variable.language.dataweave", "match": "\\$+" },
+    { "name": "entity.name.type.dataweave", "match": "\\b(String|Number|Boolean|Object|Array|Date|DateTime|LocalDateTime|Time|Null|Any|Nothing|Binary|Key|Range|Regex)\\b" },
+    { "name": "keyword.operator.dataweave", "match": "->|\\+\\+|--|==|!=|>=|<=|~=|\\.\\.\\*|\\.\\*|\\.\\.|\\.\\^|\\.#|\\.&|\\.@|\\.\\?|\\.!|[=<>+*/-]" }
+  ]
+}

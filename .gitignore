@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+# synced from green-c-mule-notes at build time (npm run sync)
+.notes/
+.notes-cache/
+public/notes-assets/
+# test output
+playwright-report/
+test-results/
+coverage/
+.env
+.env.*
+.DS_Store

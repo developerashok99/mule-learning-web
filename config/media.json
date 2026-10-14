@@ -1,0 +1,982 @@
+{
+  "$comment": "THE ONE FILE FOR MEDIA URLS. See README → 'Adding media'. lectures: one entry per lesson id (YouTube URL or 11-character video id). podcasts: summary episodes; one episode can cover several lessons. Empty strings mean 'not added yet' and the site shows a friendly placeholder. URLs that are not absolute (http/https) are relative to the site root, e.g. test-media/…",
+  "showTestEpisodes": true,
+  "lectures": {
+    "day01": {
+      "youtube": "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+      "duration": "",
+      "description": "DEMO VIDEO — a public YouTube sample used only to test the player. Replace with the real Day 1 lecture URL.",
+      "demo": true
+    },
+    "day02": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day03": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day04": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day05": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day06": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day07": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day08": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day09": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day10": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day11": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day12": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day13": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day14": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day15": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day16": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day17": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day18": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day19": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day20": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day21": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day22": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day23": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day24": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day25": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day26": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day27": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day28": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day29": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day30": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day31": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day32": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day33": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day34": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day35": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day36": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day37": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day38": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day39": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day40": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day41": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day42": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day43": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day44": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day45": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day46": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day47": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day48": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day49": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day50": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day51": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day52": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day53": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day54": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day55": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day57": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "day58": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "interview-part1": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "interview-part2": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    },
+    "interview-part3": {
+      "youtube": "",
+      "duration": "",
+      "description": ""
+    }
+  },
+  "podcasts": [
+    {
+      "id": "test-fixture",
+      "title": "Player test (fixture media)",
+      "lessons": [
+        "day01",
+        "day02"
+      ],
+      "description": "A 30-second synthetic tone and test pattern bundled with the site so the video and audio players can be checked before the real podcasts are hosted. Not lesson content.",
+      "duration": "0:30",
+      "videoUrl": "test-media/fixture-video.mp4",
+      "audioUrl": "test-media/fixture-audio.mp3",
+      "test": true
+    },
+    {
+      "id": "day01",
+      "title": "Day 1 summary",
+      "lessons": [
+        "day01"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day02",
+      "title": "Day 2 summary",
+      "lessons": [
+        "day02"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day03",
+      "title": "Day 3 summary",
+      "lessons": [
+        "day03"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day04",
+      "title": "Day 4 summary",
+      "lessons": [
+        "day04"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day05",
+      "title": "Day 5 summary",
+      "lessons": [
+        "day05"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day06",
+      "title": "Day 6 summary",
+      "lessons": [
+        "day06"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day07",
+      "title": "Day 7 summary",
+      "lessons": [
+        "day07"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day08",
+      "title": "Day 8 summary",
+      "lessons": [
+        "day08"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day09",
+      "title": "Day 9 summary",
+      "lessons": [
+        "day09"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day10",
+      "title": "Day 10 summary",
+      "lessons": [
+        "day10"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day11",
+      "title": "Day 11 summary",
+      "lessons": [
+        "day11"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day12",
+      "title": "Day 12 summary",
+      "lessons": [
+        "day12"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day13",
+      "title": "Day 13 summary",
+      "lessons": [
+        "day13"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day14",
+      "title": "Day 14 summary",
+      "lessons": [
+        "day14"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day15",
+      "title": "Day 15 summary",
+      "lessons": [
+        "day15"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day16",
+      "title": "Day 16 summary",
+      "lessons": [
+        "day16"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day17",
+      "title": "Day 17 summary",
+      "lessons": [
+        "day17"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day18",
+      "title": "Day 18 summary",
+      "lessons": [
+        "day18"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day19",
+      "title": "Day 19 summary",
+      "lessons": [
+        "day19"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day20",
+      "title": "Day 20 summary",
+      "lessons": [
+        "day20"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day21",
+      "title": "Day 21 summary",
+      "lessons": [
+        "day21"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day22",
+      "title": "Day 22 summary",
+      "lessons": [
+        "day22"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day23",
+      "title": "Day 23 summary",
+      "lessons": [
+        "day23"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day24",
+      "title": "Day 24 summary",
+      "lessons": [
+        "day24"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day25",
+      "title": "Day 25 summary",
+      "lessons": [
+        "day25"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day26",
+      "title": "Day 26 summary",
+      "lessons": [
+        "day26"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day27",
+      "title": "Day 27 summary",
+      "lessons": [
+        "day27"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day28",
+      "title": "Day 28 summary",
+      "lessons": [
+        "day28"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day29",
+      "title": "Day 29 summary",
+      "lessons": [
+        "day29"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day30",
+      "title": "Day 30 summary",
+      "lessons": [
+        "day30"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day31",
+      "title": "Day 31 summary",
+      "lessons": [
+        "day31"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day32",
+      "title": "Day 32 summary",
+      "lessons": [
+        "day32"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day33",
+      "title": "Day 33 summary",
+      "lessons": [
+        "day33"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day34",
+      "title": "Day 34 summary",
+      "lessons": [
+        "day34"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day35",
+      "title": "Day 35 summary",
+      "lessons": [
+        "day35"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day36",
+      "title": "Day 36 summary",
+      "lessons": [
+        "day36"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day37",
+      "title": "Day 37 summary",
+      "lessons": [
+        "day37"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day38",
+      "title": "Day 38 summary",
+      "lessons": [
+        "day38"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day39",
+      "title": "Day 39 summary",
+      "lessons": [
+        "day39"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day40",
+      "title": "Day 40 summary",
+      "lessons": [
+        "day40"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day41",
+      "title": "Day 41 summary",
+      "lessons": [
+        "day41"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day42",
+      "title": "Day 42 summary",
+      "lessons": [
+        "day42"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day43",
+      "title": "Day 43 summary",
+      "lessons": [
+        "day43"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day44",
+      "title": "Day 44 summary",
+      "lessons": [
+        "day44"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day45",
+      "title": "Day 45 summary",
+      "lessons": [
+        "day45"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day46",
+      "title": "Day 46 summary",
+      "lessons": [
+        "day46"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day47",
+      "title": "Day 47 summary",
+      "lessons": [
+        "day47"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day48",
+      "title": "Day 48 summary",
+      "lessons": [
+        "day48"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day49",
+      "title": "Day 49 summary",
+      "lessons": [
+        "day49"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day50",
+      "title": "Day 50 summary",
+      "lessons": [
+        "day50"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day51",
+      "title": "Day 51 summary",
+      "lessons": [
+        "day51"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day52",
+      "title": "Day 52 summary",
+      "lessons": [
+        "day52"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day53",
+      "title": "Day 53 summary",
+      "lessons": [
+        "day53"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day54",
+      "title": "Day 54 summary",
+      "lessons": [
+        "day54"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day55",
+      "title": "Day 55 summary",
+      "lessons": [
+        "day55"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day57",
+      "title": "Day 57 summary",
+      "lessons": [
+        "day57"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "day58",
+      "title": "Day 58 summary",
+      "lessons": [
+        "day58"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "interview-part1",
+      "title": "Interview Part 1 summary",
+      "lessons": [
+        "interview-part1"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "interview-part2",
+      "title": "Interview Part 2 summary",
+      "lessons": [
+        "interview-part2"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    },
+    {
+      "id": "interview-part3",
+      "title": "Interview Part 3 summary",
+      "lessons": [
+        "interview-part3"
+      ],
+      "description": "",
+      "duration": "",
+      "videoUrl": "",
+      "audioUrl": ""
+    }
+  ]
+}
