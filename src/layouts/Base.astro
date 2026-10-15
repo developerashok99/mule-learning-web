@@ -9,7 +9,7 @@ interface Props {
   title: string;
   description?: string;
   /** Which primary nav item is current */
-  nav?: "home" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about";
+  nav?: "home" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy";
 }
 const { title, description = "Personal MuleSoft study platform: lectures, summary podcasts and notes.", nav } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
@@ -48,6 +48,7 @@ const NAV = [
           r.dataset.theme = dark ? "dark" : "light";
           r.dataset.width = p.width === "wide" ? "wide" : "normal";
           if (p.scale) r.style.setProperty("--read-scale", String(p.scale));
+          r.dataset.lessonnav = p.lessonNav === "hidden" ? "hidden" : "shown";
         }
         apply(document);
         document.addEventListener("astro:before-swap", function (e) { apply(e.newDocument); });
@@ -69,6 +70,8 @@ const NAV = [
         <div class="header-actions">
           <a class="search-trigger" href={`${base}search/`} aria-label="Search notes and lessons"><Icon name="search" /><span class="st-text">Search notes…</span><kbd>/</kbd></a>
           <a class="icon-btn only-phone" href={`${base}search/`} aria-label="Search"><Icon name="search" /></a>
+          <a class="icon-btn" href={`${base}revise/`} aria-label="Revision: glossary and self-tests" title="Revision" aria-current={nav === "revise" ? "page" : undefined}><Icon name="check" /></a>
+          <a class="icon-btn" href={`${base}my-study/`} aria-label="My study: bookmarks and progress" title="My study" aria-current={nav === "mystudy" ? "page" : undefined}><Icon name="bookmark" /></a>
           <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark theme">
             <Icon name="sun" class="sun" /><Icon name="moon" class="moon" />
           </button>
@@ -76,6 +79,9 @@ const NAV = [
       </div>
     </header>
 
+    <div class="offline-banner" data-offline-banner role="status" hidden>
+      You're offline. Pages you've opened before still work; search, audio and video need a connection.
+    </div>
     <main id="main" tabindex="-1">
       <slot />
     </main>
@@ -95,6 +101,7 @@ const NAV = [
     </nav>
 
     <AudioPlayer />
+    <div class="toast" data-toast role="status" aria-live="polite" hidden></div>
 
     <script>
       import "../client/app";

@@ -8,11 +8,23 @@ import { setupMermaid, rerenderMermaid } from "./mermaid";
 import { setupMedia } from "./media";
 import { setupDashboard } from "./dashboard";
 import { setupSearch } from "./search";
+import { setupMyStudy } from "./mystudy";
 import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
-import { completedIds, isBookmarked, isCompleted, prefs, recordVisit, setBookmarked, setCompleted, setPrefs } from "./store";
+import { pageSignal } from "./page";
+import { startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recordVisit, setBookmarked, setCompleted, setPrefs } from "./store";
 
 const base = document.documentElement.dataset.base || "/";
+
+let toastTimer = 0;
+export function toast(text: string) {
+  const el = document.querySelector<HTMLElement>("[data-toast]");
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (el.hidden = true), 2200);
+}
 
 function applyTheme(theme: "light" | "dark") {
   document.documentElement.dataset.theme = theme;
@@ -26,6 +38,20 @@ document.addEventListener("click", async (e) => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     setPrefs({ theme: next });
     applyTheme(next);
+    return;
+  }
+  const anchor = target.closest<HTMLAnchorElement>(".prose a.anchor");
+  if (anchor) {
+    e.preventDefault();
+    const url = new URL(anchor.href, location.href);
+    history.replaceState(history.state, "", url.hash);
+    document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView();
+    try {
+      await navigator.clipboard.writeText(url.href);
+      toast("Link to this section copied");
+    } catch {
+      toast("Link is in the address bar");
+    }
     return;
   }
   const copy = target.closest<HTMLButtonElement>("[data-copy]");
@@ -67,19 +93,41 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   });
 }
 
+// offline notice (the banner lives in each page, so re-apply after navigation)
+function renderOnline() {
+  const banner = document.querySelector<HTMLElement>("[data-offline-banner]");
+  if (banner) banner.hidden = navigator.onLine;
+}
+window.addEventListener("online", renderOnline);
+window.addEventListener("offline", renderOnline);
+
 // ---- lesson state (done / bookmark / visit) ----
+const STATUS_TEXT = { done: "Completed", started: "In progress", new: "Not started" } as const;
+
+/** Paints completed / in-progress / not-started marks and section progress bars from stored data. */
 function markDone() {
   const done = new Set(completedIds());
+  const started = new Set(startedIds());
   document.querySelectorAll<HTMLElement>("[data-lesson-done]").forEach((el) => {
-    el.dataset.done = String(done.has(el.dataset.lessonDone!));
+    const status = statusOf(el.dataset.lessonDone!, done, started);
+    el.dataset.done = String(status === "done");
+    el.dataset.status = status;
+    const label = el.querySelector<HTMLElement>("[data-status-label]");
+    if (label) label.textContent = STATUS_TEXT[status];
   });
   document.querySelectorAll<HTMLElement>("[data-section-progress]").forEach((el) => {
     const ids = (el.dataset.sectionProgress || "").split(",").filter(Boolean);
     const n = ids.filter((id) => done.has(id)).length;
-    const bar = el.querySelector<HTMLElement>(".progress > span");
-    if (bar) bar.style.width = ids.length ? `${(n / ids.length) * 100}%` : "0";
+    const s = ids.filter((id) => !done.has(id) && started.has(id)).length;
+    const bar = el.querySelector<HTMLElement>(".progress");
+    if (bar) {
+      const [doneBar, startedBar] = [bar.children[0] as HTMLElement, bar.children[1] as HTMLElement | undefined];
+      if (doneBar) doneBar.style.width = ids.length ? `${(n / ids.length) * 100}%` : "0";
+      if (startedBar) startedBar.style.width = ids.length ? `${(s / ids.length) * 100}%` : "0";
+      bar.setAttribute("aria-label", `${n} of ${ids.length} completed${s ? `, ${s} in progress` : ""}`);
+    }
     const text = el.querySelector<HTMLElement>("[data-count]");
-    if (text) text.textContent = `${n} of ${ids.length} done`;
+    if (text) text.textContent = el.closest("summary") ? `${n}/${ids.length}` : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
   });
 }
 
@@ -122,30 +170,76 @@ function setupLesson() {
     tabs.scrollLeft = active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2;
   }
 
+  // "Lessons": toggles the sidebar where there is room for it, otherwise opens the drawer
   const dlg = document.querySelector<HTMLDialogElement>("[data-jump-dialog]");
+  const body = dlg?.querySelector<HTMLElement>(".jump-dialog__body");
   const filter = dlg?.querySelector<HTMLInputElement>("input");
-  document.querySelectorAll("[data-open-jump]").forEach((b) =>
-    b.addEventListener("click", () => {
-      dlg?.showModal();
-      if (filter) {
-        filter.value = "";
-        filter.dispatchEvent(new Event("input"));
-        filter.focus();
-      }
-      const cur = dlg?.querySelector<HTMLElement>('[aria-current="page"]');
-      const list = dlg?.querySelector<HTMLElement>("ul");
-      if (cur && list) list.scrollTop = cur.offsetTop - list.clientHeight / 2;
-    }),
-  );
+  const wide = window.matchMedia("(min-width: 1400px)");
+  const sidebar = document.querySelector<HTMLElement>(".lesson-sidebar");
+  const centre = (box: HTMLElement | null | undefined) => {
+    const cur = box?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (box && cur) box.scrollTop = cur.offsetTop - box.clientHeight / 2;
+  };
+  const openBtn = page.querySelector<HTMLButtonElement>("[data-open-jump]");
+  const renderToggle = () => {
+    if (!openBtn) return;
+    if (wide.matches) {
+      const shown = document.documentElement.dataset.lessonnav !== "hidden";
+      openBtn.setAttribute("aria-expanded", String(shown));
+      openBtn.removeAttribute("aria-haspopup");
+      openBtn.title = shown ? "Hide the lesson list" : "Show the lesson list";
+    } else {
+      openBtn.removeAttribute("aria-expanded");
+      openBtn.setAttribute("aria-haspopup", "dialog");
+      openBtn.title = "Show all lessons";
+    }
+  };
+  openBtn?.addEventListener("click", () => {
+    if (wide.matches) {
+      const hide = document.documentElement.dataset.lessonnav !== "hidden";
+      document.documentElement.dataset.lessonnav = hide ? "hidden" : "shown";
+      setPrefs({ lessonNav: hide ? "hidden" : "shown" });
+      renderToggle();
+      if (!hide) centre(sidebar);
+      return;
+    }
+    if (!dlg) return;
+    dlg.showModal();
+    if (filter) {
+      filter.value = "";
+      filter.dispatchEvent(new Event("input"));
+    }
+    centre(body);
+    // focus the current lesson link so arrow/Tab navigation starts in context
+    dlg.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+  });
+  wide.addEventListener("change", renderToggle, { signal: pageSignal() });
+  renderToggle();
+  centre(sidebar);
   dlg?.querySelector("[data-close]")?.addEventListener("click", () => dlg.close());
   dlg?.addEventListener("click", (e) => e.target === dlg && dlg.close());
-  filter?.addEventListener("input", () => {
-    const q = filter.value.trim().toLowerCase();
-    dlg!.querySelectorAll<HTMLLIElement>("li").forEach((li) => (li.hidden = !!q && !li.textContent!.toLowerCase().includes(q)));
+}
+
+function setupRevise() {
+  const btn = document.querySelector<HTMLButtonElement>("[data-reveal-all]");
+  if (!btn) return;
+  const all = () => [...document.querySelectorAll<HTMLDetailsElement>("details.qa")];
+  const render = () => {
+    const open = all().every((d) => d.open);
+    btn.setAttribute("aria-pressed", String(open));
+    btn.textContent = open ? "Hide all answers" : "Show all answers";
+  };
+  btn.addEventListener("click", () => {
+    const open = !all().every((d) => d.open);
+    all().forEach((d) => (d.open = open));
+    render();
   });
+  all().forEach((d) => d.addEventListener("toggle", render));
 }
 
 document.addEventListener("astro:page-load", () => {
+  renderOnline();
+  setupRevise();
   setupLesson();
   markDone();
   setupNotes();
@@ -154,6 +248,7 @@ document.addEventListener("astro:page-load", () => {
   setupSlides();
   setupLists();
   setupDashboard();
+  setupMyStudy();
   setupSearch();
 });
 window.addEventListener("mls:store", markDone);

@@ -1,0 +1,42 @@
+---
+import Base from "../layouts/Base.astro";
+import Icon from "../components/Icon.astro";
+import { getLessons } from "../lib/content";
+import { lessonPath, withBase } from "../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const index = getLessons().map((l) => ({ id: l.id, label: l.label, title: l.title, href: withBase(base, lessonPath(l.id)) }));
+const SECTIONS = [
+  { key: "bookmarks", title: "Bookmarks", icon: "bookmark", empty: "No bookmarks yet. Use Bookmark on any lesson." },
+  { key: "started", title: "In progress", icon: "clock", empty: "Nothing in progress. Lessons you open but haven't completed appear here." },
+  { key: "done", title: "Completed", icon: "check", empty: "No completed lessons yet. Use Mark complete on a lesson when you finish it." },
+  { key: "recent", title: "Recently studied", icon: "lessons", empty: "Nothing opened yet." },
+  { key: "listened", title: "Listening history", icon: "podcast", empty: "No podcasts played yet." },
+] as const;
+---
+<Base title="My study" nav="mystudy" description="Bookmarks, progress and listening history saved in this browser">
+  <div class="container container--narrow" data-my-study>
+    <script is:inline type="application/json" data-lesson-index set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
+    <div class="page-head">
+      <h1>My study</h1>
+      <p>Everything this browser remembers about your studying. It is stored only on this device — use <b>Back up</b> to move it to another browser.</p>
+    </div>
+    {SECTIONS.map((s) => (
+      <section class="section-block" aria-labelledby={`ms-${s.key}`}>
+        <div class="section-block__head"><h2 id={`ms-${s.key}`}><Icon name={s.icon} /> {s.title} <span class="small muted" data-ms-count={s.key}></span></h2></div>
+        <ul class="study-list" data-ms={s.key} hidden></ul>
+        <p class="empty" data-ms-empty={s.key}>{s.empty}</p>
+      </section>
+    ))}
+    <section class="section-block card" aria-labelledby="ms-data">
+      <h2 id="ms-data" class="card-title">Your data</h2>
+      <p class="small muted" style="margin-top:0">A backup is a small JSON file with your progress, bookmarks, podcast positions and settings. Restoring it replaces what this browser has.</p>
+      <div class="btn-row">
+        <button class="btn btn--sm" type="button" data-ms-export><Icon name="file" /> Back up progress</button>
+        <label class="btn btn--sm"><Icon name="file" /> Restore from backup<input class="visually-hidden" type="file" accept="application/json,.json" data-ms-import /></label>
+        <button class="btn btn--sm" type="button" data-ms-reset><Icon name="close" /> Reset all progress</button>
+      </div>
+      <p class="small" role="status" data-ms-status style="min-height:1.4em;margin:.75rem 0 0"></p>
+    </section>
+  </div>
+</Base>

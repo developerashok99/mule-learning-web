@@ -30,7 +30,7 @@ const ALIAS: Record<string, string> = { raml: "yaml", dw: "dataweave", txt: "tex
 let highlighter: Promise<Highlighter> | null = null;
 function getHighlighter() {
   highlighter ??= createHighlighter({
-    themes: ["github-light", "github-dark"],
+    themes: ["github-light-default", "github-dark-default"],
     langs: [...LANGS, { ...(dataweave as object), name: "dataweave" } as never],
   });
   return highlighter;
@@ -65,7 +65,7 @@ function remarkBlocks(hl: Highlighter, counter: { mermaid: number }) {
       }
       const lang = ALIAS[raw] ?? raw;
       const use = loaded.has(lang) ? lang : "text";
-      const hast = hl.codeToHast(code.value, { lang: use, themes: { light: "github-light", dark: "github-dark" }, defaultColor: false });
+      const hast = hl.codeToHast(code.value, { lang: use, themes: { light: "github-light-default", dark: "github-dark-default" }, defaultColor: false });
       const pre = hast.children[0] as Element;
       pre.properties = { ...pre.properties, tabIndex: 0 };
       const label = raw && raw !== "text" ? raw : "";
@@ -89,29 +89,40 @@ function remarkBlocks(hl: Highlighter, counter: { mermaid: number }) {
 
 /** hast: links, images, tables; collects the table of contents. */
 function rehypeSite(kind: SourceKind, sid: string, base: string, known: Set<string>, toc: TocItem[]) {
+  let tables = 0;
   return (tree: HRoot) => {
     visit(tree, "element", (node: Element, index, parent) => {
-      if (node.tagName === "a" && typeof node.properties.href === "string" && !node.properties.ariaHidden) {
+      if (node.tagName === "a" && typeof node.properties.href === "string" && !(node.properties.className as string[] | undefined)?.includes("anchor")) {
         const { href, external } = rewriteLink(node.properties.href, kind, sid, base, known);
         node.properties.href = href;
         if (external) {
           node.properties.target = "_blank";
           node.properties.rel = ["noopener", "noreferrer"];
+          node.properties.className = ["ext"];
+          node.children.push({ type: "element", tagName: "span", properties: { className: ["visually-hidden"], dataPagefindIgnore: "" }, children: [{ type: "text", value: " (opens in a new tab)" }] });
         }
       } else if (node.tagName === "img" && typeof node.properties.src === "string") {
         node.properties.src = rewriteLink(node.properties.src, kind, sid, base, known).href;
         node.properties.loading = "lazy";
         node.properties.decoding = "async";
       } else if (node.tagName === "table" && parent && index != null) {
+        tables++;
+        // header cells left blank in the notes still need an accessible name
+        visit(node, "element", (cell: Element) => {
+          if (cell.tagName === "th" && !textOf(cell).trim()) cell.children = [{ type: "element", tagName: "span", properties: { className: ["visually-hidden"] }, children: [{ type: "text", value: "(blank)" }] }];
+        });
+        const firstHead = textOf(node).trim().split(/\s+/).slice(0, 6).join(" ");
         (parent.children as ElementContent[])[index] = {
           type: "element", tagName: "div",
-          properties: { className: ["table-wrap"], tabIndex: 0, role: "region", ariaLabel: "Table (scrolls sideways)" },
+          properties: { className: ["table-wrap"], tabIndex: 0, role: "region", ariaLabel: `Table ${tables}: ${firstHead}` },
           children: [node],
         };
         return SKIP;
       } else if (node.tagName === "h1") {
-        // the document title is the page itself; no anchor (keeps it out of search sub-results)
+        // the document title is the page itself; no anchor (keeps it out of search sub-results),
+        // and it counts most when ranking search results
         delete node.properties.id;
+        node.properties.dataPagefindWeight = "10";
       } else if ((node.tagName === "h2" || node.tagName === "h3") && typeof node.properties.id === "string") {
         const text = node.children.filter((c) => !(c.type === "element" && c.tagName === "a" && (c.properties.className as string[] | undefined)?.includes("anchor"))).map(textOf).join("").trim();
         toc.push({ depth: node.tagName === "h2" ? 2 : 3, text, id: node.properties.id });
@@ -145,7 +156,8 @@ async function render(source: string, opts: { kind: SourceKind; sid: string; bas
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: "append",
-      properties: { className: ["anchor"], ariaHidden: "true", tabIndex: -1, dataPagefindIgnore: "" },
+      // a real, keyboard-reachable link; the browser script copies its URL when clicked
+      properties: (el: Element) => ({ className: ["anchor"], ariaLabel: `Copy link to section: ${textOf(el).trim()}`, dataPagefindIgnore: "" }),
       content: { type: "text", value: "#" },
       test: ["h2", "h3", "h4"],
     })

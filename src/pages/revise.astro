@@ -1,0 +1,113 @@
+---
+/**
+ * Course-wide revision hub: every lesson's revision view, and a glossary merged from the
+ * "Important Terminology" tables of the super-detailed notes (meanings copied verbatim, with their lesson).
+ */
+import Base from "../layouts/Base.astro";
+import Icon from "../components/Icon.astro";
+import { getCourses, getLesson, getLessons, knownIds, readNote } from "../lib/content";
+import { renderMarkdown } from "../lib/markdown";
+import { lessonHasView, lessonPath, withBase } from "../lib/routes";
+import { findSection, parseQuestions, parseTermTable } from "../lib/revision";
+
+const base = import.meta.env.BASE_URL;
+const known = knownIds();
+const inline = async (text: string, sid: string) =>
+  (await renderMarkdown(text, { kind: "super", sid, base, known })).html.replace(/^<p>|<\/p>\s*$/g, "");
+
+interface Entry {
+  key: string;
+  term: string;
+  meanings: { html: string; lessons: string[] }[];
+}
+const entries = new Map<string, Entry>();
+const qCount = new Map<string, number>();
+for (const l of getLessons()) {
+  const src = readNote(l.id, "super");
+  const q = findSection(src, /interview question|questions discussed/i);
+  qCount.set(l.id, q ? parseQuestions(q.body).length : 0);
+  const t = findSection(src, /terminolog/i);
+  if (!t) continue;
+  for (const row of parseTermTable(t.body)) {
+    const key = row.term.replace(/[`*_]/g, "").trim().toLowerCase();
+    if (!key) continue;
+    const e = entries.get(key) ?? { key, term: await inline(row.term, l.id), meanings: [] };
+    entries.set(key, e);
+    const html = await inline(row.meaning, l.id);
+    const same = e.meanings.find((m) => m.html === html);
+    if (same) same.lessons.push(l.id);
+    else e.meanings.push({ html, lessons: [l.id] });
+  }
+}
+const sortKey = (k: string) => k.replace(/^[^a-z0-9]+/, "") || k;
+const sorted = [...entries.values()].sort((a, b) => sortKey(a.key).localeCompare(sortKey(b.key)));
+const letterOf = (k: string) => {
+  const c = sortKey(k)[0]?.toUpperCase() ?? "#";
+  return /[A-Z]/.test(c) ? c : "#";
+};
+const letters = [...new Set(sorted.map((e) => letterOf(e.key)))];
+const sections = getCourses().flatMap((c) => c.sections);
+---
+<Base title="Revision" nav="revise" description="Revision hub: glossary of key terms and per-lesson self-tests">
+  <div class="container container--narrow">
+    <div class="page-head">
+      <h1>Revision</h1>
+      <p>Quick review material taken directly from the notes — nothing here is rewritten or summarised by the site.</p>
+    </div>
+
+    <section class="section-block" aria-labelledby="rv-lessons">
+      <div class="section-block__head"><h2 id="rv-lessons">Revise a lesson</h2><p>Outline, Must Remember, Quick Recap, key terms, a self-test from the interview questions, and the code examples.</p></div>
+      {sections.map((s) => (
+        <details class="lesson-nav__section card" style="padding:.25rem .5rem;margin-bottom:.5rem">
+          <summary>{s.title} <span class="small muted">{s.lessons.length} lessons</span></summary>
+          <ul class="study-list" style="margin:.25rem 0 .5rem">
+            {s.lessons.map((id) => getLesson(id)!).filter((l) => lessonHasView(l, "revise")).map((l) => (
+              <li data-lesson-done={l.id}>
+                <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+                <span class="visually-hidden" data-status-label>Not started</span>
+                <a href={withBase(base, lessonPath(l.id, "revise"))}><b>{l.label}</b> — {l.title}</a>
+                {qCount.get(l.id) ? <small>{qCount.get(l.id)} questions</small> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+    </section>
+
+    <section class="section-block" aria-labelledby="rv-glossary" data-filter-scope>
+      <div class="section-block__head">
+        <h2 id="rv-glossary">Glossary</h2>
+        <p>{sorted.length} terms from the “Important Terminology” tables of the super-detailed notes. Where lessons define a term differently, each definition is shown with its lesson.</p>
+      </div>
+      <div class="filters">
+        <label class="visually-hidden" for="gl-filter">Filter the glossary</label>
+        <input id="gl-filter" class="input" style="max-width:24rem" type="search" placeholder="Filter terms, e.g. “vCore”, “payload”" data-filter-text />
+        <span class="small muted" data-filter-count aria-live="polite"></span>
+      </div>
+      <nav class="chips glossary-letters" aria-label="Glossary letters">
+        {letters.map((L) => <a class="chip" href={`#gl-${L === "#" ? "other" : L.toLowerCase()}`}>{L}</a>)}
+      </nav>
+      {letters.map((L) => (
+        <div class="glossary-group" data-filter-group>
+          <h3 id={`gl-${L === "#" ? "other" : L.toLowerCase()}`}>{L === "#" ? "Other" : L}</h3>
+          <dl class="glossary">
+            {sorted.filter((e) => letterOf(e.key) === L).map((e) => (
+              <div class="glossary__item" data-filter-item={`${e.key} ${e.meanings.map((m) => m.html.replace(/<[^>]+>/g, "")).join(" ")}`}>
+                <dt set:html={e.term} />
+                {e.meanings.map((m) => (
+                  <dd>
+                    <span set:html={m.html} />
+                    <span class="glossary__src">
+                      {m.lessons.map((id, i) => <>{i > 0 && ", "}<a href={withBase(base, lessonPath(id, "super"))}>{getLesson(id)?.label}</a></>)}
+                    </span>
+                  </dd>
+                ))}
+              </div>
+            ))}
+          </dl>
+        </div>
+      ))}
+      <p class="empty" data-filter-empty hidden>No terms match.</p>
+    </section>
+  </div>
+</Base>

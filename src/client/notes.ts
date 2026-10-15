@@ -53,13 +53,17 @@ export function setupNotes() {
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) e.isIntersecting ? visible.add(e.target.id) : visible.delete(e.target.id);
       let active = headings.find((h) => visible.has(h.id))?.id;
-      if (!active) active = [...headings].reverse().find((h) => h.getBoundingClientRect().top < 120)?.id;
+      if (!active) active = [...headings].reverse().find((h) => h.getBoundingClientRect().top < 160)?.id;
       document.querySelectorAll(".toc-list a.active").forEach((a) => a.classList.remove("active"));
       for (const a of links.get(active ?? "") ?? []) {
         a.classList.add("active");
-        if (a.closest(".doc-toc")) a.scrollIntoView({ block: "nearest" });
+        // keep the active entry visible inside the sidebar (manual scroll: scrollIntoView would move the page/focus point)
+        const box = a.closest<HTMLElement>(".doc-toc");
+        if (box && (a.offsetTop < box.scrollTop || a.offsetTop + a.offsetHeight > box.scrollTop + box.clientHeight)) {
+          box.scrollTop = a.offsetTop - box.clientHeight / 3;
+        }
       }
-    }, { rootMargin: "-80px 0px -65% 0px" });
+    }, { rootMargin: "-120px 0px -60% 0px" });
     headings.forEach((h) => io.observe(h));
     signal.addEventListener("abort", () => io.disconnect());
   }

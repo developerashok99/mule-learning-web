@@ -17,6 +17,7 @@ const res = [
 ---
 <li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
   <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+  <span class="visually-hidden" data-status-label>Not started</span>
   <div class="lesson-row__main">
     <span class="lesson-row__label">{l.label}</span>
     <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>

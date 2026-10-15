@@ -5,6 +5,7 @@
 export const KEYS = {
   completed: "mls.completed", // string[] lesson ids
   bookmarks: "mls.bookmarks", // string[] lesson ids
+  started: "mls.started", // string[] lesson ids opened at least once (for "in progress")
   recent: "mls.recent", // RecentItem[] newest first
   audio: "mls.audio", // Record<episodeId, MediaProgress>
   video: "mls.video", // Record<episodeId, MediaProgress>
@@ -32,7 +33,8 @@ export function read<T>(key: string, fallback: T): T {
     const raw = localStorage.getItem(key);
     if (raw == null) return fallback;
     const value = JSON.parse(raw) as unknown;
-    return value == null || typeof value !== typeof fallback || Array.isArray(value) !== Array.isArray(fallback) ? fallback : (value as T);
+    if (value == null || fallback === null) return (value ?? fallback) as T;
+    return typeof value !== typeof fallback || Array.isArray(value) !== Array.isArray(fallback) ? fallback : (value as T);
   } catch {
     return fallback;
   }
@@ -65,12 +67,28 @@ export function setBookmarked(id: string, on: boolean) {
   write(KEYS.bookmarks, list);
 }
 
+export type LessonStatus = "done" | "started" | "new";
+
+/** Lessons opened at least once. Older data (before this key existed) is derived from recents and reading progress. */
+export function startedIds(): string[] {
+  const stored = read<string[] | null>(KEYS.started, null);
+  if (Array.isArray(stored)) return stored.filter((x) => typeof x === "string");
+  const derived = new Set<string>(read<RecentItem[]>(KEYS.recent, []).map((r) => r?.id).filter((x): x is string => typeof x === "string"));
+  for (const k of Object.keys(read<Record<string, number>>(KEYS.reading, {}))) derived.add(k.split("/")[0]);
+  return [...derived];
+}
+export function statusOf(id: string, done = new Set(completedIds()), started = new Set(startedIds())): LessonStatus {
+  return done.has(id) ? "done" : started.has(id) ? "started" : "new";
+}
+
 export const recent = () => read<RecentItem[]>(KEYS.recent, []).filter((r) => r && typeof r.id === "string");
 export function recordVisit(item: Omit<RecentItem, "at">) {
   // One entry per lesson: the most recent view of it.
   const list = recent().filter((r) => r.id !== item.id);
   list.unshift({ ...item, at: Date.now() });
   write(KEYS.recent, list.slice(0, 12));
+  const started = startedIds();
+  if (!started.includes(item.id)) write(KEYS.started, [...started, item.id]);
 }
 
 export function mediaProgress(kind: "audio" | "video", id: string): MediaProgress | null {
@@ -101,10 +119,44 @@ export function saveReadingProgress(key: string, value: number) {
   write(KEYS.reading, all);
 }
 
+/** Everything this site stores, for backup / restore / reset on the My study page. */
+export function exportAll(): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of Object.values(KEYS)) {
+    const v = read<unknown>(key, null);
+    if (v != null) out[key] = v;
+  }
+  return out;
+}
+export function importAll(data: unknown): number {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) throw new Error("Not a Mule Study backup file");
+  const known = new Set<string>(Object.values(KEYS));
+  let n = 0;
+  for (const [k, v] of Object.entries(data)) {
+    if (!known.has(k)) continue;
+    write(k, v);
+    n++;
+  }
+  if (!n) throw new Error("The file contains no Mule Study progress");
+  return n;
+}
+export function clearAll(keepPrefs = true) {
+  for (const key of Object.values(KEYS)) {
+    if (keepPrefs && key === KEYS.prefs) continue;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+  window.dispatchEvent(new CustomEvent("mls:store", { detail: { key: "*" } }));
+}
+
 export interface Prefs {
   theme?: "light" | "dark";
   width?: "normal" | "wide";
   scale?: number;
+  lessonNav?: "shown" | "hidden";
 }
 export const prefs = () => read<Prefs>(KEYS.prefs, {});
 export function setPrefs(patch: Partial<Prefs>) {

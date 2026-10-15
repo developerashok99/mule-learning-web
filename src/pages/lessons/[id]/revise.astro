@@ -1,0 +1,149 @@
+---
+/**
+ * Revision view: the lesson outline plus sections taken verbatim from the notes (nothing is rewritten),
+ * each linking back to where it comes from. Interview questions become a self-test with hidden answers.
+ * Not indexed by search (it repeats text that is already indexed on the notes pages).
+ */
+import LessonShell from "../../../components/LessonShell.astro";
+import Icon from "../../../components/Icon.astro";
+import { getLessons, knownIds, readNote, type Lesson } from "../../../lib/content";
+import { renderMarkdown, type RenderedDoc } from "../../../lib/markdown";
+import { lessonHasView, lessonPath, withBase, type NoteLevel } from "../../../lib/routes";
+import { codeExamples, findSection, parseQuestions, stripNumber } from "../../../lib/revision";
+
+export function getStaticPaths() {
+  return getLessons()
+    .filter((l) => lessonHasView(l, "revise"))
+    .map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+const base = import.meta.env.BASE_URL;
+const known = knownIds();
+const LABEL: Record<NoteLevel, string> = { simple: "Simple notes", detailed: "Detailed notes", super: "Super-detailed notes" };
+
+const src = { simple: readNote(lesson.id, "simple"), detailed: readNote(lesson.id, "detailed"), super: readNote(lesson.id, "super") };
+const full: Partial<Record<NoteLevel, RenderedDoc>> = {};
+for (const level of ["simple", "detailed", "super"] as NoteLevel[]) {
+  if (src[level]) full[level] = await renderMarkdown(src[level]!, { kind: level, sid: lesson.id, base, known });
+}
+const md = (text: string, level: NoteLevel) => renderMarkdown(text, { kind: level, sid: lesson.id, base, known });
+/** link to a heading of a source document, matched by its text */
+const sourceLink = (level: NoteLevel, heading: string) => {
+  const plain = heading.replace(/[`*_]/g, "").trim();
+  const hit = full[level]?.toc.find((t) => t.text.trim() === plain);
+  return withBase(base, lessonPath(lesson.id, level)) + (hit ? `#${hit.id}` : "");
+};
+
+// Outline: the most complete notes available
+const outlineLevel: NoteLevel = full.super ? "super" : full.detailed ? "detailed" : "simple";
+const outline = full[outlineLevel]!.toc;
+
+type Block = { key: string; title: string; level: NoteLevel; heading: string; html: string };
+const blocks: Block[] = [];
+async function add(key: string, title: string, level: NoteLevel, pattern: RegExp) {
+  const s = findSection(src[level], pattern);
+  if (s && s.body) blocks.push({ key, title, level, heading: s.title, html: (await md(s.body, level)).html });
+}
+await add("must", "Must remember", "super", /^must remember/i);
+await add("recap", "Quick recap", "simple", /^quick recap/i);
+if (!blocks.some((b) => b.key === "recap")) await add("recap", "Quick recap", "detailed", /^quick recap/i);
+await add("terms", "Key terms", "super", /terminolog/i);
+
+const qSection = findSection(src.super, /interview question|questions discussed/i);
+const questions = qSection ? await Promise.all(parseQuestions(qSection.body).map(async (q) => ({ q: (await md(q.question, "super")).html, a: (await md(q.answer, "super")).html }))) : [];
+if (!questions.length) await add("checklist", "Interview checklist", "super", /interview-question checklist|interview questions/i);
+
+// Code examples from the detailed and super-detailed notes (identical snippets shown once)
+const seen = new Set<string>();
+const examples: { level: NoteLevel; heading: string; html: string; lang: string }[] = [];
+for (const level of ["detailed", "super"] as NoteLevel[]) {
+  for (const ex of codeExamples(src[level])) {
+    const key = ex.code.replace(/\s+/g, " ").trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    examples.push({ level, heading: ex.heading, lang: ex.lang, html: (await md(ex.markdown, level)).html });
+  }
+}
+const nav = [
+  { id: "rv-outline", label: "Outline", on: outline.length > 0 },
+  ...blocks.map((b) => ({ id: `rv-${b.key}`, label: b.title, on: true })),
+  { id: "rv-selftest", label: `Self-test (${questions.length})`, on: questions.length > 0 },
+  { id: "rv-code", label: `Code (${examples.length})`, on: examples.length > 0 },
+].filter((n) => n.on);
+---
+<LessonShell lesson={lesson} view="revise" viewLabel="Revise">
+  <div class="revise" data-revise={lesson.id}>
+    <h1 class="revise__title">Revise: {lesson.label} — {lesson.title}</h1>
+    <div class="notice" style="margin:0 0 1.25rem">
+      <Icon name="info" />
+      <div>
+        <strong>Assembled from this lesson's notes — nothing rewritten</strong>
+        <p>Each part below is copied unchanged from the notes, with a link to where it comes from. Read the full notes for explanations and demos.</p>
+      </div>
+    </div>
+    <nav class="chips revise__jump" aria-label="Revision sections">
+      {nav.map((n) => <a class="chip" href={`#${n.id}`}>{n.label}</a>)}
+    </nav>
+
+    {outline.length > 0 && (
+      <section class="revise__block" id="rv-outline" aria-labelledby="rv-outline-h">
+        <h2 id="rv-outline-h">Outline</h2>
+        <p class="revise__src">The headings of the <a href={withBase(base, lessonPath(lesson.id, outlineLevel))}>{LABEL[outlineLevel]}</a> — select one to read that part.</p>
+        <ol class="revise__outline">
+          {outline.filter((t) => t.depth === 2).map((t) => {
+            const subs = outline.slice(outline.indexOf(t) + 1);
+            const end = subs.findIndex((x) => x.depth === 2);
+            const children = (end < 0 ? subs : subs.slice(0, end)).filter((x) => x.depth === 3);
+            return (
+              <li>
+                <a href={`${withBase(base, lessonPath(lesson.id, outlineLevel))}#${t.id}`}>{stripNumber(t.text)}</a>
+                {children.length > 0 && <ul>{children.map((c) => <li><a href={`${withBase(base, lessonPath(lesson.id, outlineLevel))}#${c.id}`}>{stripNumber(c.text)}</a></li>)}</ul>}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    )}
+
+    {blocks.map((b) => (
+      <section class="revise__block" id={`rv-${b.key}`} aria-labelledby={`rv-${b.key}-h`}>
+        <h2 id={`rv-${b.key}-h`}>{b.title}</h2>
+        <p class="revise__src">From the <a href={sourceLink(b.level, b.heading)}>{LABEL[b.level]} › {stripNumber(b.heading)}</a></p>
+        <div class="prose revise__body" set:html={b.html} />
+      </section>
+    ))}
+
+    {questions.length > 0 && (
+      <section class="revise__block" id="rv-selftest" aria-labelledby="rv-selftest-h">
+        <div class="section-block__head">
+          <h2 id="rv-selftest-h">Self-test</h2>
+          <button class="btn btn--sm" type="button" data-reveal-all aria-pressed="false">Show all answers</button>
+        </div>
+        <p class="revise__src">The interview questions from the <a href={sourceLink("super", qSection!.title)}>{LABEL.super} › {stripNumber(qSection!.title)}</a>. Answer out loud first, then open the answer to check.</p>
+        <ol class="qa-list">
+          {questions.map((q, i) => (
+            <li>
+              <details class="qa">
+                <summary><span class="qa__n">Q{i + 1}</span><span class="qa__q" set:html={q.q.replace(/^<p>|<\/p>\s*$/g, "")} /></summary>
+                <div class="prose qa__a" set:html={q.a} />
+              </details>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    {examples.length > 0 && (
+      <section class="revise__block" id="rv-code" aria-labelledby="rv-code-h">
+        <h2 id="rv-code-h">Code examples</h2>
+        <p class="revise__src">Every code example in the detailed and super-detailed notes, with the section it belongs to.</p>
+        {examples.map((ex) => (
+          <div class="revise__example">
+            <p class="revise__src"><a href={sourceLink(ex.level, ex.heading)}>{LABEL[ex.level]} › {stripNumber(ex.heading) || "Introduction"}</a></p>
+            <div class="prose" set:html={ex.html} />
+          </div>
+        ))}
+      </section>
+    )}
+  </div>
+</LessonShell>

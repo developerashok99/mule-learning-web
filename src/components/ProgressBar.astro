@@ -1,0 +1,8 @@
+---
+/** Completed (solid) + in-progress (light) bar. Filled in the browser from stored progress (src/client/app.ts). */
+interface Props {
+  thin?: boolean;
+}
+const { thin = false } = Astro.props;
+---
+<div class:list={["progress", { "progress--thin": thin }]} role="img" aria-label="No progress yet"><span class="p-done"></span><span class="p-started"></span></div>

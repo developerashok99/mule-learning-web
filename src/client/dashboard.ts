@@ -1,7 +1,8 @@
-/** Home page panels built from what this browser remembers. */
+/** Home page panels, built only from what this browser has stored (nothing is invented). */
 import { getEpisode } from "./player";
-import { allMediaProgress, bookmarkIds, completedIds, recent, timeAgo } from "./store";
+import { allMediaProgress, bookmarkIds, completedIds, readingProgress, recent, startedIds, timeAgo } from "./store";
 import { formatClock } from "../lib/duration";
+import { recommend } from "../lib/progress";
 
 interface IndexItem {
   id: string;
@@ -9,7 +10,11 @@ interface IndexItem {
   title: string;
   href: string;
   section: string;
+  res: { view: string; label: string; href: string }[];
 }
+
+const VIEW_NAMES: Record<string, string> = { lecture: "Overview", podcast: "Podcast", simple: "Simple notes", detailed: "Detailed notes", super: "Super-detailed notes", slides: "Slides", revise: "Revise" };
+const NOTE_VIEWS = new Set(["simple", "detailed", "super"]);
 
 function item(href: string, main: string, aside = "") {
   const li = document.createElement("li");
@@ -35,8 +40,6 @@ function fill(list: HTMLElement | null, items: HTMLLIElement[]) {
   if (empty) empty.hidden = items.length > 0;
 }
 
-const VIEW_NAMES: Record<string, string> = { lecture: "Lecture", podcast: "Podcast", simple: "Simple notes", detailed: "Detailed notes", super: "Super-detailed notes", slides: "Slides" };
-
 export function setupDashboard() {
   const dash = document.querySelector<HTMLElement>("[data-dashboard]");
   if (!dash) return;
@@ -47,51 +50,87 @@ export function setupDashboard() {
     index = [];
   }
   const byId = new Map(index.map((l) => [l.id, l]));
-  const done = new Set(completedIds());
+  const done = new Set(completedIds().filter((id) => byId.has(id)));
+  const started = new Set(startedIds().filter((id) => byId.has(id) && !done.has(id)));
   const visits = recent().filter((r) => byId.has(r.id));
+  const $ = <T extends HTMLElement>(sel: string) => dash.querySelector<T>(sel);
 
-  // Continue learning: the last thing opened; otherwise the first unfinished lesson.
-  const cont = dash.querySelector<HTMLElement>("[data-continue]");
+  // ---- Continue learning ----
   const last = visits[0];
-  const nextUp = index.find((l) => !done.has(l.id));
-  if (cont && last) {
+  const continueId = last && !done.has(last.id) ? last.id : undefined;
+  if (last) {
     const l = byId.get(last.id)!;
-    cont.querySelector("[data-c-eyebrow]")!.textContent = `Last opened ${timeAgo(last.at)} · ${VIEW_NAMES[last.view] ?? ""}`;
-    cont.querySelector("[data-c-title]")!.textContent = `${l.label} — ${l.title}`;
-    const go = cont.querySelector<HTMLAnchorElement>("[data-c-go]")!;
+    $("[data-c-welcome]")!.hidden = true;
+    $("[data-c-resume]")!.hidden = false;
+    $("[data-c-heading]")!.textContent = done.has(last.id) ? "Last studied" : "Continue learning";
+    $("[data-c-eyebrow]")!.textContent = `${VIEW_NAMES[last.view] ?? "Lesson"} · opened ${timeAgo(last.at)}${done.has(last.id) ? " · completed" : ""}`;
+    $("[data-c-title]")!.textContent = `${l.label} — ${l.title}`;
+    const go = $<HTMLAnchorElement>("[data-c-go]")!;
     go.href = last.href;
-    go.querySelector("[data-text]")!.textContent = "Continue";
-  }
-  const nextBox = dash.querySelector<HTMLElement>("[data-next-up]");
-  if (nextBox) {
-    const target = last && done.has(last.id) ? index[index.findIndex((l) => l.id === last.id) + 1] ?? nextUp : nextUp;
-    if (last && target && target.id !== last.id) {
-      nextBox.hidden = false;
-      const a = nextBox.querySelector<HTMLAnchorElement>("a")!;
-      a.href = target.href;
-      a.textContent = `${target.label} — ${target.title}`;
-    } else nextBox.hidden = true;
+    go.querySelector("[data-text]")!.textContent = `Continue: ${VIEW_NAMES[last.view] ?? "lesson"}`;
+    if (NOTE_VIEWS.has(last.view)) {
+      const pct = readingProgress(`${last.id}/${last.view}`);
+      if (pct > 0) {
+        $("[data-c-read]")!.hidden = false;
+        $<HTMLElement>("[data-c-read] .p-done")!.style.width = `${Math.round(pct * 100)}%`;
+        $("[data-c-read-text]")!.textContent = `${Math.round(pct * 100)}% read`;
+      }
+    }
+    const res = $("[data-c-res]")!;
+    res.replaceChildren(
+      ...l.res.map((r) => {
+        const a = document.createElement("a");
+        a.className = "chip";
+        a.href = r.href;
+        a.textContent = r.label;
+        if (r.view === last.view) a.setAttribute("aria-current", "page");
+        return a;
+      }),
+    );
   }
 
-  fill(dash.querySelector("[data-recent]"), visits.slice(0, 5).map((r) => {
+  // ---- Recommended next ----
+  const rec = recommend(index, done, continueId);
+  if (rec) {
+    const l = index[rec.i];
+    const a = $<HTMLAnchorElement>("[data-next-link]")!;
+    a.href = l.href;
+    a.replaceChildren(Object.assign(document.createElement("b"), { textContent: l.label }), ` ${l.title}`);
+    $("[data-next-why]")!.textContent = rec.why;
+  }
+  $("[data-next-up]")!.hidden = !rec;
+  $("[data-next-done]")!.hidden = !!rec || done.size < index.length;
+
+  // ---- lists ----
+  const visitOf = new Map(visits.map((v) => [v.id, v]));
+  fill($("[data-in-progress]"), index.filter((l) => started.has(l.id)).slice(0, 6).map((l) => {
+    const v = visitOf.get(l.id);
+    return item(v?.href ?? l.href, `${l.label} — ${l.title}`, v ? timeAgo(v.at) : "");
+  }));
+  fill($("[data-recent]"), visits.slice(0, 5).map((r) => {
     const l = byId.get(r.id)!;
     return item(r.href, `${l.label} · ${VIEW_NAMES[r.view] ?? "Lesson"} — ${l.title}`, timeAgo(r.at));
   }));
-
-  fill(dash.querySelector("[data-bookmarks]"), bookmarkIds().filter((id) => byId.has(id)).map((id) => {
+  fill($("[data-bookmarks]"), bookmarkIds().filter((id) => byId.has(id)).slice(0, 6).map((id) => {
     const l = byId.get(id)!;
     return item(l.href, `${l.label} — ${l.title}`, l.section);
   }));
-
   const played = Object.entries(allMediaProgress("audio"))
     .map(([id, p]) => ({ ep: getEpisode(id), p }))
-    .filter((x) => x.ep)
+    .filter((x) => x.ep && x.p && typeof x.p.at === "number")
     .sort((a, b) => b.p.at - a.p.at)
     .slice(0, 4);
-  fill(dash.querySelector("[data-played]"), played.map(({ ep, p }) =>
+  fill($("[data-played]"), played.map(({ ep, p }) =>
     item(ep!.href, ep!.title, p.done && !p.pos ? "Finished" : p.dur ? `${formatClock(p.pos)} / ${formatClock(p.dur)}` : timeAgo(p.at)),
   ));
 
-  const total = dash.querySelector<HTMLElement>("[data-total-done]");
-  if (total) total.textContent = String(index.filter((l) => done.has(l.id)).length);
+  // ---- counts ----
+  const set = (sel: string, n: number) => {
+    const el = $(sel);
+    if (el) el.textContent = String(n);
+  };
+  set("[data-total-done]", done.size);
+  set("[data-n-done]", done.size);
+  set("[data-n-started]", started.size);
+  set("[data-n-new]", index.length - done.size - started.size);
 }

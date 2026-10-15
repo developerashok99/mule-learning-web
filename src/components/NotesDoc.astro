@@ -18,9 +18,9 @@ const toc = doc.toc;
 <div class="doc-tools">
   <span><span class="badge badge--accent">{typeLabel}</span> · {minutes} min read · {doc.words.toLocaleString("en")} words</span>
   <div class="btn-row" role="group" aria-label="Reading options">
-    <button class="btn btn--sm btn--ghost" type="button" data-scale="down" aria-label="Smaller text">A−</button>
-    <button class="btn btn--sm btn--ghost" type="button" data-scale="up" aria-label="Larger text">A+</button>
-    <button class="btn btn--sm btn--ghost" type="button" data-width-toggle aria-pressed="false" aria-label="Use the full width for text">↔ Wide</button>
+    <button class="btn btn--sm btn--ghost" type="button" data-scale="down">A−<span class="visually-hidden"> smaller text</span></button>
+    <button class="btn btn--sm btn--ghost" type="button" data-scale="up">A+<span class="visually-hidden"> larger text</span></button>
+    <button class="btn btn--sm btn--ghost" type="button" data-width-toggle aria-pressed="false"><span aria-hidden="true">↔ </span>Wide<span class="visually-hidden"> text (use the full width)</span></button>
   </div>
 </div>
 <div class="notice" data-reading-resume hidden style="margin-bottom:1rem">

@@ -1,4 +1,5 @@
 ---
+import ProgressBar from "../../components/ProgressBar.astro";
 import Base from "../../layouts/Base.astro";
 import Icon from "../../components/Icon.astro";
 import { getCourses } from "../../lib/content";
@@ -21,7 +22,7 @@ const courses = getCourses();
             <h2 class="card-title" style="font-size:1.25rem"><Icon name="courses" /><a href={withBase(base, `courses/${c.id}/`)}>{c.title}</a></h2>
             <p class="muted">{c.description}</p>
             <p class="small"><b>{ids.length} lessons</b> in {c.sections.length} sections · <span data-count>0 of {ids.length} done</span></p>
-            <div class="progress"><span></span></div>
+            <ProgressBar />
             <ol class="small" style="margin:1rem 0 0;padding-left:1.25rem">
               {c.sections.map((s) => <li><a href={withBase(base, `courses/${c.id}/#${s.id}`)}>{s.title}</a> <span class="muted">({s.lessons.length})</span></li>)}
             </ol>

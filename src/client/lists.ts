@@ -19,7 +19,13 @@ export function setupLists() {
         it.hidden = !ok;
         if (ok) shown++;
       }
-      for (const g of groups) g.hidden = !g.querySelector("[data-filter-item]:not([hidden])");
+      for (const g of groups) {
+        g.hidden = !g.querySelector("[data-filter-item]:not([hidden])");
+        if (g instanceof HTMLDetailsElement) {
+          g.dataset.initialOpen ??= String(g.open);
+          g.open = q ? !g.hidden : g.dataset.initialOpen === "true";
+        }
+      }
       if (count) count.textContent = `${shown} shown`;
       scope.querySelector<HTMLElement>("[data-filter-empty]")?.toggleAttribute("hidden", shown > 0);
     };

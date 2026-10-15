@@ -2,10 +2,11 @@
 import LessonShell from "../../../components/LessonShell.astro";
 import PodcastPlayer from "../../../components/PodcastPlayer.astro";
 import { getLessons, type Lesson } from "../../../lib/content";
+import { lessonHasView } from "../../../lib/routes";
 
 export function getStaticPaths() {
   return getLessons()
-    .filter((l) => l.podcasts.length > 0)
+    .filter((l) => lessonHasView(l, "podcast"))
     .map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
 }
 const { lesson } = Astro.props as { lesson: Lesson };
@@ -16,6 +17,6 @@ const { lesson } = Astro.props as { lesson: Lesson };
     the full lecture and the notes have the complete material.
   </p>
   <div class="grid" style="max-width:56rem">
-    {lesson.podcasts.map((ep) => <PodcastPlayer episode={ep} />)}
+    {lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl).map((ep) => <PodcastPlayer episode={ep} />)}
   </div>
 </LessonShell>

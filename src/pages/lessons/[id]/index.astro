@@ -28,6 +28,7 @@ for (const { level } of NOTE_LEVELS) {
 }
 topics = topics.filter((t) => !/terminolog|interview question|must remember|next session|sources|recap|checklist|glossary|references|overview/i.test(t)).slice(0, 10);
 const slides = readSlides(lesson.id);
+const playable = lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl);
 ---
 <LessonShell lesson={lesson} view="lecture" viewLabel="Lecture">
   <div class="lesson-grid">
@@ -46,10 +47,10 @@ const slides = readSlides(lesson.id);
 
       <section style="margin-top:1.75rem" aria-labelledby="pod-h" data-pagefind-ignore>
         <h2 id="pod-h" style="font-size:1.1rem;margin:0 0 .5rem">Summary podcast</h2>
-        {lesson.podcasts.length ? (
-          <ul class="episode-list">{lesson.podcasts.map((ep) => <EpisodeCard episode={ep} />)}</ul>
+        {playable.length ? (
+          <ul class="episode-list">{playable.map((ep) => <EpisodeCard episode={ep} />)}</ul>
         ) : (
-          <div class="notice"><Icon name="info" /><div><strong>No summary podcast for this lesson yet</strong><p>Add one in config/media.json and it will be listed here.</p></div></div>
+          <div class="notice"><Icon name="info" /><div><strong>No summary podcast for this lesson yet</strong><p>The video and audio summary will appear here once its links are added to config/media.json.</p></div></div>
         )}
       </section>
     </div>

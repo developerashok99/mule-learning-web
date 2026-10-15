@@ -1,0 +1,41 @@
+---
+/**
+ * Every lesson grouped by section, with completion marks (painted in the browser) and the current lesson marked.
+ * Links keep the resource you are on (e.g. Detailed notes) when the target lesson has it.
+ */
+import { getCourses, getLesson, type Lesson } from "../lib/content";
+import { lessonHasView, lessonPath, withBase, type View } from "../lib/routes";
+import Icon from "./Icon.astro";
+
+interface Props {
+  lesson: Lesson;
+  view: View;
+  /** used to keep ids unique when the list appears twice on a page */
+  idPrefix: string;
+}
+const { lesson, view, idPrefix } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const sections = getCourses().flatMap((c) => c.sections);
+const href = (l: Lesson) => withBase(base, lessonPath(l.id, lessonHasView(l, view) ? view : "lecture"));
+---
+<div class="lesson-nav">
+  {sections.map((s) => (
+    <details class="lesson-nav__section" open={s.id === lesson.sectionId} data-filter-group>
+      <summary id={`${idPrefix}-${s.id}`}>{s.title} <span class="small muted" data-section-progress={s.lessons.join(",")}><span data-count></span></span></summary>
+      <ul aria-labelledby={`${idPrefix}-${s.id}`}>
+        {s.lessons.map((id) => {
+          const l = getLesson(id)!;
+          return (
+            <li data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title}`}>
+              <a href={href(l)} aria-current={l.id === lesson.id ? "page" : undefined}>
+                <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+                <span class="lesson-nav__text" title={`${l.label} — ${l.title}`}><b>{l.label}</b> {l.title}</span>
+                <span class="visually-hidden" data-status-label>Not started</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  ))}
+</div>
