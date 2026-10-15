@@ -10,7 +10,7 @@ const version = Date.now().toString(36);
 const sw = `
 const BASE = ${JSON.stringify(base)};
 const VERSION = ${JSON.stringify(version)};
-const PAGES = "pages-" + VERSION, STATIC = "static-" + VERSION, IMAGES = "images-v1";
+const PAGES = "pages-" + VERSION, STATIC = "static-" + VERSION, IMAGES = "images-v2";
 const MAX_IMAGES = 400;
 
 self.addEventListener("install", (e) => {
@@ -50,10 +50,16 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (url.pathname.startsWith(BASE + "notes-assets/")) {
-    e.respondWith(caches.match(req).then((r) => r || fetch(req).then((res) => {
-      if (res.ok) { const copy = res.clone(); caches.open(IMAGES).then((c) => c.put(req, copy)).then(() => trim(IMAGES, MAX_IMAGES)); }
-      return res;
-    })));
+    // stale-while-revalidate: instant from cache, refreshed in the background so updated slides appear on the next visit
+    e.respondWith(caches.open(IMAGES).then(async (c) => {
+      const cached = await c.match(req);
+      const fresh = fetch(req).then((res) => {
+        if (res.ok) c.put(req, res.clone()).then(() => trim(IMAGES, MAX_IMAGES));
+        return res;
+      }).catch(() => cached);
+      if (cached) { e.waitUntil(fresh); return cached; }
+      return fresh;
+    }));
   }
 });
 `;

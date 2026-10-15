@@ -57,6 +57,56 @@ describe.skipIf(!synced)("synced notes", () => {
     expect(doc.html).toContain('class="table-wrap"');
   });
 
+  it("renders every note completely: headings, code, diagrams, tables and images all survive", async () => {
+    const levels = [["simple", ""], ["detailed", "detailed/"], ["super", "super/"]] as const;
+    const count = (html: string, re: RegExp) => (html.match(re) ?? []).length;
+    const mismatches: string[] = [];
+    const totals = { code: 0, mermaid: 0, tables: 0 };
+    for (const id of known) {
+      for (const [kind, dir] of levels) {
+        const file = path.join(ROOT, ".notes", dir, `${id}.md`);
+        if (!fs.existsSync(file)) continue;
+        const src = fs.readFileSync(file, "utf8");
+        // source counts, ignoring anything inside fenced code
+        let fence: string | null = null;
+        const c = { headings: 0, code: 0, mermaid: 0, tables: 0, images: 0 };
+        for (const line of src.split("\n")) {
+          const m = line.match(/^(?:>\s?)*\s*(`{3,}|~{3,})\s*([\w-]*)/);
+          if (m && (!fence || m[1].startsWith(fence))) {
+            if (!fence) {
+              fence = m[1];
+              m[2].toLowerCase() === "mermaid" ? c.mermaid++ : c.code++;
+            } else fence = null;
+            continue;
+          }
+          if (fence) continue;
+          if (/^#{1,6}\s+\S/.test(line)) c.headings++;
+          if (/^\s*(>\s*)*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line)) c.tables++;
+          c.images += (line.replace(/`[^`]*`/g, "").match(/!\[[^\]]*\]\([^)]+\)/g) ?? []).length;
+        }
+        const doc = await renderMarkdown(src, { kind, sid: id, base: "/mule-learning-web/", known: new Set(known) });
+        const got = {
+          headings: count(doc.html, /<h[1-6][\s>]/g),
+          code: count(doc.html, /<figure class="code"/g),
+          mermaid: count(doc.html, /data-mermaid/g),
+          tables: count(doc.html, /<table/g),
+          images: count(doc.html, /<img /g),
+        };
+        totals.code += c.code;
+        totals.mermaid += c.mermaid;
+        totals.tables += c.tables;
+        for (const k of Object.keys(c) as (keyof typeof c)[]) {
+          if (c[k] !== got[k]) mismatches.push(`${dir}${id}.md ${k}: source ${c[k]}, rendered ${got[k]}`);
+        }
+      }
+    }
+    expect(mismatches).toEqual([]);
+    // guard against a vacuous pass (the course has hundreds of each)
+    expect(totals.code).toBeGreaterThan(200);
+    expect(totals.mermaid).toBeGreaterThan(200);
+    expect(totals.tables).toBeGreaterThan(200);
+  });
+
   it("shows literal angle-bracket text instead of dropping it", async () => {
     const doc = await renderMarkdown("Replace <your name> here.\n\n```dataweave\n%dw 2.0\noutput application/json\n---\npayload map $.id\n```", { kind: "simple", sid: "day01", base: "/", known: new Set() });
     expect(doc.html).toContain("&#x3C;your name>");

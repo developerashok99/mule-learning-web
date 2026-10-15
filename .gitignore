@@ -3,6 +3,7 @@ dist/
 .astro/
 # synced from green-c-mule-notes at build time (npm run sync)
 .notes/
+.notes.tmp/
 .notes-cache/
 public/notes-assets/
 # test output

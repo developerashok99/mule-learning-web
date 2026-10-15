@@ -4,6 +4,9 @@ import Icon from "../../../components/Icon.astro";
 import { getLessons, knownIds, readSlides, type Lesson } from "../../../lib/content";
 import { renderMarkdown } from "../../../lib/markdown";
 import { rewriteLink } from "../../../lib/links";
+import { withBase } from "../../../lib/routes";
+import fs from "node:fs";
+import path from "node:path";
 
 export function getStaticPaths() {
   return getLessons()
@@ -15,6 +18,9 @@ const base = import.meta.env.BASE_URL;
 const data = readSlides(lesson.id)!;
 const intro = data.intro ? await renderMarkdown(data.intro, { kind: "slides", sid: lesson.id, base, known: knownIds() }) : null;
 const src = (file: string) => rewriteLink(file, "slides", lesson.id, base).href;
+// 560px WebP thumbnails made by the sync script; fall back to the original if one is missing
+const thumbFile = (file: string) => path.join(process.cwd(), "public/notes-assets/thumbs", lesson.id, file.replace(/\.[^.]+$/, ".webp"));
+const thumb = (file: string) => (fs.existsSync(thumbFile(file)) ? withBase(base, `notes-assets/thumbs/${lesson.id}/${encodeURIComponent(file.replace(/\.[^.]+$/, ".webp"))}`) : src(file));
 ---
 <LessonShell lesson={lesson} view="slides" viewLabel="Slides">
   <div data-pagefind-body data-pagefind-filter="type:Slides" data-pagefind-meta={`lesson:${lesson.label}`}>
@@ -27,7 +33,7 @@ const src = (file: string) => rewriteLink(file, "slides", lesson.id, base).href;
         <li>
           <figure class="slide-card">
             <button type="button" data-slide={i} data-full={src(s.file)} data-alt={s.alt} data-caption={`${s.n} — ${s.caption}`} aria-label={`Enlarge slide ${s.n}: ${s.caption}`}>
-              <img src={src(s.file)} alt={s.alt} loading={i < 4 ? "eager" : "lazy"} decoding="async" width="640" height="360" />
+              <img src={thumb(s.file)} alt={s.alt} loading={i < 2 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : undefined} decoding="async" width="560" height="315" />
             </button>
             <figcaption><b>{s.n}</b>{s.caption}{s.time && <time>at {s.time} in the class video</time>}</figcaption>
           </figure>
