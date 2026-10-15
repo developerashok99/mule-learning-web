@@ -3,8 +3,10 @@
  * (`pagefind --site dist`) and loaded from <base>pagefind/ only when a search box is used.
  */
 import { base, pageSignal } from "./page";
+import { groupHits, isRelevant } from "../lib/searchrank";
 
 interface PagefindResult {
+  score?: number;
   data: () => Promise<{
     url: string;
     excerpt: string;
@@ -106,22 +108,48 @@ export function setupSearch() {
     else if (scope === "notes") filters.type = { any: NOTE_TYPES };
     const res = await pagefind.debouncedSearch(q, { filters }, 200);
     if (!res || mine !== token) return; // superseded by a newer query
-    const data = await Promise.all(res.results.slice(0, 20).map((r) => r.data()));
+    // enough pages to group into lessons; each data() call fetches one small fragment
+    const top = res.results.slice(0, 48);
+    const data = await Promise.all(top.map((r) => r.data()));
     if (mine !== token) return;
+    const groups = groupHits(
+      data.flatMap((d, i) => (isRelevant(d.excerpt, q) ? [d] : []).map((d) => ({
+        url: d.url,
+        score: top[i].score ?? 0,
+        lesson: d.meta.lesson ?? "",
+        type: d.filters.type?.[0] ?? "",
+        title: d.meta.title ?? d.url,
+        excerpt: d.excerpt,
+        subs: (d.sub_results ?? []).filter((x) => x.url !== d.url && x.title).map((x) => ({ title: x.title, url: x.url })),
+      }))),
+      q,
+    ).slice(0, 15);
     list.replaceChildren(
-      ...data.map((d) => {
+      ...groups.map((g) => {
         const li = el("li");
-        const meta = el("div", "small muted", [d.meta.lesson, d.filters.type?.[0]].filter(Boolean).join(" · "));
-        const a = el("a", "", d.meta.title || d.url);
-        a.href = d.url;
-        li.append(meta, a, safeExcerpt(d.excerpt));
-        const subs = (d.sub_results ?? []).filter((s) => s.url !== d.url && s.title && s.title !== d.meta.title).slice(0, 3);
+        const heading = el("a", "result-title", g.lesson ? `${g.lesson} — ${g.lessonTitle}` : g.lessonTitle);
+        heading.href = g.best.url;
+        heading.dataset.result = "";
+        const where = el("div", "small muted", g.lesson ? `Best match: ${g.best.type === "Lesson" ? "Overview" : g.best.type}` : g.best.type);
+        li.append(where, heading, safeExcerpt(g.best.excerpt));
+        if (g.hits.length > 1) {
+          const also = el("div", "match-links");
+          also.append(el("span", "small muted", "Also found in:"));
+          for (const h of g.hits.filter((h) => h !== g.best)) {
+            const a = el("a", "chip", h.type === "Lesson" ? "Overview" : h.type.replace(" notes", ""));
+            a.href = h.url;
+            a.setAttribute("aria-label", `${g.lesson} ${h.type}`);
+            also.append(a);
+          }
+          li.append(also);
+        }
+        const subs = g.best.subs.slice(0, 3);
         if (subs.length) {
           const ul = el("ul", "sub");
-          for (const s of subs) {
+          for (const x of subs) {
             const sli = el("li");
-            const sa = el("a", "", `§ ${s.title}`);
-            sa.href = s.url;
+            const sa = el("a", "", `§ ${x.title}`);
+            sa.href = x.url;
             sli.append(sa);
             ul.append(sli);
           }
@@ -130,10 +158,24 @@ export function setupSearch() {
         return li;
       }),
     );
-    status.textContent = res.results.length
-      ? `${res.results.length} result${res.results.length === 1 ? "" : "s"}${res.results.length > 20 ? " (showing the best 20)" : ""}`
-      : `No results for “${q}”. Try fewer or different words.`;
+    const n = groups.length ? res.results.length : 0;
+    status.textContent = n
+      ? `${groups.length}${n > top.length ? "+" : ""} lesson${groups.length === 1 ? "" : "s"} match (${n} page${n === 1 ? "" : "s"}). Use ↓ ↑ to move between results.`
+      : `No results for “${q}”. Try fewer or different words, or another spelling (e.g. “Dataweave”, “API kit”).`;
   };
+  // ↓ from the box goes to the first result; ↑ ↓ move between result titles
+  box.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const links = [...list.querySelectorAll<HTMLAnchorElement>("[data-result]")];
+    if (!links.length) return;
+    const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+    if (document.activeElement === input && e.key === "ArrowDown") links[0].focus();
+    else if (i >= 0) {
+      const next = e.key === "ArrowDown" ? links[i + 1] : i === 0 ? input : links[i - 1];
+      next?.focus();
+    } else return;
+    e.preventDefault();
+  }, { signal });
   input.addEventListener("input", () => void run(), { signal });
   chips.forEach((c) =>
     c.addEventListener("click", () => {
