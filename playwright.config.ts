@@ -25,10 +25,13 @@ export default defineConfig({
     // let media start without a user gesture in tests
     launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },
   },
+  // The five viewport sizes the site is designed for.
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], ...use, viewport: { width: 1366, height: 900 } } },
-    { name: "phone", use: { ...devices["Pixel 7"], ...use } },
-    { name: "tablet", use: { ...devices["Desktop Chrome"], ...use, viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: false } },
+    { name: "phone-360", use: { ...devices["Pixel 7"], ...use, viewport: { width: 360, height: 800 } } },
+    { name: "phone-390", use: { ...devices["Pixel 7"], ...use, viewport: { width: 390, height: 844 } } },
+    { name: "tablet-768", use: { ...devices["Desktop Chrome"], ...use, viewport: { width: 768, height: 1024 }, hasTouch: true } },
+    { name: "tablet-1024", use: { ...devices["Desktop Chrome"], ...use, viewport: { width: 1024, height: 768 }, hasTouch: true } },
+    { name: "desktop-1440", use: { ...devices["Desktop Chrome"], ...use, viewport: { width: 1440, height: 900 } } },
   ],
   webServer: external
     ? undefined

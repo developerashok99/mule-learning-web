@@ -1,6 +1,7 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-/** Fails the test on uncaught page errors and console errors (except known third-party noise). */
+/** Collects uncaught page errors and console errors (except known third-party noise). */
 function watchErrors(page: Page) {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
@@ -18,18 +19,27 @@ async function noHorizontalOverflow(page: Page) {
   expect(overflow, "page scrolls sideways").toBeLessThanOrEqual(1);
 }
 
-const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 760;
+const width = (page: Page) => page.viewportSize()?.width ?? 1000;
+const isPhone = (page: Page) => width(page) <= 760;
+const hasSidebar = (page: Page) => width(page) >= 1400;
+const mainNav = (page: Page) => page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
+
+const PAGES = [
+  "", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "revise/", "my-study/",
+  "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/",
+  "lessons/day15/revise/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/",
+];
 
 test.describe("pages", () => {
-  for (const path of ["", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/"]) {
+  for (const path of PAGES) {
     test(`/${path} loads cleanly`, async ({ page }) => {
       const errors = watchErrors(page);
       const res = await page.goto(path);
       expect(res?.status()).toBe(200);
-      await expect(page.locator("h1").first()).toBeAttached();
+      await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator("main")).toBeVisible();
       await noHorizontalOverflow(page);
-      // every image on the page loads (lazy images are scrolled into view first)
+      // the visible images load (lazy ones are forced to load)
       const broken = await page.evaluate(async () => {
         const imgs = [...document.images].slice(0, 12);
         for (const img of imgs) img.loading = "eager";
@@ -47,125 +57,301 @@ test.describe("pages", () => {
     await expect(page.getByRole("heading", { name: "This page doesn't exist" })).toBeVisible();
   });
 
-  test("missing resources show unavailable states, not broken links", async ({ page }) => {
+  test("missing resources are clearly unavailable, not broken", async ({ page }) => {
     await page.goto("lessons/day04/");
     await expect(page.getByText("Lecture video not added yet")).toBeVisible();
+    // no podcast media for Day 4 → the tab is shown but disabled, and no podcast page exists
+    const tabs = page.getByRole("navigation", { name: "Lesson resources" });
+    await expect(tabs.getByRole("link", { name: "Podcast" })).toHaveCount(0);
+    await expect(tabs.locator('[aria-disabled="true"]', { hasText: "Podcast" })).toBeVisible();
+    expect((await page.request.get("lessons/day04/podcast/")).status()).toBe(404);
     await page.goto("podcasts/day04/");
     await expect(page.getByText("Video podcast not added yet")).toBeVisible();
     await expect(page.getByText("Audio podcast not added yet")).toBeVisible();
   });
 });
 
+test.describe("accessibility (axe, WCAG 2.1 AA)", () => {
+  for (const scheme of ["light", "dark"] as const) {
+    for (const path of ["", "lessons/day45/super-detailed/", "lessons/day15/revise/", "search/?q=dataweave", "podcasts/"]) {
+      test(`/${path} ${scheme}`, async ({ page }) => {
+        test.skip(width(page) !== 390 && width(page) !== 1440, "checked at one phone and one desktop size");
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.goto(path);
+        if (path.startsWith("search")) await page.locator("[data-search-results] > li").first().waitFor();
+        const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+        const serious = results.violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
+        expect(serious).toEqual([]);
+      });
+    }
+  }
+});
+
 test.describe("navigation", () => {
-  test("open a lesson from the list and move through its tabs and lessons", async ({ page }) => {
+  test("lesson list → lesson → tabs → next lesson keeps the tab; refresh, Back and Forward work", async ({ page }) => {
     await page.goto("lessons/");
     await page.getByLabel("Filter lessons").fill("watermark");
     await expect(page.locator("[data-filter-item]:visible")).toHaveCount(2);
     await page.getByRole("link", { name: /Watermarking with the Object Store/ }).click();
     await expect(page).toHaveURL(/lessons\/day53\/$/);
-    await page.getByRole("navigation", { name: "Lesson resources" }).getByRole("link", { name: "Detailed", exact: true }).click();
+    const tabs = page.getByRole("navigation", { name: "Lesson resources" });
+    await tabs.getByRole("link", { name: "Detailed", exact: true }).click();
     await expect(page).toHaveURL(/day53\/detailed\/$/);
+    await expect(tabs.getByRole("link", { name: "Detailed", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(page.locator("article.prose h1")).toContainText("Day 53");
-    // next lesson keeps the same tab
     await page.getByRole("link", { name: /Next lesson/ }).click();
     await expect(page).toHaveURL(/day54\/detailed\/$/);
-    // refreshing a nested page works
     await page.reload();
     await expect(page.locator("article.prose h1")).toContainText("Day 54");
+    await page.goBack();
+    await expect(page).toHaveURL(/day53\/detailed\/$/);
+    await expect(page.locator("article.prose h1")).toContainText("Day 53");
+    await page.goBack();
+    await expect(page).toHaveURL(/day53\/$/);
+    await page.goForward();
+    await expect(page).toHaveURL(/day53\/detailed\/$/);
+    await expect(page.locator("article.prose h1")).toContainText("Day 53");
   });
 
-  test("jump to any lesson from the dialog", async ({ page }) => {
+  test("lesson list: sidebar on wide screens, drawer elsewhere; both keep the current resource", async ({ page }) => {
     await page.goto("lessons/day10/simple/");
-    await page.getByRole("button", { name: "All lessons" }).click();
-    const dialog = page.getByRole("dialog", { name: "Jump to a lesson" });
-    await expect(dialog).toBeVisible();
-    await dialog.getByPlaceholder("Filter lessons…").fill("batch processing");
-    await dialog.getByRole("link", { name: /Day 50/ }).click();
-    await expect(page).toHaveURL(/day50\/simple\/$/);
+    const toggle = page.locator("[data-open-jump]");
+    if (hasSidebar(page)) {
+      const sidebar = page.getByRole("complementary", { name: "Course lessons" });
+      await expect(sidebar).toBeVisible();
+      await expect(sidebar.locator('a[aria-current="page"]')).toContainText("Day 10");
+      await sidebar.getByText("Testing & Processing").click();
+      await sidebar.getByRole("link", { name: /Day 50/ }).click();
+      await expect(page).toHaveURL(/day50\/simple\/$/);
+      // hide it; the choice is remembered
+      await toggle.click();
+      await expect(sidebar).toBeHidden();
+      await page.reload();
+      await expect(page.getByRole("complementary", { name: "Course lessons" })).toBeHidden();
+      await page.locator("[data-open-jump]").click();
+      await expect(page.getByRole("complementary", { name: "Course lessons" })).toBeVisible();
+    } else {
+      await toggle.click();
+      const drawer = page.getByRole("dialog", { name: "Jump to a lesson" });
+      await expect(drawer).toBeVisible();
+      await expect(drawer.locator('a[aria-current="page"]')).toBeFocused();
+      await drawer.getByPlaceholder("Filter lessons…").fill("batch processing");
+      await drawer.getByRole("link", { name: /Day 50/ }).click();
+      await expect(page).toHaveURL(/day50\/simple\/$/);
+      await page.locator("[data-open-jump]").click();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog", { name: "Jump to a lesson" })).toBeHidden();
+    }
   });
 
   test("primary navigation reaches every section", async ({ page }) => {
     await page.goto("");
-    const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
     for (const [name, url] of [["Courses", /courses\/$/], ["Lessons", /lessons\/$/], ["Notes", /notes\/$/], ["Podcasts", /podcasts\/$/], ["Home", /mule-learning-web\/$/]] as const) {
-      await nav.getByRole("link", { name }).click();
+      await mainNav(page).getByRole("link", { name }).click();
       await expect(page).toHaveURL(url);
-      await expect(nav.getByRole("link", { name })).toHaveAttribute("aria-current", "page");
+      await expect(mainNav(page).getByRole("link", { name })).toHaveAttribute("aria-current", "page");
     }
+    await page.getByRole("link", { name: "My study: bookmarks and progress" }).click();
+    await expect(page).toHaveURL(/my-study\/$/);
+    await page.getByRole("link", { name: "Revision: glossary and self-tests" }).click();
+    await expect(page).toHaveURL(/revise\/$/);
   });
 });
 
 test.describe("notes", () => {
-  test("renders diagrams, highlighted code, tables and a table of contents", async ({ page, context }) => {
+  test("diagrams, highlighted code, tables, copy buttons and the table of contents", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
     await page.goto("lessons/day05/detailed/");
     const article = page.locator("article.prose");
     await expect(article.locator("figure.code").first()).toBeVisible();
+    await expect(article.locator("figure.code .code-lang").first()).not.toBeEmpty();
     await expect(article.locator("figure.code .shiki span[style*='--shiki']").first()).toBeAttached();
     await expect(article.locator(".table-wrap table").first()).toBeAttached();
-    // mermaid diagrams draw when scrolled into view
     const diagram = article.locator("[data-mermaid]").first();
-    if (await diagram.count()) {
-      await diagram.scrollIntoViewIfNeeded();
-      await expect(diagram.locator("svg")).toBeVisible({ timeout: 20_000 });
-    }
-    // copy button
+    await diagram.scrollIntoViewIfNeeded();
+    await expect(diagram.locator("svg")).toBeVisible({ timeout: 20_000 });
     const copy = article.locator("figure.code .copy-btn").first();
     await copy.scrollIntoViewIfNeeded();
     await copy.click();
     await expect(copy).toHaveText(/Copied|Select & copy/);
-    // table of contents
+    // a long code line scrolls inside its block instead of widening the page
+    await noHorizontalOverflow(page);
     if (isPhone(page)) {
       await page.locator(".toc-mobile summary").click();
       const first = page.locator(".toc-mobile .toc-list a").first();
       const id = (await first.getAttribute("href"))!.slice(1);
       await first.click();
       await expect(page.locator(`[id="${decodeURIComponent(id)}"]`)).toBeInViewport();
-    } else if ((page.viewportSize()?.width ?? 0) >= 1180) {
-      await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
+    } else if (width(page) >= 1180) {
+      const toc = page.getByRole("navigation", { name: "On this page" });
+      await expect(toc).toBeVisible();
+      await toc.getByRole("link").nth(2).click();
+      await expect(toc.locator("a.active")).toHaveCount(1);
     }
+  });
+
+  test("heading links copy a link to the section", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+    await page.goto("lessons/day15/super-detailed/");
+    const link = page.getByRole("link", { name: /Copy link to section: .*The Error Object/ });
+    await link.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#5-the-error-object$/);
+    await expect(page.locator("[data-toast]")).toBeVisible();
   });
 
   test("text size and width preferences persist", async ({ page }) => {
     await page.goto("lessons/day04/simple/");
-    await page.getByRole("button", { name: "Larger text" }).click();
-    await page.getByRole("button", { name: "Use the full width for text" }).click();
+    await page.getByRole("button", { name: /^A\+/ }).click();
+    await page.getByRole("button", { name: /Wide/ }).click();
     await page.reload();
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--read-scale").trim())).toBe("1.1");
     await expect(page.locator("html")).toHaveAttribute("data-width", "wide");
   });
 
-  test("slides open in a viewer with keyboard navigation", async ({ page }) => {
+  test("reading position is remembered and offered on return", async ({ page }) => {
+    await page.goto("lessons/day16/super-detailed/");
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.5));
+    await page.waitForTimeout(400);
+    await page.goto("lessons/day16/");
+    await page.goto("lessons/day16/super-detailed/");
+    const resume = page.locator("[data-reading-resume]");
+    await expect(resume).toBeVisible();
+    await resume.getByRole("button", { name: "Jump back" }).click();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+  });
+
+  test("slides: thumbnails in the grid, full image in the viewer, keyboard navigation", async ({ page }) => {
     await page.goto("lessons/day04/slides/");
+    expect(await page.locator(".slide-card img").first().getAttribute("src")).toMatch(/thumbs\/day04\/01-.*\.webp$/);
     await page.getByRole("button", { name: /Enlarge slide 01/ }).click();
     const viewer = page.getByRole("dialog", { name: "Slide viewer" });
     await expect(viewer).toBeVisible();
     await expect(viewer.locator("[data-count]")).toHaveText("1 / 28");
+    expect(await viewer.locator("img").getAttribute("src")).toMatch(/notes-assets\/slides\/day04\/01-.*\.jpg$/);
     await page.keyboard.press("ArrowRight");
     await expect(viewer.locator("[data-count]")).toHaveText("2 / 28");
-    expect(await viewer.locator("img").evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0 ? true : new Promise((r) => (img.onload = () => r(true))))).toBe(true);
     await page.keyboard.press("Escape");
     await expect(viewer).toBeHidden();
   });
 });
 
-test.describe("progress and bookmarks (local storage)", () => {
-  test("completing and bookmarking a lesson shows up across pages and reloads", async ({ page }) => {
+test.describe("revision", () => {
+  test("lesson revision view: verbatim sections and a self-test with hidden answers", async ({ page }) => {
+    await page.goto("lessons/day15/revise/");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Revise: Day 15");
+    for (const h of ["Outline", "Must remember", "Quick recap", "Key terms", "Self-test", "Code examples"]) {
+      await expect(page.getByRole("heading", { level: 2, name: h })).toBeVisible();
+    }
+    // copied verbatim from the super-detailed notes
+    await expect(page.locator("#rv-must")).toContainText("ANY = catch-all, always last.");
+    await expect(page.locator("#rv-must .revise__src a")).toHaveAttribute("href", /day15\/super-detailed\/#12-must-remember$/);
+    const firstQ = page.locator("details.qa").first();
+    await expect(firstQ.locator(".qa__a")).toBeHidden();
+    await firstQ.locator("summary").click();
+    await expect(firstQ.locator(".qa__a")).toBeVisible();
+    await page.getByRole("button", { name: "Show all answers" }).click();
+    await expect(page.locator("details.qa:not([open])")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Hide all answers" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("glossary filters terms and links back to lessons", async ({ page }) => {
+    await page.goto("revise/");
+    await page.getByLabel("Filter the glossary").fill("vcore");
+    const items = page.locator(".glossary__item:visible");
+    expect(await items.count()).toBeGreaterThan(0);
+    await expect(items.first()).toContainText(/vCore/i);
+    await items.first().locator(".glossary__src a").first().click();
+    await expect(page).toHaveURL(/lessons\/day\d+\/super-detailed\/$/);
+  });
+});
+
+test.describe("progress, bookmarks and My study (local storage)", () => {
+  test("not started → in progress → completed, everywhere", async ({ page }) => {
+    await page.goto("courses/mulesoft/");
+    await expect(page.locator('#foundations [data-lesson-done="day07"]')).toHaveAttribute("data-status", "new");
     await page.goto("lessons/day07/");
-    const done = page.locator("[data-toggle-done]");
-    await done.click();
-    await expect(done).toHaveAttribute("aria-pressed", "true");
+    await page.goto("courses/mulesoft/");
+    await expect(page.locator('#foundations [data-lesson-done="day07"]')).toHaveAttribute("data-status", "started");
+    await expect(page.locator("#foundations [data-count]")).toHaveText("0 of 10 done · 1 in progress");
+    await page.goto("lessons/day07/");
+    await page.locator("[data-toggle-done]").click();
+    await expect(page.locator("[data-toggle-done]")).toHaveAttribute("aria-pressed", "true");
     await page.locator("[data-toggle-bookmark]").click();
     await page.goto("courses/mulesoft/");
-    await expect(page.locator('[data-lesson-done="day07"]')).toHaveAttribute("data-done", "true");
+    await expect(page.locator('#foundations [data-lesson-done="day07"]')).toHaveAttribute("data-status", "done");
     await expect(page.locator("#foundations [data-count]")).toHaveText("1 of 10 done");
+    // dashboard reflects real stored data only
     await page.goto("");
     await expect(page.locator("[data-total-done]")).toHaveText("1");
+    await expect(page.locator("[data-n-started]")).toHaveText("0");
     await expect(page.locator("[data-bookmarks]")).toContainText("Day 7");
     await expect(page.locator("[data-recent]")).toContainText("Day 7");
     await expect(page.locator("[data-c-title]")).toContainText("Day 7");
-    // Day 7 is done, so the suggestion is the lesson after it
-    await expect(page.locator("[data-next-up]")).toContainText("Day 8");
+    await expect(page.locator("[data-next-link]")).toContainText("Day 8");
+    await expect(page.locator("[data-next-why]")).toContainText("after Day 7");
+  });
+
+  test("empty dashboard shows a welcome state, not fake data", async ({ page }) => {
+    await page.goto("");
+    await expect(page.locator("[data-c-welcome]")).toBeVisible();
+    await expect(page.locator("[data-c-resume]")).toBeHidden();
+    await expect(page.locator("[data-total-done]")).toHaveText("0");
+    await expect(page.locator("[data-n-new]")).toHaveText("60");
+    await expect(page.locator("[data-next-link]")).toContainText("Day 1");
+  });
+
+  test("continue learning reopens the exact resource with its reading progress", async ({ page }) => {
+    await page.goto("lessons/day12/detailed/");
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.4));
+    await page.waitForTimeout(300);
+    await page.goto("");
+    await expect(page.locator("[data-c-eyebrow]")).toContainText("Detailed notes");
+    await expect(page.locator("[data-c-read-text]")).toContainText("% read");
+    await page.locator("[data-c-go]").click();
+    await expect(page).toHaveURL(/day12\/detailed\/$/);
+  });
+
+  test("My study: remove a bookmark, undo completion, back up, reset and restore", async ({ page }) => {
+    await page.goto("lessons/day20/");
+    await page.locator("[data-toggle-done]").click();
+    await page.locator("[data-toggle-bookmark]").click();
+    await page.goto("my-study/");
+    await expect(page.locator('[data-ms="bookmarks"]')).toContainText("Day 20");
+    await expect(page.locator('[data-ms="done"]')).toContainText("Day 20");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Back up progress" }).click();
+    const file = await (await download).path();
+    await page.locator('[data-ms="bookmarks"]').getByRole("button", { name: /Remove/ }).click();
+    await expect(page.locator('[data-ms-empty="bookmarks"]')).toBeVisible();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Reset all progress" }).click();
+    await expect(page.locator('[data-ms-empty="done"]')).toBeVisible();
+    await page.locator("[data-ms-import]").setInputFiles(file!);
+    await expect(page.locator("[data-ms-status]")).toContainText("Restored");
+    await expect(page.locator('[data-ms="done"]')).toContainText("Day 20");
+    await expect(page.locator('[data-ms="bookmarks"]')).toContainText("Day 20");
+  });
+
+  test("corrupted stored data does not break the site", async ({ page }) => {
+    await page.goto("about/");
+    await page.evaluate(() => {
+      localStorage.setItem("mls.completed", "{not json");
+      localStorage.setItem("mls.recent", JSON.stringify([null, 5, { id: 3 }, { id: "day99", href: "/x" }]));
+      localStorage.setItem("mls.audio", JSON.stringify({ "test-fixture": "oops", other: null }));
+      localStorage.setItem("mls.bookmarks", JSON.stringify({ a: 1 }));
+      localStorage.setItem("mls.prefs", "[1,2]");
+    });
+    const errors = watchErrors(page);
+    for (const path of ["", "my-study/", "courses/mulesoft/", "lessons/day04/simple/", "podcasts/"]) {
+      await page.goto(path);
+      await expect(page.locator("main")).toBeVisible();
+    }
+    await page.goto("");
+    await expect(page.locator("[data-total-done]")).toHaveText("0");
+    expect(errors).toEqual([]);
   });
 
   test("theme choice persists", async ({ page }) => {
@@ -180,16 +366,47 @@ test.describe("progress and bookmarks (local storage)", () => {
 });
 
 test.describe("search", () => {
-  test("finds notes and filters by type", async ({ page }) => {
+  test("groups results by lesson and ranks the teaching lesson first", async ({ page }) => {
+    await page.goto("search/?q=error%20handling");
+    const titles = page.locator("[data-search-results] .result-title");
+    await expect(titles.first()).toBeVisible({ timeout: 15_000 });
+    const top2 = (await titles.allTextContents()).slice(0, 2).join(" | ");
+    expect(top2).toMatch(/Day 15/);
+    expect(top2).toMatch(/Day 16/);
+    // one entry per lesson
+    const lessons = (await titles.allTextContents()).map((t) => t.split(" — ")[0]);
+    expect(new Set(lessons).size).toBe(lessons.length);
+    await expect(page.locator("[data-search-results] > li").first().locator(".match-links .chip").first()).toBeVisible();
+  });
+
+  for (const [q, expected] of [["APIkit", /Day 2[67]/], ["HTTP Listener", /Day [56]\b/], ["mapObject", /Day 45/], ["Mule event", /Day 7\b/], ["RAML", /Day (2[1-9]|30)|Interview Part 2/], ["%dw 2.0", /Day|Interview/]] as const) {
+    test(`finds "${q}" in the real notes`, async ({ page }) => {
+      test.skip(width(page) !== 1440 && width(page) !== 390, "content check, not a layout check");
+      await page.goto(`search/?q=${encodeURIComponent(q)}`);
+      const first = page.locator("[data-search-results] .result-title").first();
+      await expect(first).toBeVisible({ timeout: 15_000 });
+      await expect(first).toContainText(expected);
+    });
+  }
+
+  test("type filter, keyboard navigation and result links", async ({ page }) => {
     await page.goto("search/?q=watermark");
-    const results = page.locator("[data-search-results] > li");
-    await expect(results.first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator("[data-search-status]")).toContainText("result");
+    await expect(page.locator("[data-search-results] > li").first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Simple notes", exact: true }).click();
     await expect(page).toHaveURL(/type=Simple/);
-    await expect(results.first().locator(".small")).toContainText("Simple notes");
-    await results.first().locator("a").first().click();
+    await expect(page.locator("[data-search-results] > li").first()).toContainText("Best match: Simple notes");
+    if (!isPhone(page)) {
+      await page.locator("[data-search-input]").focus();
+      await page.keyboard.press("ArrowDown");
+      await expect(page.locator("[data-search-results] .result-title").first()).toBeFocused();
+      await page.keyboard.press("Enter");
+    } else await page.locator("[data-search-results] .result-title").first().click();
     await expect(page).toHaveURL(/\/lessons\/day\d+\/simple\//);
+  });
+
+  test("no results shows a helpful message", async ({ page }) => {
+    await page.goto("search/?q=xylophonequartz");
+    await expect(page.locator("[data-search-status]")).toContainText("No results", { timeout: 15_000 });
   });
 
   test("notes page search only returns notes", async ({ page }) => {
@@ -197,7 +414,7 @@ test.describe("search", () => {
     await page.getByPlaceholder("Search inside all notes…").fill("scatter gather");
     const first = page.locator("[data-search-results] > li").first();
     await expect(first).toBeVisible({ timeout: 15_000 });
-    await expect(first.locator(".small")).toContainText(/notes/);
+    await expect(first).toContainText(/Best match: .*notes/);
   });
 
   test("'/' opens search", async ({ page }) => {
@@ -209,7 +426,7 @@ test.describe("search", () => {
   });
 });
 
-test.describe("accessibility basics", () => {
+test.describe("keyboard and touch", () => {
   test("skip link is first and focus is visible", async ({ page }) => {
     test.skip(isPhone(page), "keyboard test");
     await page.goto("lessons/day04/");
@@ -217,11 +434,10 @@ test.describe("accessibility basics", () => {
     const skip = page.getByRole("link", { name: "Skip to content" });
     await expect(skip).toBeFocused();
     await expect(skip).toBeInViewport();
-    const outline = await skip.evaluate((el) => getComputedStyle(el).outlineStyle);
-    expect(outline).not.toBe("none");
+    expect(await skip.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe("none");
   });
 
-  test("controls have accessible names and touch-size targets", async ({ page }) => {
+  test("controls have accessible names and comfortable touch targets", async ({ page }) => {
     await page.goto("lessons/day04/");
     const unnamed = await page.evaluate(() =>
       [...document.querySelectorAll("button, a[href], input, select")]
@@ -238,5 +454,12 @@ test.describe("accessibility basics", () => {
       );
       expect(small).toBe(0);
     }
+  });
+
+  test("sticky header and tabs never cover the heading you jump to", async ({ page }) => {
+    await page.goto("lessons/day15/super-detailed/#5-the-error-object");
+    const box = await page.locator('[id="5-the-error-object"]').boundingBox();
+    const tabs = await page.locator(".lesson-tabs").boundingBox();
+    expect(box!.y).toBeGreaterThanOrEqual(tabs!.y + tabs!.height - 2);
   });
 });

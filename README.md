@@ -67,19 +67,19 @@ The build validates `media.json` and prints every problem it finds: bad YouTube 
 
 | Area | What it does |
 |---|---|
-| **Home** | Continue learning (the last lesson and tab you opened), next suggested lesson, overall and per-section progress, recently opened lessons, recently played podcasts with position, bookmarks, search |
-| **Courses** | Course → sections → lessons, with completion marks and progress per section |
-| **Lessons** | Tabs per lesson: Lecture · Podcast · Simple · Detailed · Super-detailed · Slides. Missing resources are shown as disabled tabs, not broken links. Includes Mark complete, Bookmark, a jump-to-any-lesson dialog, and previous/next that keeps the same tab |
-| **Notes** | Comfortable reading width (toggle *Wide*), A−/A+ text size, table of contents (sidebar on wide screens, collapsible on phones) with the current section highlighted, reading-progress bar, "jump back to where you stopped", syntax highlighting (including a DataWeave grammar), copy-code buttons, sideways-scrolling tables, Mermaid diagrams drawn in the browser (light and dark) |
-| **Slides** | Gallery with the caption and video timestamp for each screen, plus a full-screen viewer (arrow keys, swipe, Esc) |
-| **Podcasts** | Episode list grouped by section, with filters (text, section, playable only) and per-episode progress; an episode page with the video podcast and the audio version |
-| **Audio player** | One player for the whole site, docked at the bottom, that **keeps playing while you browse**. It has play/pause, −10 s / +30 s, a seek bar, elapsed and total time, speed (0.75×–2×, remembered), previous/next episode, resume from the saved position, loading/buffering/error states, and lock-screen controls through the Media Session API |
-| **Search** | Full-text search with Pagefind across notes, slide captions and podcasts, with type filters. Press `/` anywhere |
-| **Other** | Dark mode (follows the system, with a toggle), PWA (installable; visited pages and slides work offline; media always streams), 404 page, keyboard and screen-reader friendly |
+| **Home** | Continue learning (the exact lesson *and* resource you were on, with how far you read), Recommended next (with the reason), course progress split into completed / in progress / not started, in-progress lessons, recently opened, bookmarks, recently played podcasts. All of it comes from stored progress. With no progress yet, a welcome state appears instead |
+| **Courses / Lessons** | Sections and lessons with a status mark (empty = not started, half = in progress, filled = completed), filters, and available-resource icons |
+| **Lesson pages** | Tabs: Overview (lecture video, topics, resources) · Podcast · Simple · Detailed · Super-detailed · Slides · Revise. Tabs without content are shown disabled with the reason. A lesson **sidebar** (≥ 1400 px, can be hidden) or **drawer** (smaller screens) lists every lesson by section with its status. Previous/next and the sidebar keep you on the same resource |
+| **Notes** | Comfortable measure (or *Wide*), A−/A+, table of contents with the current section highlighted (sidebar or collapsible), reading-progress bar plus "jump back to where you stopped", heading links that copy a link to the section, highlighted code with language labels and copy buttons, tables that scroll sideways, Mermaid diagrams (light and dark), external links marked ↗ |
+| **Revise** (per lesson) | Outline plus **Must Remember**, **Quick Recap**, **Key terms**, a **self-test** built from the interview questions (answers hidden until you open them), and every code example with its section. All of it is **cut verbatim from the notes**, with links back to the source |
+| **Revision hub** (`/revise/`) | Every lesson's Revise page, and a filterable A–Z **glossary** (599 terms) merged from the notes' terminology tables, with each definition linked to its lesson |
+| **My study** (`/my-study/`) | Bookmarks (remove), in progress (mark complete), completed (undo), recently studied, listening history, and **backup / restore / reset** of everything stored |
+| **Podcasts** | Episodes grouped by section with filters and per-episode progress; episode page with the video podcast and the same summary as audio |
+| **Audio player** | One player for the whole site that keeps playing while you browse (including Back/Forward). It has play/pause, −10 s / +30 s, seek, time, speed 0.75×–2× (remembered), previous/next, resume, loading/buffering/finished/error states and lock-screen controls. It never starts by itself |
+| **Search** | Pagefind full-text search over notes, headings, code and slide captions. Results are **grouped by lesson** (the best page plus "also found in" links), re-ranked so lessons whose title matches come first, with loose single-letter matches filtered out, type filters, and ↓/↑ keyboard navigation. `/` focuses search |
+| **Other** | Dark mode, installable PWA with an offline notice, slide thumbnails (WebP), 404 page, WCAG 2.1 AA checks (axe) in the test suite |
 
-Progress (completed lessons, bookmarks, recents, audio/video positions, reading progress, settings) is stored in the browser's **localStorage**. It does **not** sync between devices, and clearing site data resets it.
-
----
+Progress is stored in the browser's **localStorage**. It does **not** sync between devices; use *My study → Back up progress* to move it. Clearing site data resets it.
 
 ## Architecture
 
@@ -116,7 +116,15 @@ tests/
 2. `../green-c-mule-notes`: a sibling checkout next to this repo
 3. otherwise a shallow `git clone` of the public repo into `.notes-cache/` (`git pull` on later runs)
 
-It copies `dayNN.md` / `interview-partN.md` (simple notes), `detailed-notes/`, `super-detailed-notes/`, `slides/<id>/README.md` + images, and records which transcripts exist. **The notes repository is only read, never written.** The source commit is shown in the site footer and on the About page.
+It copies `dayNN.md` / `interview-partN.md` (simple notes), `detailed-notes/`, `super-detailed-notes/`, `slides/<id>/README.md` + images, records which transcripts exist, and makes 560 px WebP slide thumbnails (only for new or changed images). **The notes repository is only read, never written.** The source commit is shown in the site footer and on the About page.
+
+**The sync refuses to publish an incomplete course.** It exits with an error, and the deployment stops, when:
+- a lesson listed in `config/course.json` is missing;
+- a lesson lacks one of the three note levels;
+- a slides README points at an image that doesn't exist;
+- one of the content folders is missing.
+
+It writes into temporary folders and swaps them in only on success, so a failed sync keeps the last good copy. `ALLOW_PARTIAL_NOTES=1` turns these errors into warnings. A unit test also checks that every note renders with all of its headings, code blocks, diagrams, tables and images.
 
 New lessons need no code changes. Add `day59.md` (and its detailed/super-detailed notes and slides) to the notes repo, and the lesson appears automatically, in an "Other lessons" section until you add its id to a section in `config/course.json`. The site rebuilds on every push here and **once a day** (to pick up notes changes); you can also run the workflow manually from the Actions tab.
 
@@ -143,7 +151,7 @@ npm run check        # TypeScript / Astro type check
 npm test             # unit tests + validation of config/*.json against the synced notes
 npm run build
 npm run test:links   # every internal href/src/#anchor in dist/ must resolve, with the base path
-npm run test:e2e     # Playwright in Google Chrome: desktop 1366×900, phone (Pixel 7), tablet 820×1180
+npm run test:e2e     # Playwright in Google Chrome at 360×800, 390×844, 768×1024, 1024×768 and 1440×900, incl. axe accessibility checks
 npm run verify       # all of the above
 ```
 
@@ -158,6 +166,6 @@ The e2e tests run against the built site under the real `/mule-learning-web/` ba
 - **Progress is per browser** (localStorage). There are no accounts and no cross-device sync.
 - **Background audio on phones:** the audio keeps playing while you move between pages of this site. With the screen locked or the browser in the background, Android Chrome and iOS Safari normally continue (lock-screen controls are provided). Some browsers, in-app browsers (Instagram, Gmail and similar) and battery-saver modes pause it. Your position is always saved. This was tested in desktop Chrome and phone/tablet emulation, not on physical iPhone/Android devices.
 - The YouTube player uses youtube-nocookie.com and is loaded only after you press play. YouTube itself may still set storage once a video plays.
-- Offline: pages and slide images you've visited are cached; audio and video always need the network.
+- Offline: pages and slide images you've visited are cached (pages are always fetched fresh when online; slide images refresh in the background). Audio, video and search need the network.
 - `astro dev` has no search index; use `npm run build && npm run preview` to try search locally.
 - Quizzes, flashcards and mind maps remain on the [original notes site](https://developerashok99.github.io/green-c-mule-notes/) and are linked from the About page.

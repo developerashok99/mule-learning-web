@@ -66,6 +66,49 @@ test.describe("audio podcast player", () => {
     expect(await page.locator("[data-audio]").evaluate((a: HTMLAudioElement) => a.paused && !a.getAttribute("src"))).toBe(true);
   });
 
+  test("browser Back and Forward do not restart or stop playback", async ({ page }) => {
+    await page.goto("podcasts/test-fixture/");
+    await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).click();
+    await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.5);
+    await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: "Lessons" }).click();
+    await expect(page).toHaveURL(/lessons\/$/);
+    await page.goBack();
+    await expect(page).toHaveURL(/podcasts\/test-fixture\/$/);
+    const afterBack = await audioState(page);
+    expect(afterBack.paused).toBe(false);
+    await page.goForward();
+    await expect(page).toHaveURL(/lessons\/$/);
+    await page.waitForTimeout(500);
+    const afterForward = await audioState(page);
+    expect(afterForward.paused).toBe(false);
+    expect(afterForward.t).toBeGreaterThan(afterBack.t);
+  });
+
+  test("never starts playing by itself", async ({ page }) => {
+    await page.goto("podcasts/");
+    await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).first().click();
+    await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.3);
+    await page.reload();
+    await expect(player(page)).toBeVisible();
+    await page.waitForTimeout(1200);
+    expect((await audioState(page)).paused).toBe(true);
+  });
+
+  test("shows Finished at the end and restarts from the beginning next time", async ({ page }) => {
+    await page.goto("podcasts/test-fixture/");
+    await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).click();
+    await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.2);
+    await page.locator("[data-audio]").evaluate((a: HTMLAudioElement) => { a.currentTime = a.duration - 0.5; });
+    await expect(player(page).locator("[data-status]")).toHaveText("Finished", { timeout: 10_000 });
+    await expect(page.locator('[data-episode-progress="test-fixture"]').first()).toHaveAttribute("aria-label", "100% listened");
+  });
+
+  test("episodes without an audio file cannot be played", async ({ page }) => {
+    await page.goto("podcasts/");
+    const disabled = page.getByRole("button", { name: "Audio not available yet: Day 4 summary" });
+    await expect(disabled).toBeDisabled();
+  });
+
   test("shows an error when the audio file can't be loaded", async ({ page }) => {
     await page.route("**/fixture-audio.mp3", (r) => r.fulfill({ status: 404, body: "missing" }));
     await page.goto("podcasts/");
