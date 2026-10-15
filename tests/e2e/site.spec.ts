@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+
+const media = JSON.parse(readFileSync(new URL("../../config/media.json", import.meta.url), "utf8"));
+/** A lesson whose lecture video is still empty, if any (all 60 are linked as of Oct 2026). */
+const lessonWithoutVideo = Object.entries(media.lectures as Record<string, { youtube?: string }>)
+  .find(([, l]) => !l.youtube?.trim())?.[0];
 
 /** Collects uncaught page errors and console errors (except known third-party noise). */
 function watchErrors(page: Page) {
@@ -58,8 +64,11 @@ test.describe("pages", () => {
   });
 
   test("missing resources are clearly unavailable, not broken", async ({ page }) => {
+    if (lessonWithoutVideo) {
+      await page.goto(`lessons/${lessonWithoutVideo}/`);
+      await expect(page.getByText("Lecture video not added yet")).toBeVisible();
+    }
     await page.goto("lessons/day04/");
-    await expect(page.getByText("Lecture video not added yet")).toBeVisible();
     // no podcast media for Day 4 → the tab is shown but disabled, and no podcast page exists
     const tabs = page.getByRole("navigation", { name: "Lesson resources" });
     await expect(tabs.getByRole("link", { name: "Podcast" })).toHaveCount(0);

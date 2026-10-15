@@ -1,4 +1,9 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+
+/** The real Day 1 lecture from config/media.json, so the test follows whatever link is configured. */
+const media = JSON.parse(readFileSync(new URL("../../config/media.json", import.meta.url), "utf8"));
+const day01Id = String(media.lectures.day01.youtube).match(/[A-Za-z0-9_-]{11}$/)?.[0] ?? "";
 
 const player = (page: Page) => page.getByRole("region", { name: "Audio podcast player" });
 const audioState = (page: Page) =>
@@ -143,11 +148,12 @@ test.describe("video", () => {
     const ytRequests: string[] = [];
     page.on("request", (r) => /youtube|ytimg|googlevideo/.test(r.url()) && ytRequests.push(r.url()));
     await page.goto("lessons/day01/");
-    await expect(page.getByText("Demo video", { exact: true })).toBeVisible();
+    await expect(page.getByText("Demo video", { exact: true })).toHaveCount(media.lectures.day01.demo ? 1 : 0);
     expect(ytRequests).toEqual([]);
     await page.getByRole("button", { name: /Play lecture video/ }).click();
     const frame = page.locator(".media-frame iframe");
     await expect(frame).toBeAttached({ timeout: 20_000 });
-    expect(await frame.getAttribute("src")).toContain("youtube-nocookie.com/embed/M7lc1UVf-VE");
+    expect(day01Id).toHaveLength(11);
+    expect(await frame.getAttribute("src")).toContain(`youtube-nocookie.com/embed/${day01Id}`);
   });
 });
