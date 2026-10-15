@@ -31,7 +31,7 @@ Each lesson has an entry under `lectures`. Paste the YouTube link into `youtube`
 - Any normal YouTube link works: `youtube.com/watch?v=…`, `youtu.be/…`, `/embed/…`, `/live/…`, or just the 11-character id. A `t=` start time is respected.
 - `duration` is optional (`H:MM:SS` or `MM:SS`).
 - Leave `youtube` as `""` and the lesson shows "Lecture video not added yet".
-- **Day 1 currently has a demo video** (`"demo": true`, a public YouTube developer sample) so the player can be tested. Replace its URL and delete the `"demo": true` line.
+- All 60 lessons (Day 1–58, no Day 56, plus Interview Parts 1–3) are linked to the course playlist https://www.youtube.com/playlist?list=PLMD28xi7jc5E (Unlisted videos). A `"demo": true` flag marks a placeholder sample video; none are left.
 - Unlisted videos embed fine. Private videos and videos with embedding disabled show a clear message with an "Open on YouTube" link.
 
 ### Summary podcasts (video MP4 + audio MP3)
