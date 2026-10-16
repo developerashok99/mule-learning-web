@@ -182,7 +182,7 @@ kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-strong); border-
   .topbar__crumb, .hide-phone { display: none !important; }
   .header-actions { gap: 0.35rem; }
   .bottom-nav {
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
     height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
     padding: 0.3rem 0.3rem env(safe-area-inset-bottom, 0px);
@@ -191,6 +191,7 @@ kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-strong); border-
   .bottom-nav a {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; min-width: 0;
     color: var(--text-muted); text-decoration: none; font-size: 0.72rem; font-weight: 800; border-radius: var(--radius-sm);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .bottom-nav .icon { width: 1.35rem; height: 1.35rem; }
   .bottom-nav a[aria-current="page"] { color: var(--accent-hover); }
@@ -283,7 +284,10 @@ main:focus { outline: 0; }
 .pill--amber { background: var(--warn-soft); color: var(--warn); }
 button.pill, a.pill { cursor: pointer; min-height: 2.25rem; padding: 0.3rem 0.8rem; text-decoration: none; font-size: 0.78rem; }
 button.pill:hover, a.pill:hover { background: var(--accent-soft); color: var(--accent-hover); }
-.pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; min-width: 0; }
+/* long labels wrap instead of widening the page (fonts differ between devices) */
+.pill { max-width: 100%; }
+.pill-row .pill { white-space: normal; }
 /* older badges, kept for media and episode metadata */
 .badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.74rem; font-weight: 750; background: var(--bg-soft); color: var(--text-muted); white-space: nowrap; }
 .badge--accent { background: var(--accent-soft); color: var(--accent-hover); }
@@ -906,13 +910,16 @@ body.has-player { --player-h: 4.8rem; }
 .glossary-letters { margin: 0 0 1rem; }
 .glossary-letters .chip { min-width: 2.5rem; justify-content: center; }
 .glossary-group h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); scroll-margin-top: calc(var(--topbar-h) + 1rem); }
-.glossary { margin: 0; }
+.glossary { margin: 0; overflow-wrap: anywhere; }
 .glossary__item { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 .glossary dt { font-weight: 750; }
 .glossary dd { margin: 0.2rem 0 0; color: var(--text-muted); }
 .glossary dd + dd { margin-top: 0.35rem; }
 .glossary code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.05em 0.3em; }
 .glossary__src { font-size: 0.8rem; margin-left: 0.4rem; white-space: nowrap; }
+@media (max-width: 560px) { .glossary__src { white-space: normal; } }
+/* long words and links in cards wrap instead of widening the page */
+.card { overflow-wrap: break-word; }
 .glossary__src::before { content: "— "; color: var(--text-faint); }
 /* per-lesson revision view */
 .revise { max-width: 52rem; }
@@ -979,3 +986,12 @@ body.has-player { --player-h: 4.8rem; }
   .card { border: 0; padding: 0; }
   .prose { max-width: none; }
 }
+
+/* narrow phones with wide fonts: these never push the page sideways */
+.coursebox > div { min-width: 0; }
+.coursebox .btn, .curriculum .pill, .head__actions .btn { white-space: normal; text-align: center; }
+.segmented { flex-wrap: wrap; max-width: 100%; }
+.curriculum summary > .row:last-child { min-width: 0; }
+.setting > div:first-child { min-width: 0; }
+.section-head { flex-wrap: wrap; }
+.section-head > div:first-child { min-width: 0; flex: 1 1 12rem; }
