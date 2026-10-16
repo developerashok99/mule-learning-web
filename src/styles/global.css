@@ -1089,3 +1089,10 @@ a.video-meta__item:hover { text-decoration: underline; }
 .study-progress__row { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 0.5rem; color: var(--text-muted); font-size: 0.92rem; }
 .study-progress__row b { color: var(--success); font-size: 1.1rem; }
 .study-progress .p-done { background: var(--success); }
+/* the header never pushes the page wider: the brand name gives way first (fonts differ between devices) */
+.site-header__inner { min-width: 0; }
+.brand { min-width: 0; flex-shrink: 1; }
+.brand__mark { flex: none; }
+.brand__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.header-actions { flex: none; }
+@media (max-width: 380px) { .header-actions .icon-btn { min-width: 2.6rem; padding: 0 0.35rem; } .site-header__inner { gap: 0.5rem; } }
