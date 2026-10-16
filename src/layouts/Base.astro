@@ -9,7 +9,7 @@ interface Props {
   title: string;
   description?: string;
   /** Which primary nav item is current */
-  nav?: "home" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy";
+  nav?: "home" | "videos" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy";
 }
 const { title, description = "Personal MuleSoft study platform: lectures, summary podcasts and notes.", nav } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
@@ -17,6 +17,7 @@ const pageTitle = title === "Home" ? "Mule Study" : `${title} · Mule Study`;
 const manifest = getManifest();
 const NAV = [
   { key: "home", href: base, label: "Home", icon: "home" },
+  { key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" },
   { key: "courses", href: `${base}courses/`, label: "Courses", icon: "courses" },
   { key: "lessons", href: `${base}lessons/`, label: "Lessons", icon: "lessons" },
   { key: "notes", href: `${base}notes/`, label: "Notes", icon: "notes" },

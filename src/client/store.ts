@@ -11,7 +11,7 @@ export const KEYS = {
   video: "mls.video", // Record<episodeId, MediaProgress>
   reading: "mls.reading", // Record<"<lesson>/<level>", number 0..1>
   player: "mls.player", // { id, rate } the last episode in the audio player
-  prefs: "mls.prefs", // { theme?, width?, scale? }
+  prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
 
 export interface RecentItem {
@@ -157,6 +157,10 @@ export interface Prefs {
   width?: "normal" | "wide";
   scale?: number;
   lessonNav?: "shown" | "hidden";
+  /** Videos tab: play the next video when one ends (default on) */
+  videoAutoplay?: boolean;
+  /** Videos tab: the last video opened, for "continue watching" */
+  lastVideo?: string;
 }
 export const prefs = () => read<Prefs>(KEYS.prefs, {});
 export function setPrefs(patch: Partial<Prefs>) {

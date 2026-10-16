@@ -1,0 +1,12 @@
+---
+import VideoWatch from "../../components/VideoWatch.astro";
+import { getLessons, type Lesson } from "../../lib/content";
+
+export function getStaticPaths() {
+  return getLessons()
+    .filter((lesson) => lesson.lecture?.youtubeId)
+    .map((lesson) => ({ params: { id: lesson.id }, props: { lesson } }));
+}
+const { lesson } = Astro.props as { lesson: Lesson };
+---
+<VideoWatch current={lesson} />

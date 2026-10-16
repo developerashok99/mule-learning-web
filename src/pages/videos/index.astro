@@ -1,0 +1,8 @@
+---
+/** The Videos tab opens on the first course video (Day 1); the browser offers to continue the last one watched. */
+import VideoWatch from "../../components/VideoWatch.astro";
+import { getLessons } from "../../lib/content";
+
+const first = getLessons().find((l) => l.lecture?.youtubeId)!;
+---
+<VideoWatch current={first} isIndex />

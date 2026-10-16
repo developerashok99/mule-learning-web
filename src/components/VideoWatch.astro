@@ -1,0 +1,96 @@
+---
+/**
+ * Videos tab: one lecture video at the top, Previous / Next under it, and every course video in order
+ * (Day 1 → the interview parts) as a playlist beside it (below it on phones).
+ */
+import Base from "../layouts/Base.astro";
+import Icon from "./Icon.astro";
+import { getCourses, getLessons, type Lesson } from "../lib/content";
+import { formatLength } from "../lib/duration";
+import { lessonPath, withBase } from "../lib/routes";
+
+interface Props {
+  /** the video being watched */
+  current: Lesson;
+  /** /videos/ itself: offers "continue where you left off" (filled in by the browser) */
+  isIndex?: boolean;
+}
+const { current, isIndex = false } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const videos = getLessons().filter((l) => l.lecture?.youtubeId);
+const at = videos.findIndex((l) => l.id === current.id);
+const prev = at > 0 ? videos[at - 1] : null;
+const next = at < videos.length - 1 ? videos[at + 1] : null;
+const href = (l: Lesson) => withBase(base, `videos/${l.id}/`);
+const sections = getCourses()
+  .flatMap((c) => c.sections)
+  .map((s) => ({ ...s, videos: videos.filter((l) => s.lessons.includes(l.id)) }))
+  .filter((s) => s.videos.length);
+const lecture = current.lecture!;
+const name = `${current.label} — ${current.title}`;
+---
+<Base title={`${current.label} video`} nav="videos" description={`Watch ${name}, then go to the next or previous course video.`}>
+  <div class="container video-page" data-video-page={current.id}>
+    {isIndex && (
+      <p class="notice video-resume" data-video-resume hidden>
+        <Icon name="play" /><span>Continue where you left off: <a data-video-go="pick" href=""></a></span>
+      </p>
+    )}
+    <div class="video-layout">
+      <div class="video-main">
+        <div class="media-frame video-frame">
+          <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${name}`} aria-label={`Play video: ${name}`}>
+            <span class="yt-facade__play"><Icon name="play" /></span>
+            <span>Play {current.label}</span>
+            <small>Loads from youtube-nocookie.com when you press play</small>
+          </button>
+        </div>
+
+        <div class="video-pager" aria-label="Previous and next video">
+          {prev ? (
+            <a class="btn" href={href(prev)} data-video-go="prev" rel="prev"><Icon name="prev" /><span>Previous<span class="video-pager__name"> · {prev.label}</span></span></a>
+          ) : (
+            <span class="btn" aria-disabled="true"><Icon name="prev" /><span>Previous</span></span>
+          )}
+          <span class="small muted video-pager__count">{at + 1} of {videos.length}</span>
+          {next ? (
+            <a class="btn btn--primary" href={href(next)} data-video-go="next" rel="next"><span>Next<span class="video-pager__name"> · {next.label}</span></span><Icon name="next" /></a>
+          ) : (
+            <span class="btn btn--primary" aria-disabled="true"><span>Next</span><Icon name="next" /></span>
+          )}
+        </div>
+
+        <h1 class="video-title"><span class="kind-label kind-label--lecture">{current.label}</span> {current.title}</h1>
+        <p class="btn-row small muted video-meta">
+          {lecture.duration != null && <span><Icon name="clock" /> {formatLength(lecture.duration)}</span>}
+          <a href={withBase(base, lessonPath(current.id))}><Icon name="notes" /> Lesson page &amp; notes</a>
+          {lecture.watchUrl && <a href={lecture.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a>}
+          <label class="switch"><input type="checkbox" data-video-autoplay checked /> Play next automatically</label>
+        </p>
+        <p class="small muted video-keys">Keyboard: <kbd>Shift</kbd>+<kbd>P</kbd> previous · <kbd>Shift</kbd>+<kbd>N</kbd> next</p>
+      </div>
+
+      <nav class="video-list" aria-label="All course videos">
+        <div class="video-list__head"><strong>All videos</strong><span class="small muted">{videos.length} videos · Day 1 onwards</span></div>
+        <div class="video-list__scroll" data-video-list>
+          {sections.map((s) => (
+            <section>
+              <h2 class="video-list__section">{s.title}</h2>
+              <ol>
+                {s.videos.map((l) => (
+                  <li data-lesson-done={l.id}>
+                    <a href={href(l)} data-video-go="pick" aria-current={l.id === current.id ? "page" : undefined}>
+                      <span class="video-list__num" aria-hidden="true">{l.id === current.id ? <Icon name="play" /> : videos.indexOf(l) + 1}</span>
+                      <span class="video-list__text"><b>{l.label}</b> {l.title}</span>
+                      {l.lecture?.duration != null && <span class="video-list__len small muted">{formatLength(l.lecture.duration)}</span>}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
+      </nav>
+    </div>
+  </div>
+</Base>

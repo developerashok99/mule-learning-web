@@ -67,6 +67,8 @@ async function startYouTube(btn: HTMLButtonElement) {
       videoId: id,
       playerVars: { autoplay: 1, rel: 0, start, playsinline: 1, origin: location.origin },
       events: {
+        // 0 = ended: the Videos tab can move on to the next video
+        onStateChange: (e: { data: number }) => e.data === 0 && document.dispatchEvent(new CustomEvent("mls:lecture-ended")),
         onError: (e: { data: number }) =>
           showState(frame, "This lecture video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", link),
       },
