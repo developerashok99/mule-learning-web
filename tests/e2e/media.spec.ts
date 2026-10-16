@@ -123,6 +123,20 @@ test.describe("audio podcast player", () => {
 });
 
 test.describe("video", () => {
+  test("a YouTube video podcast loads the privacy-enhanced player only after pressing play", async ({ page }) => {
+    const ep = (media.podcasts as { id: string; title: string; videoUrl?: string }[]).find((p) => /youtu/.test(p.videoUrl ?? ""));
+    test.skip(!ep, "no YouTube video podcast in media.json");
+    const id = ep!.videoUrl!.match(/[A-Za-z0-9_-]{11}$/)![0];
+    const ytRequests: string[] = [];
+    page.on("request", (r) => /youtube|ytimg/.test(r.url()) && ytRequests.push(r.url()));
+    await page.goto(`podcasts/${ep!.id}/`);
+    expect(ytRequests).toEqual([]);
+    await page.getByRole("button", { name: `Play video podcast: ${ep!.title}` }).click();
+    const frame = page.locator(".media-frame iframe");
+    await expect(frame).toHaveCount(1, { timeout: 15_000 });
+    expect(await frame.getAttribute("src")).toContain(`youtube-nocookie.com/embed/${id}`);
+  });
+
   test("video podcast fixture plays and remembers its position", async ({ page }) => {
     await page.goto("lessons/day01/podcast/");
     const video = page.locator("video[data-episode-video]");

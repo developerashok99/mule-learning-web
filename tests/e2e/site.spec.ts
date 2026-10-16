@@ -6,6 +6,10 @@ const media = JSON.parse(readFileSync(new URL("../../config/media.json", import.
 /** A lesson whose lecture video is still empty, if any (all 60 are linked as of Oct 2026). */
 const lessonWithoutVideo = Object.entries(media.lectures as Record<string, { youtube?: string }>)
   .find(([, l]) => !l.youtube?.trim())?.[0];
+/** A lesson with no podcast media at all (its own episode slot is still empty). */
+const lessonWithoutPodcast = (media.podcasts as { id: string; lessons: string[]; videoUrl?: string; audioUrl?: string; test?: boolean }[])
+  .find((p) => !p.test && p.lessons.length === 1 && p.id === p.lessons[0] && !p.videoUrl?.trim() && !p.audioUrl?.trim()
+    && !(media.podcasts as typeof p[]).some((q) => q.lessons.includes(p.id) && (q.videoUrl?.trim() || q.audioUrl?.trim())))?.id;
 
 /** Collects uncaught page errors and console errors (except known third-party noise). */
 function watchErrors(page: Page) {
@@ -68,13 +72,15 @@ test.describe("pages", () => {
       await page.goto(`lessons/${lessonWithoutVideo}/`);
       await expect(page.getByText("Lecture video not added yet")).toBeVisible();
     }
-    await page.goto("lessons/day04/");
-    // no podcast media for Day 4 → the tab is shown but disabled, and no podcast page exists
+    expect(lessonWithoutPodcast, "media.json has a lesson without podcast media").toBeTruthy();
+    const id = lessonWithoutPodcast!;
+    await page.goto(`lessons/${id}/`);
+    // no podcast media for this lesson → the tab is shown but disabled, and no podcast page exists
     const tabs = page.getByRole("navigation", { name: "Lesson resources" });
     await expect(tabs.getByRole("link", { name: "Podcast" })).toHaveCount(0);
     await expect(tabs.locator('[aria-disabled="true"]', { hasText: "Podcast" })).toBeVisible();
-    expect((await page.request.get("lessons/day04/podcast/")).status()).toBe(404);
-    await page.goto("podcasts/day04/");
+    expect((await page.request.get(`lessons/${id}/podcast/`)).status()).toBe(404);
+    await page.goto(`podcasts/${id}/`);
     await expect(page.getByText("Video podcast not added yet")).toBeVisible();
     await expect(page.getByText("Audio podcast not added yet")).toBeVisible();
   });

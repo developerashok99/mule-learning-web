@@ -30,6 +30,9 @@ export interface Episode {
   description: string;
   duration: number | null;
   videoUrl: string | null;
+  /** Set when videoUrl is a YouTube link: the video podcast then plays in the YouTube player */
+  youtubeId: string | null;
+  watchUrl: string | null;
   audioUrl: string | null;
   test: boolean;
   demo: boolean;
@@ -147,6 +150,10 @@ export function parseMedia(raw: unknown, known: string[]): MediaConfig {
       const err = checkMediaUrl(str(p[key]));
       if (err) problems.push(`${where} (${id}).${key} ${err}`);
     }
+    const video = str(p.videoUrl);
+    const isYouTube = /^https?:\/\/([a-z0-9-]+\.)*(youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(video);
+    const youtubeId = isYouTube ? parseYouTubeId(video) : null;
+    if (isYouTube && !youtubeId) problems.push(`${where} (${id}).videoUrl is a YouTube link without a video id`);
     const duration = parseDuration(str(p.duration));
     if (str(p.duration) && duration == null) problems.push(`${where} (${id}).duration "${p.duration}" must look like 12:30`);
     if (p.test === true && !showTest) return;
@@ -156,7 +163,9 @@ export function parseMedia(raw: unknown, known: string[]): MediaConfig {
       lessons: lessons.filter((l) => known.includes(l)),
       description: str(p.description),
       duration,
-      videoUrl: str(p.videoUrl) || null,
+      videoUrl: video || null,
+      youtubeId,
+      watchUrl: youtubeId ? watchUrl(youtubeId, parseYouTubeStart(video)) : null,
       audioUrl: str(p.audioUrl) || null,
       test: p.test === true,
       demo: p.demo === true,

@@ -1,5 +1,5 @@
 ---
-/** Both formats of one summary episode: the video podcast (<video>) and the same summary as audio. */
+/** Both formats of one summary episode: the video podcast (YouTube or <video>) and the same summary as audio. */
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
@@ -32,7 +32,13 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
 
   <h4 class="small" style="margin:.4rem 0"><Icon name="video" /> Video podcast</h4>
   <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
-    {ep.videoUrl ? (
+    {ep.youtubeId ? (
+      <button class="yt-facade" type="button" data-yt={ep.youtubeId} data-start="0" data-watch={ep.watchUrl} data-title={`Video podcast: ${ep.title}`} aria-label={`Play video podcast: ${ep.title}`}>
+        <span class="yt-facade__play"><Icon name="play" /></span>
+        <span>Play video podcast</span>
+        <small>Loads from youtube-nocookie.com when you press play</small>
+      </button>
+    ) : ep.videoUrl ? (
       <video controls playsinline preload="metadata" data-episode-video={ep.id} aria-label={`Video podcast: ${ep.title}`}>
         <source src={withBase(base, ep.videoUrl)} type={videoType} />
         Your browser can't play this video. <a href={withBase(base, ep.videoUrl)}>Download it</a> instead.
@@ -40,10 +46,11 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
     ) : (
       <div class="media-state" role="status">
         <strong>Video podcast not added yet</strong>
-        <p>The video version of this summary will play here once its MP4 link is added to config/media.json.</p>
+        <p>The video version of this summary will play here once its YouTube or MP4 link is added to config/media.json.</p>
       </div>
     )}
   </div>
+  {ep.watchUrl && <p class="small" style="margin:.4rem 0 0"><a href={ep.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a></p>}
   <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>
 
   <h4 class="small" style="margin:1rem 0 .4rem"><Icon name="podcast" /> Audio podcast (same summary, audio only)</h4>
