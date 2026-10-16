@@ -11,6 +11,7 @@ export const KEYS = {
   video: "mls.video", // Record<episodeId, MediaProgress>
   reading: "mls.reading", // Record<"<lesson>/<level>", number 0..1>
   player: "mls.player", // { id, rate } the last episode in the audio player
+  searches: "mls.searches", // string[] recent search queries, newest first
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
 
@@ -162,6 +163,16 @@ export interface Prefs {
   /** Videos tab: the last video opened, for "continue watching" */
   lastVideo?: string;
 }
+/** Recent searches (search page), newest first; a longer query replaces the shorter one it extends. */
+export const recentSearches = () => read<string[]>(KEYS.searches, []).filter((x) => typeof x === "string");
+export function saveSearch(q: string) {
+  const list = recentSearches().filter((x) => x.toLowerCase() !== q.toLowerCase() && !q.toLowerCase().startsWith(x.toLowerCase()));
+  write(KEYS.searches, [q, ...list].slice(0, 6));
+}
+export function clearSearches() {
+  write(KEYS.searches, []);
+}
+
 export const prefs = () => read<Prefs>(KEYS.prefs, {});
 export function setPrefs(patch: Partial<Prefs>) {
   write(KEYS.prefs, { ...prefs(), ...patch });

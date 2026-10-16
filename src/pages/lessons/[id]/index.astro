@@ -34,16 +34,17 @@ const playable = lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl);
   <div class="lesson-grid">
     <div data-pagefind-body data-pagefind-filter="type:Lesson" data-pagefind-meta={`lesson:${lesson.label}`}>
       <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lesson.label} — {lesson.title}</span>
-      <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} playerHref={lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : undefined} />
-
       {topics.length > 0 && (
-        <section style="margin-top:1.75rem" aria-labelledby="topics-h">
-          <h2 id="topics-h" style="font-size:1.1rem;margin:0 0 .5rem">What this lesson covers</h2>
-          <ul style="margin:0;padding-left:1.25rem;columns:2 16rem;column-gap:2rem">
-            {topics.map((t) => <li style="break-inside:avoid;margin:.15rem 0">{t}</li>)}
+        <section class="takeaways" aria-labelledby="topics-h">
+          <h2 id="topics-h"><Icon name="check" /> What this lesson covers</h2>
+          <ul>
+            {topics.map((t) => <li><Icon name="check" />{t}</li>)}
           </ul>
         </section>
       )}
+
+      <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} playerHref={lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : undefined} />
+
 
       <section style="margin-top:1.75rem" aria-labelledby="pod-h" data-pagefind-ignore>
         <h2 id="pod-h" style="font-size:1.1rem;margin:0 0 .5rem">Summary podcast</h2>

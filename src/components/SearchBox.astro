@@ -20,6 +20,7 @@ const id = `q-${scope}`;
     <button class="btn btn--primary" type="submit"><Icon name="search" /><span class="visually-hidden">Search</span></button>
   </form>
   <div class="chips" role="group" aria-label="Limit to">
+    <button class="chip" type="button" data-search-type="" aria-pressed="true">All</button>
     {types.map((t) => <button class="chip" type="button" data-search-type={t} aria-pressed="false">{t}</button>)}
   </div>
   <p class="small muted" data-search-status aria-live="polite" style="margin:.75rem 0 0"></p>

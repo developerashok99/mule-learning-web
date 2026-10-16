@@ -120,7 +120,7 @@ function updateMediaSession() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: current.title,
       artist: current.lessons.map((l) => l.label).join(", ") || "MuleSoft course",
-      album: "Mule Study — summary podcasts",
+      album: "Mule Learning Hub — summary podcasts",
     });
   } catch {
     /* MediaMetadata unsupported */

@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import Icon from "../components/Icon.astro";
+import ProgressBar from "../components/ProgressBar.astro";
 import { getLessons } from "../lib/content";
 import { lessonPath, withBase } from "../lib/routes";
 
@@ -9,7 +10,7 @@ const index = getLessons().map((l) => ({ id: l.id, label: l.label, title: l.titl
 const SECTIONS = [
   { key: "bookmarks", title: "Bookmarks", icon: "bookmark", empty: "No bookmarks yet. Use Bookmark on any lesson." },
   { key: "started", title: "In progress", icon: "clock", empty: "Nothing in progress. Lessons you open but haven't completed appear here." },
-  { key: "done", title: "Completed", icon: "check", empty: "No completed lessons yet. Use Mark complete on a lesson when you finish it." },
+  { key: "done", title: "Completed", icon: "check", empty: "No completed lessons yet. Use Mark as Completed on a lesson when you finish it." },
   { key: "recent", title: "Recently studied", icon: "lessons", empty: "Nothing opened yet." },
   { key: "listened", title: "Listening history", icon: "podcast", empty: "No podcasts played yet." },
 ] as const;
@@ -18,9 +19,20 @@ const SECTIONS = [
   <div class="container container--narrow" data-my-study>
     <script is:inline type="application/json" data-lesson-index set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
     <div class="page-head">
-      <h1>My study</h1>
+      <h1>My Study</h1>
       <p>Everything this browser remembers about your studying. It is stored only on this device — use <b>Back up</b> to move it to another browser.</p>
     </div>
+    <nav class="study-tabs" aria-label="My study sections">
+      <a href="#ms-progress">Progress</a>
+      <a href="#ms-bookmarks">Bookmarks</a>
+      <a href="#ms-recent">Recently viewed</a>
+      <a href="#ms-listened">Listening</a>
+    </nav>
+    <section class="card study-progress" aria-labelledby="ms-progress" data-section-progress={index.map((l) => l.id).join(",")}>
+      <h2 id="ms-progress" class="card-title">Overall progress</h2>
+      <div class="study-progress__row"><span data-count>0 of {index.length} done</span><b data-pct>0%</b></div>
+      <ProgressBar />
+    </section>
     {SECTIONS.map((s) => (
       <section class="section-block" aria-labelledby={`ms-${s.key}`}>
         <div class="section-block__head"><h2 id={`ms-${s.key}`}><Icon name={s.icon} /> {s.title} <span class="small muted" data-ms-count={s.key}></span></h2></div>

@@ -5,8 +5,8 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
 export const GET: APIRoute = () =>
   new Response(
     JSON.stringify({
-      name: "Mule Study — MuleSoft course",
-      short_name: "Mule Study",
+      name: "Mule Learning Hub — MuleSoft course",
+      short_name: "Mule Hub",
       description: "Lectures, summary podcasts and notes for the MuleSoft course",
       start_url: base,
       scope: base,

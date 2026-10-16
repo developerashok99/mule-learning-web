@@ -107,11 +107,44 @@ test.describe("course and home", () => {
     await expect(page).toHaveURL(/#api-design$/);
   });
 
+  test("course sections work as tabs on wide screens", async ({ page }) => {
+    await page.goto("courses/mulesoft/");
+    const panels = page.locator(".section-panel:visible");
+    if (width(page) >= 1024) {
+      await expect(panels).toHaveCount(1);
+      await page.getByRole("navigation", { name: "Sections in this course" }).getByRole("link", { name: /Security & Policies/ }).click();
+      await expect(panels).toHaveCount(1);
+      await expect(panels.first()).toHaveAttribute("id", "security");
+    } else {
+      expect(await panels.count()).toBeGreaterThan(1);
+    }
+  });
+
+  test("search remembers recent searches and offers popular topics", async ({ page }) => {
+    await page.goto("search/");
+    await expect(page.getByRole("heading", { name: "Popular topics" })).toBeVisible();
+    await page.locator("[data-search-input]").fill("watermark");
+    await expect(page.locator("[data-search-results] > li").first()).toBeVisible({ timeout: 15_000 });
+    await page.goto("search/");
+    await expect(page.locator("[data-recent-searches]")).toContainText("watermark");
+    await page.getByRole("button", { name: "Clear" }).click();
+    await expect(page.getByRole("heading", { name: "Recent searches" })).toBeHidden();
+  });
+
+  test("lesson actions sit in the tab bar, or under the title on phones", async ({ page }) => {
+    await page.goto("lessons/day02/");
+    const done = page.locator("[data-toggle-done]");
+    if (isPhone(page)) await expect(page.locator(".lesson-head [data-toggle-done]")).toBeVisible();
+    else await expect(page.locator(".lesson-bar [data-toggle-done]")).toBeVisible();
+    await done.click();
+    await expect(done).toHaveText(/Completed/);
+  });
+
   test("home quick links reach the main study areas", async ({ page }) => {
     await page.goto("");
     const quick = page.getByRole("navigation", { name: "Quick links" });
-    await expect(quick.getByRole("link")).toHaveCount(5);
-    await quick.getByRole("link", { name: /Videos/ }).click();
+    await expect(quick.getByRole("link")).toHaveCount(6);
+    await quick.getByRole("link", { name: /Video Lectures/ }).click();
     await expect(page).toHaveURL(/videos\/$/);
   });
 });
@@ -193,15 +226,18 @@ test.describe("navigation", () => {
 
   test("primary navigation reaches every section", async ({ page }) => {
     await page.goto("");
-    for (const [name, url] of [["Courses", /courses\/$/], ["Lessons", /lessons\/$/], ["Notes", /notes\/$/], ["Podcasts", /podcasts\/$/], ["Home", /mule-learning-web\/$/]] as const) {
-      await mainNav(page).getByRole("link", { name }).click();
+    // phones: bottom tabs (Home, Courses, Lessons, Search, My Study); wider screens: the full top navigation
+    const common = [["Courses", /courses\/$/], ["Lessons", /lessons\/$/], ["My Study", /my-study\/$/]] as const;
+    const extra = isPhone(page)
+      ? ([["Search", /search\/$/]] as const)
+      : ([["Podcasts", /podcasts\/$/], ["Videos", /videos\/$/], ["Revise", /revise\/$/]] as const);
+    for (const [name, url] of [...common, ...extra, ["Home", /mule-learning-web\/$/]] as const) {
+      await mainNav(page).getByRole("link", { name, exact: true }).click();
       await expect(page).toHaveURL(url);
-      await expect(mainNav(page).getByRole("link", { name })).toHaveAttribute("aria-current", "page");
+      await expect(mainNav(page).getByRole("link", { name, exact: true })).toHaveAttribute("aria-current", "page");
     }
     await page.getByRole("link", { name: "My study: bookmarks and progress" }).click();
     await expect(page).toHaveURL(/my-study\/$/);
-    await page.getByRole("link", { name: "Revision: glossary and self-tests" }).click();
-    await expect(page).toHaveURL(/revise\/$/);
   });
 });
 

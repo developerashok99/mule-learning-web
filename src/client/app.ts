@@ -117,7 +117,10 @@ function markDone() {
     el.dataset.status = status;
     el.dataset.bookmarked = String(marked.has(el.dataset.lessonDone!));
     const label = el.querySelector<HTMLElement>("[data-status-label]");
-    if (label) label.textContent = STATUS_TEXT[status] + (marked.has(el.dataset.lessonDone!) ? ", bookmarked" : "");
+    if (label) {
+      label.textContent = STATUS_TEXT[status];
+      if (marked.has(el.dataset.lessonDone!)) label.append(Object.assign(document.createElement("span"), { className: "visually-hidden", textContent: ", bookmarked" }));
+    }
   });
   document.querySelectorAll<HTMLElement>("[data-section-progress]").forEach((el) => {
     const ids = (el.dataset.sectionProgress || "").split(",").filter(Boolean);
@@ -130,6 +133,8 @@ function markDone() {
       if (startedBar) startedBar.style.width = ids.length ? `${(s / ids.length) * 100}%` : "0";
       bar.setAttribute("aria-label", `${n} of ${ids.length} completed${s ? `, ${s} in progress` : ""}`);
     }
+    const pct = el.querySelector<HTMLElement>("[data-pct]");
+    if (pct) pct.textContent = `${ids.length ? Math.round((n / ids.length) * 100) : 0}%`;
     const text = el.querySelector<HTMLElement>("[data-count]");
     if (text) text.textContent = el.closest("summary") ? `${n}/${ids.length}` : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
   });
@@ -147,7 +152,7 @@ function setupLesson() {
     const done = isCompleted(id);
     if (doneBtn) {
       doneBtn.setAttribute("aria-pressed", String(done));
-      doneBtn.querySelector("[data-text]")!.textContent = done ? "Completed" : "Mark complete";
+      doneBtn.querySelector("[data-text]")!.textContent = done ? "Completed" : "Mark as Completed";
     }
     const on = isBookmarked(id);
     if (markBtn) {
@@ -165,6 +170,20 @@ function setupLesson() {
     render();
   });
   render();
+
+  // phones: the lesson actions sit under the title so the tab row keeps its full width
+  // (wider screens: in the sticky tab bar, as in the design). The same elements move, so their listeners stay.
+  const actions = page.querySelector<HTMLElement>(".lesson-actions");
+  const head = page.querySelector<HTMLElement>(".lesson-head");
+  const bar = page.querySelector<HTMLElement>(".lesson-bar");
+  const phone = window.matchMedia("(max-width: 760px)");
+  const place = () => {
+    if (!actions || !head || !bar) return;
+    if (phone.matches && actions.parentElement !== head) head.append(actions);
+    else if (!phone.matches && actions.parentElement !== bar) bar.append(actions);
+  };
+  phone.addEventListener("change", place, { signal: pageSignal() });
+  place();
 
   // keep the active tab visible in the scrollable tab bar on phones
   // (scrollLeft rather than scrollIntoView, which would move the keyboard focus starting point)
@@ -240,11 +259,13 @@ function setupCourse() {
   const text = btn.querySelector("[data-text]");
   if (!rec || !text) {
     btn.hidden = !rec;
+    setupSectionTabs(order[0]?.id ?? "");
     return;
   }
   const l = order[rec.i];
   btn.href = l.href;
   text.textContent = done.size || started ? `Continue: ${l.label}` : `Start with ${l.label}`;
+  setupSectionTabs(l.id);
 
   // "Last studied": the most recently opened lesson of this course, in the view it was opened in
   const lastBox = document.querySelector<HTMLElement>("[data-course-last]");
@@ -258,6 +279,40 @@ function setupCourse() {
     lastBox.querySelector("[data-when]")!.textContent = timeAgo(last.at);
     lastBox.hidden = false;
   }
+}
+
+/**
+ * Course page on wide screens: the section list works as tabs, showing one section's lessons at a time
+ * (the section in the URL hash, else the one holding the next lesson). Narrow screens show every section.
+ */
+function setupSectionTabs(nextId: string) {
+  const box = document.querySelector<HTMLElement>("[data-course-sections]");
+  if (!box) return;
+  const links = [...box.querySelectorAll<HTMLAnchorElement>("[data-section-link]")];
+  const panels = [...box.querySelectorAll<HTMLElement>(".section-panel")];
+  const wide = window.matchMedia("(min-width: 1024px)");
+  const fromHash = () => panels.find((p) => `#${p.id}` === location.hash)?.id;
+  const holding = panels.find((p) => p.querySelector(`[data-lesson-done="${nextId}"]`))?.id;
+  let current = fromHash() ?? holding ?? panels[0]?.id;
+  const render = () => {
+    box.classList.toggle("is-tabbed", wide.matches);
+    for (const p of panels) p.hidden = wide.matches && p.id !== current;
+    for (const a of links) {
+      if (a.dataset.sectionLink === current && wide.matches) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    }
+  };
+  for (const a of links) {
+    a.addEventListener("click", (e) => {
+      if (!wide.matches) return;
+      e.preventDefault();
+      current = a.dataset.sectionLink!;
+      history.replaceState(history.state, "", `#${current}`);
+      render();
+    }, { signal: pageSignal() });
+  }
+  wide.addEventListener("change", render, { signal: pageSignal() });
+  render();
 }
 
 function setupRevise() {

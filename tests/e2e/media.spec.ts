@@ -55,8 +55,8 @@ test.describe("audio podcast player", () => {
     await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).click();
     await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.3);
     const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
-    await nav.getByRole("link", { name: "Notes" }).click();
-    await expect(page).toHaveURL(/notes\/$/);
+    await nav.getByRole("link", { name: "Courses", exact: true }).click();
+    await expect(page).toHaveURL(/courses\/$/);
     await nav.getByRole("link", { name: "Lessons" }).click();
     await page.getByRole("link", { name: /Course Introduction/ }).click();
     await expect(page).toHaveURL(/lessons\/day01\/$/);

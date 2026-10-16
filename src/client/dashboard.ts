@@ -65,6 +65,14 @@ export function setupDashboard() {
     $("[data-c-heading]")!.textContent = done.has(last.id) ? "Last studied" : "Continue learning";
     $("[data-c-eyebrow]")!.textContent = `${VIEW_NAMES[last.view] ?? "Lesson"} · opened ${timeAgo(last.at)}${done.has(last.id) ? " · completed" : ""}`;
     $("[data-c-title]")!.textContent = `${l.label} — ${l.title}`;
+    // the hero's main button resumes too
+    const hero = $<HTMLAnchorElement>("[data-hero-start]");
+    if (hero && !done.has(last.id)) {
+      hero.href = last.href;
+      hero.querySelector("[data-text]")!.textContent = "Continue Learning";
+    }
+    const feat = $<HTMLAnchorElement>("[data-hero-continue]");
+    if (feat) feat.href = last.href;
     const go = $<HTMLAnchorElement>("[data-c-go]")!;
     go.href = last.href;
     go.querySelector("[data-text]")!.textContent = `Continue: ${VIEW_NAMES[last.view] ?? "lesson"}`;

@@ -4,6 +4,7 @@
  */
 import { base, pageSignal } from "./page";
 import { groupHits, isRelevant } from "../lib/searchrank";
+import { clearSearches, recentSearches, saveSearch } from "./store";
 
 interface PagefindResult {
   score?: number;
@@ -81,6 +82,33 @@ export function setupSearch() {
   const renderChips = () => chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.searchType === type)));
   renderChips();
 
+  // with an empty box: recent searches (this browser) and popular topics
+  const idle = document.querySelector<HTMLElement>("[data-search-idle]");
+  const recentList = idle?.querySelector<HTMLElement>("[data-recent-searches]");
+  const renderIdle = (q: string) => {
+    if (!idle) return;
+    idle.hidden = !!q;
+    if (q || !recentList) return;
+    const items = recentSearches();
+    recentList.closest("section")!.hidden = !items.length;
+    recentList.replaceChildren(...items.map((s) => {
+      const li = el("li");
+      const a = el("a", "", s);
+      a.href = `${location.pathname}?q=${encodeURIComponent(s)}`;
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        input.value = s;
+        void run();
+      });
+      li.append(a);
+      return li;
+    }));
+  };
+  idle?.querySelector("[data-clear-searches]")?.addEventListener("click", () => {
+    clearSearches();
+    renderIdle("");
+  }, { signal });
+
   let token = 0;
   const run = async () => {
     const q = input.value.trim();
@@ -91,6 +119,7 @@ export function setupSearch() {
       type ? u.searchParams.set("type", type) : u.searchParams.delete("type");
       history.replaceState(history.state, "", u);
     }
+    renderIdle(q);
     if (!q) {
       list.replaceChildren();
       status.textContent = "";
@@ -158,6 +187,7 @@ export function setupSearch() {
         return li;
       }),
     );
+    if (groups.length && q.length >= 3) saveSearch(q);
     const n = groups.length ? res.results.length : 0;
     status.textContent = n
       ? `${groups.length}${n > top.length ? "+" : ""} lesson${groups.length === 1 ? "" : "s"} match (${n} page${n === 1 ? "" : "s"}). Use ↓ ↑ to move between results.`
@@ -189,5 +219,6 @@ export function setupSearch() {
     void run();
   }, { signal });
   if (input.value) void run();
+  else renderIdle("");
   if (box.dataset.autofocus === "true" && !input.value) input.focus();
 }

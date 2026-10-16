@@ -1,12 +1,20 @@
 ---
+/**
+ * One lesson in a list. "default" (Lessons page): label, title and what is available.
+ * "course" (course page): number, "Day 1 – Title", a visible status pill and a chevron, as in the design mockups.
+ * Completion / bookmark state is painted in the browser from stored progress (src/client/app.ts).
+ */
 import Icon from "./Icon.astro";
 import type { Lesson } from "../lib/content";
 import { lessonPath, withBase } from "../lib/routes";
 
 interface Props {
   lesson: Lesson;
+  variant?: "default" | "course";
+  /** position in the course (course variant) */
+  n?: number;
 }
-const { lesson: l } = Astro.props;
+const { lesson: l, variant = "default", n } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const res = [
   { on: !!l.lecture?.youtubeId, icon: "lecture", label: "Lecture video" },
@@ -15,15 +23,27 @@ const res = [
   { on: l.slides > 0, icon: "slides", label: "Slides" },
 ] as const;
 ---
-<li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
-  <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
-  <span class="visually-hidden" data-status-label>Not started</span>
-  <div class="lesson-row__main">
-    <span class="lesson-row__label">{l.label}</span>
-    <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>
-  </div>
-  <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
-  <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
-    {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
-  </span>
-</li>
+{variant === "course" ? (
+  <li class="lesson-row lesson-row--course" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
+    <span class="lesson-row__n" aria-hidden="true">{String(n ?? 0).padStart(2, "0")}</span>
+    <div class="lesson-row__main">
+      <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.label} – {l.title}</a>
+    </div>
+    <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
+    <span class="status-pill" data-status-label>Not started</span>
+    <Icon name="right" class="lesson-row__chev" />
+  </li>
+) : (
+  <li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
+    <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+    <span class="visually-hidden" data-status-label>Not started</span>
+    <div class="lesson-row__main">
+      <span class="lesson-row__label">{l.label}</span>
+      <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>
+    </div>
+    <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
+    <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
+      {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
+    </span>
+  </li>
+)}
