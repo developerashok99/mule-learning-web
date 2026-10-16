@@ -30,25 +30,44 @@ const first = lessons[0];
 const withVideo = lessons.filter((l) => l.lecture?.youtubeId && !l.lecture.demo).length;
 const withPodcast = getPodcasts().filter((p) => !p.test && (p.audioUrl || p.videoUrl)).length;
 const allIds = lessons.map((l) => l.id).join(",");
+const QUICK = [
+  { href: "videos/", icon: "video", label: "Videos", note: withVideo ? `${withVideo} lectures` : "Lecture player" },
+  { href: "lessons/", icon: "lessons", label: "Lessons", note: `${lessons.length} lessons` },
+  { href: "podcasts/", icon: "podcast", label: "Podcasts", note: withPodcast ? `${withPodcast} episodes` : "Summaries" },
+  { href: "revise/", icon: "check", label: "Revise", note: "Glossary & self-tests" },
+  { href: "my-study/", icon: "bookmark", label: "My study", note: "Bookmarks & progress" },
+] as const;
 ---
 <Base title="Home" nav="home">
   <div class="container" data-dashboard>
     <script is:inline type="application/json" data-lesson-index set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
-    <div class="page-head dash-head">
-      <div>
-        <h1>Study dashboard</h1>
-        <p>Lectures, summary podcasts and notes for the MuleSoft course. Progress is saved in this browser.</p>
+    <div class="dash-hero">
+      <div class="dash-head">
+        <div>
+          <p class="eyebrow">{courses[0]?.title ?? "MuleSoft course"}</p>
+          <h1>Study dashboard</h1>
+          <p class="dash-hero__lead">Lectures, summary podcasts and notes in one place. Your progress is saved in this browser.</p>
+        </div>
+        <form class="hero-search" action={withBase(base, "search/")} method="get" role="search">
+          <label class="visually-hidden" for="home-q">Search notes and lessons</label>
+          <Icon name="search" class="hero-search__icon" />
+          <input id="home-q" class="input" type="search" name="q" placeholder="Search notes, e.g. “error mapping”, “APIkit”" />
+          <button class="btn btn--primary" type="submit">Search</button>
+        </form>
       </div>
-      <form class="hero-search" action={withBase(base, "search/")} method="get" role="search">
-        <label class="visually-hidden" for="home-q">Search notes and lessons</label>
-        <input id="home-q" class="input" type="search" name="q" placeholder="Search notes, e.g. “error mapping”, “APIkit”" />
-        <button class="btn btn--primary" type="submit"><Icon name="search" /><span class="visually-hidden">Search</span></button>
-      </form>
+      <nav class="quick-links" aria-label="Quick links">
+        {QUICK.map((q) => (
+          <a href={withBase(base, q.href)}>
+            <span class="quick-links__icon" aria-hidden="true"><Icon name={q.icon} /></span>
+            <span class="quick-links__text"><b>{q.label}</b><small>{q.note}</small></span>
+          </a>
+        ))}
+      </nav>
     </div>
 
     <div class="dash-grid">
       <div class="dash-main">
-      <section class="card o1 dash-continue" aria-labelledby="cont-h">
+      <section class="card card--feature o1 dash-continue" aria-labelledby="cont-h">
         <h2 id="cont-h" class="card-title"><Icon name="play" /> <span data-c-heading>Start learning</span></h2>
         <div data-c-welcome>
           <p class="eyebrow">Day 1 of {lessons.length}</p>

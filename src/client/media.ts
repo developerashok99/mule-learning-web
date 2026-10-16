@@ -39,14 +39,33 @@ const YT_ERRORS: Record<number, string> = {
   153: "YouTube refused to play this video here.",
 };
 
-function showState(frame: HTMLElement, title: string, text: string, link?: string) {
+/** Replaces the player with a message; `retry` adds a "Try again" button that puts the play button back. */
+function showState(frame: HTMLElement, title: string, text: string, link?: string, retry?: () => void) {
   const box = document.createElement("div");
   box.className = "media-state";
   box.setAttribute("role", "status");
-  box.innerHTML = `<strong></strong><p></p>${link ? `<a target="_blank" rel="noopener noreferrer">Open on YouTube ↗</a>` : ""}`;
+  box.innerHTML = `<span class="media-state__icon" aria-hidden="true">!</span><strong></strong><p></p><span class="media-state__actions"></span>`;
   box.querySelector("strong")!.textContent = title;
   box.querySelector("p")!.textContent = text;
-  if (link) box.querySelector("a")!.href = link;
+  const actions = box.querySelector(".media-state__actions")!;
+  if (retry) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn btn--sm btn--primary";
+    b.textContent = "Try again";
+    b.addEventListener("click", retry, { once: true });
+    actions.append(b);
+  }
+  if (link) {
+    const a = document.createElement("a");
+    a.className = "btn btn--sm";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.href = link;
+    a.textContent = "Open on YouTube ↗";
+    actions.append(a);
+  }
+  delete frame.dataset.state;
   frame.replaceChildren(box);
 }
 
@@ -55,10 +74,20 @@ async function startYouTube(btn: HTMLButtonElement) {
   const id = btn.dataset.yt!;
   const start = Number(btn.dataset.start || 0);
   const link = btn.dataset.watch!;
+  // a fresh copy of the play button, so "Try again" can start over
+  const facade = btn.cloneNode(true) as HTMLButtonElement;
+  const retry = () => {
+    frame.replaceChildren(facade);
+    facade.addEventListener("click", () => void startYouTube(facade), { once: true });
+    facade.focus();
+  };
   btn.disabled = true;
+  btn.setAttribute("aria-busy", "true");
+  frame.dataset.state = "loading";
   btn.querySelector("small")!.textContent = "Loading player…";
   const ok = await loadYouTubeApi();
   if (!frame.isConnected) return;
+  delete frame.dataset.state;
   const host = document.createElement("div");
   frame.replaceChildren(host);
   if (ok && window.YT?.Player) {
@@ -70,7 +99,7 @@ async function startYouTube(btn: HTMLButtonElement) {
         // 0 = ended: the Videos tab can move on to the next video
         onStateChange: (e: { data: number }) => e.data === 0 && document.dispatchEvent(new CustomEvent("mls:lecture-ended")),
         onError: (e: { data: number }) =>
-          showState(frame, "This lecture video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", link),
+          showState(frame, "This video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", link, retry),
       },
     });
     frame.querySelector("iframe")?.setAttribute("title", btn.dataset.title || "Lecture video");

@@ -86,9 +86,32 @@ test.describe("pages", () => {
   });
 });
 
+test.describe("course and home", () => {
+  test("course Continue points at the next unfinished lesson", async ({ page }) => {
+    await page.goto("courses/mulesoft/");
+    const go = page.locator("[data-course-continue]");
+    await expect(go).toHaveText(/Start with Day 1/);
+    await page.goto("lessons/day01/");
+    await page.locator("[data-toggle-done]").click();
+    await page.goto("courses/mulesoft/");
+    await expect(go).toHaveText(/Continue: Day 2/);
+    await expect(go).toHaveAttribute("href", /lessons\/day02\/$/);
+    await page.getByRole("navigation", { name: "Sections in this course" }).getByRole("link", { name: /API Design/ }).click();
+    await expect(page).toHaveURL(/#api-design$/);
+  });
+
+  test("home quick links reach the main study areas", async ({ page }) => {
+    await page.goto("");
+    const quick = page.getByRole("navigation", { name: "Quick links" });
+    await expect(quick.getByRole("link")).toHaveCount(5);
+    await quick.getByRole("link", { name: /Videos/ }).click();
+    await expect(page).toHaveURL(/videos\/$/);
+  });
+});
+
 test.describe("accessibility (axe, WCAG 2.1 AA)", () => {
   for (const scheme of ["light", "dark"] as const) {
-    for (const path of ["", "lessons/day45/super-detailed/", "lessons/day15/revise/", "search/?q=dataweave", "podcasts/"]) {
+    for (const path of ["", "courses/mulesoft/", "lessons/day05/", "lessons/day45/super-detailed/", "lessons/day15/revise/", "search/?q=dataweave", "podcasts/"]) {
       test(`/${path} ${scheme}`, async ({ page }) => {
         test.skip(width(page) !== 390 && width(page) !== 1440, "checked at one phone and one desktop size");
         await page.emulateMedia({ colorScheme: scheme });

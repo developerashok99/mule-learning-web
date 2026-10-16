@@ -59,6 +59,12 @@ const navHref = (l: Lesson) => u(lessonHasView(l, view) ? view : "lecture", l.id
           {!compact && <h1>{lesson.title}</h1>}
         </div>
         <div class="btn-row">
+          <span class="lesson-head__step">
+            {prev ? <a class="btn btn--sm btn--icon" href={navHref(prev)} aria-label={`Previous: ${prev.label}`} title={`Previous: ${prev.label} — ${prev.title}`}><Icon name="left" /></a>
+                  : <span class="btn btn--sm btn--icon" aria-disabled="true" title="This is the first lesson"><Icon name="left" /></span>}
+            {next ? <a class="btn btn--sm btn--icon" href={navHref(next)} aria-label={`Next: ${next.label}`} title={`Next: ${next.label} — ${next.title}`}><Icon name="right" /></a>
+                  : <span class="btn btn--sm btn--icon" aria-disabled="true" title="This is the last lesson"><Icon name="right" /></span>}
+          </span>
           <button class="btn btn--sm" type="button" data-toggle-done aria-pressed="false"><Icon name="check" /><span data-text class="label-collapse">Mark complete</span></button>
           <button class="btn btn--sm" type="button" data-toggle-bookmark aria-pressed="false"><Icon name="bookmark" /><span data-text class="label-collapse">Bookmark</span></button>
           <button class="btn btn--sm" type="button" data-open-jump aria-haspopup="dialog" aria-controls="lesson-drawer"><Icon name="list" /><span class="label-collapse">Lessons</span></button>
@@ -79,8 +85,8 @@ const navHref = (l: Lesson) => u(lessonHasView(l, view) ? view : "lecture", l.id
       <slot />
 
       <nav class="pager" aria-label="Previous and next lesson">
-        {prev && <a class="prev" href={navHref(prev)} rel="prev"><small>← Previous lesson</small><span>{prev.label} — {prev.title}</span></a>}
-        {next && <a class="next" href={navHref(next)} rel="next"><small>Next lesson →</small><span>{next.label} — {next.title}</span></a>}
+        {prev && <a class="prev" href={navHref(prev)} rel="prev"><Icon name="left" /><span class="pager__text"><small>Previous lesson</small><span>{prev.label} — {prev.title}</span></span></a>}
+        {next && <a class="next" href={navHref(next)} rel="next"><span class="pager__text"><small>Next lesson</small><span>{next.label} — {next.title}</span></span><Icon name="right" /></a>}
       </nav>
     </div>
   </div>

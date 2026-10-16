@@ -34,6 +34,20 @@ test.describe("videos tab", () => {
     await expect(page.locator('[aria-disabled="true"]', { hasText: "Next" })).toBeVisible();
   });
 
+  test("the playlist can be filtered and shows completed lessons", async ({ page }) => {
+    await page.goto(`videos/${ids[0]}/`);
+    const list = page.getByRole("navigation", { name: "All course videos" });
+    await list.getByLabel("Filter videos").fill("Day 12");
+    await expect(list.locator("li:visible")).toHaveCount(1);
+    await list.getByLabel("Filter videos").fill("zzzz-no-such-video");
+    await expect(list.getByText("No videos match.")).toBeVisible();
+    // completing a lesson marks it in the playlist
+    await page.goto(`lessons/${ids[1]}/`);
+    await page.locator("[data-toggle-done]").click();
+    await page.goto(`videos/${ids[0]}/`);
+    await expect(page.locator(`.video-list li[data-lesson-done="${ids[1]}"]`)).toHaveAttribute("data-status", "done");
+  });
+
   test("has no accessibility violations", async ({ page }) => {
     await page.goto(`videos/${ids[1]}/`);
     const results = await new AxeBuilder({ page }).analyze();

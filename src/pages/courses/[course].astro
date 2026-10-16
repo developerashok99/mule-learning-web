@@ -1,10 +1,11 @@
 ---
 import ProgressBar from "../../components/ProgressBar.astro";
 import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
 import LessonRow from "../../components/LessonRow.astro";
 import { getCourses, getLesson, type Lesson } from "../../lib/content";
 import type { Course } from "../../lib/config";
-import { withBase } from "../../lib/routes";
+import { lessonPath, withBase } from "../../lib/routes";
 
 export function getStaticPaths() {
   return getCourses().map((course) => ({ params: { course: course.id }, props: { course } }));
@@ -12,24 +13,52 @@ export function getStaticPaths() {
 const { course } = Astro.props as { course: Course };
 const base = import.meta.env.BASE_URL;
 const ids = course.sections.flatMap((s) => s.lessons);
+const lessons = ids.map((id) => getLesson(id) as Lesson);
+const videos = lessons.filter((l) => l.lecture?.youtubeId).length;
+const slides = lessons.reduce((n, l) => n + l.slides, 0);
+// course order for the browser's "Continue" button (progress itself is read from this browser's storage)
+const order = lessons.map((l) => ({ id: l.id, label: l.label, href: withBase(base, lessonPath(l.id)) }));
 ---
 <Base title={course.title} nav="courses">
   <div class="container container--narrow">
     <ol class="breadcrumb"><li><a href={withBase(base, "courses/")}>Courses</a></li><li>{course.title}</li></ol>
-    <div class="page-head">
+
+    <header class="course-hero card" data-section-progress={ids.join(",")}>
+      <p class="eyebrow">Course</p>
       <h1>{course.title}</h1>
-      <p>{course.description}</p>
-    </div>
-    <div class="card" data-section-progress={ids.join(",")} style="margin-bottom:2rem">
-      <p class="stat-line" style="margin-bottom:.4rem"><strong>{ids.length}</strong><span class="muted">lessons · <span data-count>0 of {ids.length} done</span></span></p>
-      <ProgressBar />
-    </div>
+      <p class="course-hero__desc">{course.description}</p>
+      <ul class="course-stats">
+        <li><Icon name="lessons" /><b>{ids.length}</b> lessons</li>
+        <li><Icon name="courses" /><b>{course.sections.length}</b> sections</li>
+        {videos > 0 && <li><Icon name="video" /><b>{videos}</b> lecture videos</li>}
+        {slides > 0 && <li><Icon name="slides" /><b>{slides}</b> slides</li>}
+      </ul>
+      <div class="course-hero__progress">
+        <div class="course-hero__bar"><ProgressBar /><span class="small muted" data-count>0 of {ids.length} done</span></div>
+        <a class="btn btn--primary" href={order[0]?.href} data-course-continue={JSON.stringify(order)}>
+          <span data-text>Start with {order[0]?.label}</span><Icon name="right" />
+        </a>
+      </div>
+    </header>
+
+    <nav class="section-chips" aria-label="Sections in this course">
+      {course.sections.map((s, i) => (
+        <a href={`#${s.id}`}><span class="section-chips__n">{i + 1}</span>{s.title}<small>{s.lessons.length}</small></a>
+      ))}
+    </nav>
+
     {course.sections.map((s, i) => (
       <section class="section-block" id={s.id} aria-labelledby={`${s.id}-h`} data-section-progress={s.lessons.join(",")}>
         <div class="section-block__head">
-          <h2 id={`${s.id}-h`}>{i + 1}. {s.title}</h2>
-          <span class="small muted" data-count>0 of {s.lessons.length} done</span>
-          {s.description && <p>{s.description}</p>}
+          <span class="section-block__n" aria-hidden="true">{i + 1}</span>
+          <div class="section-block__title">
+            <h2 id={`${s.id}-h`}><span class="visually-hidden">{i + 1}. </span>{s.title}</h2>
+            {s.description && <p>{s.description}</p>}
+          </div>
+          <div class="section-block__progress">
+            <span class="small muted" data-count>0 of {s.lessons.length} done</span>
+            <ProgressBar thin />
+          </div>
         </div>
         <ul class="lesson-list">
           {s.lessons.map((id) => <LessonRow lesson={getLesson(id) as Lesson} />)}

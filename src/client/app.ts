@@ -13,6 +13,7 @@ import { setupMyStudy } from "./mystudy";
 import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
 import { pageSignal } from "./page";
+import { recommend } from "../lib/progress";
 import { startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recordVisit, setBookmarked, setCompleted, setPrefs } from "./store";
 
 const base = document.documentElement.dataset.base || "/";
@@ -221,6 +222,29 @@ function setupLesson() {
   dlg?.addEventListener("click", (e) => e.target === dlg && dlg.close());
 }
 
+/** Course page: "Continue" points at the next unfinished lesson (from this browser's progress). */
+function setupCourse() {
+  const btn = document.querySelector<HTMLAnchorElement>("[data-course-continue]");
+  if (!btn) return;
+  let order: { id: string; label: string; href: string }[] = [];
+  try {
+    order = JSON.parse(btn.dataset.courseContinue || "[]");
+  } catch {
+    return;
+  }
+  const done = new Set(completedIds());
+  const started = startedIds().some((id) => order.some((l) => l.id === id));
+  const rec = recommend(order, done);
+  const text = btn.querySelector("[data-text]");
+  if (!rec || !text) {
+    btn.hidden = !rec;
+    return;
+  }
+  const l = order[rec.i];
+  btn.href = l.href;
+  text.textContent = done.size || started ? `Continue: ${l.label}` : `Start with ${l.label}`;
+}
+
 function setupRevise() {
   const btn = document.querySelector<HTMLButtonElement>("[data-reveal-all]");
   if (!btn) return;
@@ -242,6 +266,7 @@ document.addEventListener("astro:page-load", () => {
   renderOnline();
   setupRevise();
   setupLesson();
+  setupCourse();
   markDone();
   setupNotes();
   setupMermaid();
