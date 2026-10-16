@@ -7,8 +7,10 @@ import { formatLength } from "../lib/duration";
 interface Props {
   lecture: Lecture | null;
   title: string;
+  /** link to this lecture on the Videos tab (playlist + previous / next) */
+  playerHref?: string;
 }
-const { lecture, title } = Astro.props;
+const { lecture, title, playerHref } = Astro.props;
 const EMPTY = !lecture?.youtubeId;
 ---
 <section aria-labelledby="lecture-h">
@@ -39,5 +41,10 @@ const EMPTY = !lecture?.youtubeId;
     )}
   </div>
   {lecture?.description && <p class="muted small" style="margin:.6rem 0 0">{lecture.description}</p>}
-  {lecture?.watchUrl && <p class="small" style="margin:.4rem 0 0"><a href={lecture.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a></p>}
+  {lecture?.youtubeId && (
+    <p class="lecture-links small">
+      {playerHref && <a href={playerHref}><Icon name="video" /> Watch in the video player <span class="muted">· playlist, next &amp; previous</span></a>}
+      {lecture.watchUrl && <a href={lecture.watchUrl} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Open on YouTube</a>}
+    </p>
+  )}
 </section>

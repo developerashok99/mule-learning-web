@@ -22,6 +22,7 @@ const res = [
     <span class="lesson-row__label">{l.label}</span>
     <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>
   </div>
+  <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
   <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
     {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
   </span>

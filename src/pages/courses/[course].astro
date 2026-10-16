@@ -39,6 +39,7 @@ const order = lessons.map((l) => ({ id: l.id, label: l.label, href: withBase(bas
           <span data-text>Start with {order[0]?.label}</span><Icon name="right" />
         </a>
       </div>
+      <p class="course-hero__last small" data-course-last hidden><Icon name="clock" /> Last studied: <a href="#"></a> <span class="muted" data-when></span></p>
     </header>
 
     <nav class="section-chips" aria-label="Sections in this course">

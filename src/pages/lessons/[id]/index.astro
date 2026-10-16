@@ -34,7 +34,7 @@ const playable = lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl);
   <div class="lesson-grid">
     <div data-pagefind-body data-pagefind-filter="type:Lesson" data-pagefind-meta={`lesson:${lesson.label}`}>
       <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lesson.label} — {lesson.title}</span>
-      <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} />
+      <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} playerHref={lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : undefined} />
 
       {topics.length > 0 && (
         <section style="margin-top:1.75rem" aria-labelledby="topics-h">

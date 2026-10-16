@@ -4,7 +4,7 @@
  * offers to continue the last video opened.
  */
 import { pageSignal } from "./page";
-import { prefs, setPrefs } from "./store";
+import { isBookmarked, isCompleted, prefs, setBookmarked, setCompleted, setPrefs } from "./store";
 
 /** Set when the user picks a video, so the next page starts playing without a second click. */
 const PLAY_FLAG = "mls.videoPlay";
@@ -50,6 +50,23 @@ export function setupVideos() {
   page.addEventListener("click", (e) => {
     if ((e.target as Element).closest("[data-video-go]")) flag(true);
   }, { signal });
+
+  // study actions: the same completion / bookmark as the lesson page
+  const doneBtn = page.querySelector<HTMLButtonElement>("[data-video-done]");
+  const markBtn = page.querySelector<HTMLButtonElement>("[data-video-bookmark]");
+  const render = () => {
+    const done = isCompleted(id);
+    const on = isBookmarked(id);
+    doneBtn?.setAttribute("aria-pressed", String(done));
+    markBtn?.setAttribute("aria-pressed", String(on));
+    const t1 = doneBtn?.querySelector("[data-text]");
+    const t2 = markBtn?.querySelector("[data-text]");
+    if (t1) t1.textContent = done ? "Lesson completed" : "Mark lesson complete";
+    if (t2) t2.textContent = on ? "Bookmarked" : "Bookmark";
+  };
+  doneBtn?.addEventListener("click", () => { setCompleted(id, !isCompleted(id)); render(); }, { signal });
+  markBtn?.addEventListener("click", () => { setBookmarked(id, !isBookmarked(id)); render(); }, { signal });
+  render();
 
   const auto = page.querySelector<HTMLInputElement>("[data-video-autoplay]");
   if (auto) {

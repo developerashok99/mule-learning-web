@@ -96,6 +96,13 @@ test.describe("course and home", () => {
     await page.goto("courses/mulesoft/");
     await expect(go).toHaveText(/Continue: Day 2/);
     await expect(go).toHaveAttribute("href", /lessons\/day02\/$/);
+    await expect(page.locator("[data-course-last] a")).toHaveText("Day 1 · Overview");
+    // bookmarks show on the lesson rows
+    await page.goto("lessons/day03/");
+    await page.locator("[data-toggle-bookmark]").click();
+    await page.goto("courses/mulesoft/");
+    await expect(page.locator('.lesson-row[data-lesson-done="day03"]')).toHaveAttribute("data-bookmarked", "true");
+    await expect(page.locator('.lesson-row[data-lesson-done="day03"] .bookmark-mark')).toBeVisible();
     await page.getByRole("navigation", { name: "Sections in this course" }).getByRole("link", { name: /API Design/ }).click();
     await expect(page).toHaveURL(/#api-design$/);
   });

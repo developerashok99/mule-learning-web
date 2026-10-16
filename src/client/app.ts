@@ -14,7 +14,7 @@ import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
-import { startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recordVisit, setBookmarked, setCompleted, setPrefs } from "./store";
+import { bookmarkIds, startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recent, recordVisit, setBookmarked, setCompleted, setPrefs, timeAgo } from "./store";
 
 const base = document.documentElement.dataset.base || "/";
 
@@ -110,12 +110,14 @@ const STATUS_TEXT = { done: "Completed", started: "In progress", new: "Not start
 function markDone() {
   const done = new Set(completedIds());
   const started = new Set(startedIds());
+  const marked = new Set(bookmarkIds());
   document.querySelectorAll<HTMLElement>("[data-lesson-done]").forEach((el) => {
     const status = statusOf(el.dataset.lessonDone!, done, started);
     el.dataset.done = String(status === "done");
     el.dataset.status = status;
+    el.dataset.bookmarked = String(marked.has(el.dataset.lessonDone!));
     const label = el.querySelector<HTMLElement>("[data-status-label]");
-    if (label) label.textContent = STATUS_TEXT[status];
+    if (label) label.textContent = STATUS_TEXT[status] + (marked.has(el.dataset.lessonDone!) ? ", bookmarked" : "");
   });
   document.querySelectorAll<HTMLElement>("[data-section-progress]").forEach((el) => {
     const ids = (el.dataset.sectionProgress || "").split(",").filter(Boolean);
@@ -243,6 +245,19 @@ function setupCourse() {
   const l = order[rec.i];
   btn.href = l.href;
   text.textContent = done.size || started ? `Continue: ${l.label}` : `Start with ${l.label}`;
+
+  // "Last studied": the most recently opened lesson of this course, in the view it was opened in
+  const lastBox = document.querySelector<HTMLElement>("[data-course-last]");
+  const last = recent().find((r) => order.some((o) => o.id === r.id));
+  if (lastBox && last) {
+    const VIEWS: Record<string, string> = { lecture: "Overview", podcast: "Podcast", simple: "Simple notes", detailed: "Detailed notes", super: "Super-detailed notes", slides: "Slides", revise: "Revise" };
+    const a = lastBox.querySelector("a")!;
+    a.href = last.href;
+    a.textContent = `${order.find((o) => o.id === last.id)!.label} · ${VIEWS[last.view] ?? "Lesson"}`;
+    a.title = last.title;
+    lastBox.querySelector("[data-when]")!.textContent = timeAgo(last.at);
+    lastBox.hidden = false;
+  }
 }
 
 function setupRevise() {

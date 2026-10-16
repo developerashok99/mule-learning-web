@@ -877,3 +877,15 @@ a.video-meta__item:hover { text-decoration: underline; }
   .video-frame .yt-facade__play { width: 3.75rem; height: 3.75rem; }
 }
 .lesson-grid .media-frame { box-shadow: var(--shadow-lg); }
+
+/* ---------- study actions on the video page, bookmark marks, lecture links ---------- */
+.video-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.9rem 0 0; }
+.video-actions .btn { min-height: 2.75rem; }
+.video-actions .btn[aria-pressed="true"] .icon { color: var(--success); }
+.bookmark-mark { display: none; color: var(--accent); }
+[data-bookmarked="true"] > .bookmark-mark { display: inline-grid; place-items: center; }
+.bookmark-mark .icon { width: 1.05rem; height: 1.05rem; fill: currentColor; }
+.course-hero__last { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0.9rem 0 0; color: var(--text-muted); }
+.course-hero__last a { font-weight: 600; }
+.lecture-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: 0.6rem 0 0; }
+.lecture-links a { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.5rem; font-weight: 550; }

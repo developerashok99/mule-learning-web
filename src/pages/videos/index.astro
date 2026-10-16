@@ -1,8 +1,18 @@
 ---
 /** The Videos tab opens on the first course video (Day 1); the browser offers to continue the last one watched. */
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
 import VideoWatch from "../../components/VideoWatch.astro";
 import { getLessons } from "../../lib/content";
+import { withBase } from "../../lib/routes";
 
-const first = getLessons().find((l) => l.lecture?.youtubeId)!;
+const first = getLessons().find((l) => l.lecture?.youtubeId);
 ---
-<VideoWatch current={first} isIndex />
+{first ? <VideoWatch current={first} isIndex /> : (
+  <Base title="Videos" nav="videos">
+    <div class="container container--narrow">
+      <div class="page-head"><h1>Course videos</h1></div>
+      <div class="notice"><Icon name="info" /><div><strong>No lecture videos have been added yet</strong><p>Once YouTube links are added to config/media.json, every lecture plays here with a playlist and previous / next. The notes and slides are available now on the <a href={withBase(import.meta.env.BASE_URL, "lessons/")}>Lessons</a> page.</p></div></div>
+    </div>
+  </Base>
+)}

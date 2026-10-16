@@ -48,6 +48,18 @@ test.describe("videos tab", () => {
     await expect(page.locator(`.video-list li[data-lesson-done="${ids[1]}"]`)).toHaveAttribute("data-status", "done");
   });
 
+  test("study actions on the video page match the lesson", async ({ page }) => {
+    await page.goto(`videos/${ids[2]}/`);
+    await page.getByRole("button", { name: "Mark lesson complete" }).click();
+    await page.getByRole("button", { name: "Bookmark" }).click();
+    await expect(page.locator("[data-video-done]")).toHaveAttribute("aria-pressed", "true");
+    await page.goto(`lessons/${ids[2]}/`);
+    await expect(page.locator("[data-toggle-done]")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-toggle-bookmark]")).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("link", { name: /Watch in the video player/ }).click();
+    await expect(page).toHaveURL(new RegExp(`videos/${ids[2]}/$`));
+  });
+
   test("has no accessibility violations", async ({ page }) => {
     await page.goto(`videos/${ids[1]}/`);
     const results = await new AxeBuilder({ page }).analyze();

@@ -64,6 +64,10 @@ const name = `${current.label} — ${current.title}`;
             )}
           </div>
 
+          <div class="video-actions">
+            <button class="btn btn--sm" type="button" data-video-done aria-pressed="false"><Icon name="check" /><span data-text>Mark lesson complete</span></button>
+            <button class="btn btn--sm" type="button" data-video-bookmark aria-pressed="false"><Icon name="bookmark" /><span data-text>Bookmark</span></button>
+          </div>
           <div class="video-meta">
             {lecture.duration != null && <span class="video-meta__item"><Icon name="clock" /> {formatLength(lecture.duration)}</span>}
             <a class="video-meta__item" href={withBase(base, lessonPath(current.id))}><Icon name="notes" /> Lesson page &amp; notes</a>
