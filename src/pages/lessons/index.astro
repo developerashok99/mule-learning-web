@@ -1,21 +1,19 @@
 ---
 import Base from "../../layouts/Base.astro";
 import LessonRow from "../../components/LessonRow.astro";
-import { getCourses, getLesson, type Lesson } from "../../lib/content";
+import PageHead from "../../components/PageHead.astro";
+import { getCourses, getLesson, getLessons, type Lesson } from "../../lib/content";
 
-const courses = getCourses();
-const sections = courses.flatMap((c) => c.sections);
-const total = sections.reduce((n, s) => n + s.lessons.length, 0);
+const sections = getCourses().flatMap((c) => c.sections);
+const order = getLessons().map((l) => l.id);
+const total = order.length;
 ---
 <Base title="Lessons" nav="lessons">
-  <div class="container container--narrow" data-filter-scope>
-    <div class="page-head">
-      <h1>All lessons</h1>
-      <p>Every lesson has its lecture, summary podcast, three levels of notes and the class slides. Icons show what is available.</p>
-    </div>
+  <div class="page page--read" data-filter-scope>
+    <PageHead eyebrow="Every lesson" title="All lessons" sub="Each lesson has its lecture, summary podcast, three levels of notes and the class slides. The icons show what is available." />
     <div class="filters">
       <label class="visually-hidden" for="lesson-filter">Filter lessons</label>
-      <input id="lesson-filter" class="input" style="max-width:24rem" type="search" placeholder="Filter by day or topic, e.g. “Day 12” or “batch”" data-filter-text />
+      <input id="lesson-filter" class="input" type="search" placeholder="Filter by day or topic, e.g. “Day 12” or “batch”" data-filter-text />
       <label class="visually-hidden" for="lesson-section">Section</label>
       <select id="lesson-section" data-filter-section>
         <option value="">All sections</option>
@@ -24,11 +22,13 @@ const total = sections.reduce((n, s) => n + s.lessons.length, 0);
       <span class="small muted" data-filter-count aria-live="polite">{total} shown</span>
     </div>
     {sections.map((s) => (
-      <section class="section-block" data-filter-group aria-labelledby={`${s.id}-h`}>
-        <div class="section-block__head"><h2 id={`${s.id}-h`}>{s.title}</h2></div>
-        <ul class="lesson-list">{s.lessons.map((id) => <LessonRow lesson={getLesson(id) as Lesson} />)}</ul>
+      <section data-filter-group aria-labelledby={`${s.id}-h`}>
+        <div class="section-head"><div><h2 id={`${s.id}-h`}>{s.title}</h2>{s.description && <p>{s.description}</p>}</div><span class="pill">{s.lessons.length} lessons</span></div>
+        <div class="card" style="padding-block:.25rem">
+          <ul class="lesson-list">{s.lessons.map((id) => <LessonRow lesson={getLesson(id) as Lesson} n={order.indexOf(id) + 1} />)}</ul>
+        </div>
       </section>
     ))}
-    <p class="empty" data-filter-empty hidden>No lessons match. Clear the filter to see all {total}.</p>
+    <p class="empty" data-filter-empty hidden style="margin-top:1rem">No lessons match. Clear the filter to see all {total}.</p>
   </div>
 </Base>

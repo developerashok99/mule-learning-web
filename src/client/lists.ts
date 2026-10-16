@@ -4,6 +4,7 @@ export function setupLists() {
     const text = scope.querySelector<HTMLInputElement>("[data-filter-text]");
     const section = scope.querySelector<HTMLSelectElement>("[data-filter-section]");
     const avail = scope.querySelector<HTMLInputElement>("[data-filter-available]");
+    const kind = scope.querySelector<HTMLSelectElement>("[data-filter-kind]");
     const count = scope.querySelector<HTMLElement>("[data-filter-count]");
     const items = [...scope.querySelectorAll<HTMLElement>("[data-filter-item]")];
     const groups = [...scope.querySelectorAll<HTMLElement>("[data-filter-group]")];
@@ -15,7 +16,8 @@ export function setupLists() {
         const ok =
           (!q || (it.dataset.filterItem || it.textContent || "").toLowerCase().includes(q)) &&
           (!sec || (it.dataset.sections || "").split(" ").includes(sec)) &&
-          (!avail?.checked || it.dataset.available === "true");
+          (!avail?.checked || it.dataset.available === "true") &&
+          (!kind?.value || (it.dataset.kinds || "").split(" ").includes(kind.value));
         it.hidden = !ok;
         if (ok) shown++;
       }
@@ -32,6 +34,7 @@ export function setupLists() {
     text?.addEventListener("input", apply);
     section?.addEventListener("change", apply);
     avail?.addEventListener("change", apply);
+    kind?.addEventListener("change", apply);
     apply();
   });
 }

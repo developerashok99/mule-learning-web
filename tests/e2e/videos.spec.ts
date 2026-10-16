@@ -50,7 +50,7 @@ test.describe("videos tab", () => {
 
   test("study actions on the video page match the lesson", async ({ page }) => {
     await page.goto(`videos/${ids[2]}/`);
-    await page.getByRole("button", { name: "Mark lesson complete" }).click();
+    await page.getByRole("button", { name: "Mark complete" }).click();
     await page.getByRole("button", { name: "Bookmark" }).click();
     await expect(page.locator("[data-video-done]")).toHaveAttribute("aria-pressed", "true");
     await page.goto(`lessons/${ids[2]}/`);

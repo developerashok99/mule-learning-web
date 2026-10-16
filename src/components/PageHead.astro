@@ -1,0 +1,20 @@
+---
+/** Page heading used by every screen: eyebrow, h1, one-line description, and actions on the right (slot "actions"). */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  sub?: string;
+  /** id for the h1, for aria-labelledby */
+  id?: string;
+}
+const { eyebrow, title, sub, id } = Astro.props;
+---
+<div class="head">
+  <div class="head__text">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h1 id={id} data-head-title>{title}</h1>
+    {sub && <p class="sub">{sub}</p>}
+    <slot name="below" />
+  </div>
+  {Astro.slots.has("actions") && <div class="head__actions"><slot name="actions" /></div>}
+</div>

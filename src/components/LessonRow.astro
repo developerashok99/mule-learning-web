@@ -1,17 +1,19 @@
 ---
 /**
- * One lesson in a list. "default" (Lessons page): label, title and what is available.
- * "course" (course page): number, "Day 1 – Title", a visible status pill and a chevron, as in the design mockups.
- * Completion / bookmark state is painted in the browser from stored progress (src/client/app.ts).
+ * One lesson in a list: number (a check once completed), "Day 1 · Title", what it contains, and its status.
+ * "course" (course curriculum): the next lesson to study shows a Continue button instead of the status.
+ * "default" (Lessons page): also shows which resources exist.
+ * Completion / bookmark / next state is painted in the browser from stored progress (src/client/app.ts).
  */
 import Icon from "./Icon.astro";
 import type { Lesson } from "../lib/content";
+import { formatLength } from "../lib/duration";
 import { lessonPath, withBase } from "../lib/routes";
 
 interface Props {
   lesson: Lesson;
   variant?: "default" | "course";
-  /** position in the course (course variant) */
+  /** position in the course */
   n?: number;
 }
 const { lesson: l, variant = "default", n } = Astro.props;
@@ -22,28 +24,28 @@ const res = [
   { on: l.notes.simple || l.notes.detailed || l.notes.super, icon: "notes", label: "Notes" },
   { on: l.slides > 0, icon: "slides", label: "Slides" },
 ] as const;
+// what the lesson holds, from real data only
+const desc = [
+  l.lecture?.duration != null ? `${formatLength(l.lecture.duration)} lecture` : l.lecture?.youtubeId ? "Lecture video" : "",
+  l.notes.super ? "3 levels of notes" : l.notes.simple || l.notes.detailed ? "Notes" : "",
+  l.slides > 0 ? `${l.slides} slides` : "",
+].filter(Boolean).join(" · ");
+const href = withBase(base, lessonPath(l.id));
 ---
-{variant === "course" ? (
-  <li class="lesson-row lesson-row--course" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
-    <span class="lesson-row__n" aria-hidden="true">{String(n ?? 0).padStart(2, "0")}</span>
-    <div class="lesson-row__main">
-      <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.label} – {l.title}</a>
-    </div>
+<li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
+  <span class="num" aria-hidden="true"><span class="n">{String(n ?? 0).padStart(2, "0")}</span><Icon name="check" /></span>
+  <div class="lesson-row__main">
+    <a class="lesson-row__title" href={href}>{l.label} · {l.title}</a>
+    {desc && <span class="lesson-row__desc">{desc}</span>}
+  </div>
+  <div class="lesson-row__end">
     <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
-    <span class="status-pill" data-status-label>Not started</span>
-    <Icon name="right" class="lesson-row__chev" />
-  </li>
-) : (
-  <li class="lesson-row" data-lesson-done={l.id} data-filter-item={`${l.label} ${l.title} ${l.id}`} data-sections={l.sectionId}>
-    <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
-    <span class="visually-hidden" data-status-label>Not started</span>
-    <div class="lesson-row__main">
-      <span class="lesson-row__label">{l.label}</span>
-      <a class="lesson-row__title" href={withBase(base, lessonPath(l.id))}>{l.title}</a>
-    </div>
-    <span class="bookmark-mark" title="Bookmarked" aria-hidden="true"><Icon name="bookmark" /></span>
-    <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
-      {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
-    </span>
-  </li>
-)}
+    {variant === "default" && (
+      <span class="res-icons" role="img" aria-label={`Available: ${res.filter((r) => r.on).map((r) => r.label).join(", ") || "none"}`}>
+        {res.map((r) => <span class={r.on ? "" : "off"} title={`${r.label}${r.on ? "" : " (not yet)"}`}><Icon name={r.icon} /></span>)}
+      </span>
+    )}
+    <span class="pill status-pill" data-status-label>Not started</span>
+    {variant === "course" && <a class="btn btn--sm lesson-row__go" href={href} tabindex="-1" aria-hidden="true">Continue</a>}
+  </div>
+</li>

@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import PodcastPlayer from "../../components/PodcastPlayer.astro";
 import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
 import { getPodcasts } from "../../lib/content";
 import type { Episode } from "../../lib/config";
 import { podcastPath, withBase } from "../../lib/routes";
@@ -14,19 +15,16 @@ const { episode, prev, next } = Astro.props as { episode: Episode; prev: Episode
 const base = import.meta.env.BASE_URL;
 ---
 <Base title={episode.title} nav="podcasts" description={episode.description || `Summary podcast: ${episode.title}`}>
-  <div class="container container--narrow">
+  <div class="page page--narrow">
     <ol class="breadcrumb"><li><a href={withBase(base, "podcasts/")}>Podcasts</a></li><li>{episode.title}</li></ol>
     {/* Only episodes with media are indexed for search; empty slots would just clutter results. */}
     <div data-pagefind-body={episode.audioUrl || episode.videoUrl ? "" : undefined} data-pagefind-filter={episode.audioUrl || episode.videoUrl ? "type:Podcast" : undefined}>
-      <div class="page-head podcast-head">
-        <h1>{episode.title}</h1>
-        <p>Listen or watch while you study: a short summary for revision and on the go.</p>
-      </div>
+      <PageHead eyebrow="Summary podcast" title={episode.title} sub="Listen or watch while you study: a short summary for revision and on the go." />
       <PodcastPlayer episode={episode} headingLevel={2} standalone />
     </div>
-    <nav class="pager" aria-label="Previous and next episode">
-      {prev && <a class="prev" href={withBase(base, podcastPath(prev.id))}><Icon name="left" /><span class="pager__text"><small>Previous episode</small><span>{prev.title}</span></span></a>}
-      {next && <a class="next" href={withBase(base, podcastPath(next.id))}><span class="pager__text"><small>Next episode</small><span>{next.title}</span></span><Icon name="right" /></a>}
+    <nav class="lesson-pager" aria-label="Previous and next episode">
+      {prev && <a class="nav-card" href={withBase(base, podcastPath(prev.id))}><Icon name="left" /><span class="nav-card__text"><small>Previous episode</small><strong>{prev.title}</strong></span></a>}
+      {next && <a class="nav-card nav-card--next" href={withBase(base, podcastPath(next.id))}><span class="nav-card__text"><small>Next episode</small><strong>{next.title}</strong></span><Icon name="right" /></a>}
     </nav>
   </div>
 </Base>

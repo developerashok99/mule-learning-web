@@ -10,6 +10,8 @@ export function setupNotes() {
   const signal = pageSignal();
   const key = doc.dataset.doc!;
   const bar = document.querySelector<HTMLElement>("[data-reading-bar]");
+  const meter = document.querySelector<HTMLElement>("[data-reading-meter]");
+  const pctText = document.querySelector<HTMLElement>("[data-reading-pct]");
 
   // reading progress: the furthest point reached is saved per document
   let ticking = false;
@@ -19,6 +21,13 @@ export function setupNotes() {
     const total = rect.height - window.innerHeight * 0.6;
     const pct = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 1;
     if (bar) bar.style.width = `${pct * 100}%`;
+    // the "On this page" card shows the furthest point reached (what is saved), not just the scroll position
+    const best = Math.max(pct, readingProgress(key));
+    if (meter) {
+      (meter.firstElementChild as HTMLElement).style.width = `${best * 100}%`;
+      meter.setAttribute("aria-label", `${Math.round(best * 100)}% read`);
+    }
+    if (pctText) pctText.textContent = `${Math.round(best * 100)}% read`;
     if (pct > 0.02) saveReadingProgress(key, pct);
   };
   window.addEventListener("scroll", () => {

@@ -2,29 +2,61 @@
 import Base from "../../layouts/Base.astro";
 import EpisodeCard from "../../components/EpisodeCard.astro";
 import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
 import { getCourses, getPodcasts } from "../../lib/content";
+import { formatLength } from "../../lib/duration";
+import { podcastPath, withBase } from "../../lib/routes";
 
+const base = import.meta.env.BASE_URL;
 const sections = getCourses().flatMap((c) => c.sections);
 const episodes = getPodcasts();
-const ready = episodes.filter((e) => !e.test && (e.audioUrl || e.videoUrl)).length;
-const tests = episodes.filter((e) => e.test);
 const real = episodes.filter((e) => !e.test);
+const tests = episodes.filter((e) => e.test);
+const playable = real.filter((e) => e.audioUrl || e.videoUrl);
+// featured: the first real episode that can be played (course order)
+const featured = playable[0] ?? null;
 ---
 <Base title="Podcasts" nav="podcasts">
-  <div class="container container--narrow" data-filter-scope>
-    <div class="page-head">
-      <h1>Summary podcasts</h1>
-      <p>Short summaries of the lectures. Each episode comes as a <b>video podcast</b> (slides, animation, narration) and an <b>audio podcast</b> with the same content. They are for revision — not a replacement for the full lecture or the notes.</p>
-    </div>
-    {ready === 0 && (
-      <div class="notice notice--warn" style="margin-bottom:1.25rem">
+  <div class="page" data-filter-scope>
+    <PageHead eyebrow="Learn on the go" title="Podcasts & audio" sub="Revisit ideas through short recaps of the lectures, as video podcast episodes and audio. They are for revision, not a replacement for the full lecture or the notes.">
+      <span slot="actions" class="pill pill--blue">Persistent mini-player</span>
+    </PageHead>
+
+    {featured ? (
+      <section class="card podcast-feature" aria-labelledby="feat-h">
+        <div class="podart" aria-hidden="true"><small>MULE · AUDIO NOTES</small><strong>Understand it.<br />Remember it.</strong><small>LISTEN &amp; REVISE</small></div>
+        <div>
+          <span class="pill pill--blue">Featured episode</span>
+          <h2 id="feat-h">{featured.title}</h2>
+          <p class="sub">{featured.description || "A short summary of the lecture."}{featured.duration != null && <> · {formatLength(featured.duration)}</>}</p>
+          <div class="btn-row" style="margin-top:1rem">
+            {featured.audioUrl
+              ? <button class="btn btn--primary" type="button" data-play-episode={featured.id} data-label={featured.title} aria-label={`Play episode: ${featured.title}`}><Icon name="play" /> Play episode</button>
+              : <a class="btn btn--primary" href={withBase(base, podcastPath(featured.id))}><Icon name="play" /> Watch episode</a>}
+            <a class="btn" href={withBase(base, "revise/")}>Review key terms</a>
+          </div>
+          <p class="tiny muted" style="margin:.75rem 0 0">{playable.length} of {real.length} episodes are available now. Audio keeps playing in the mini-player while you move around the site.</p>
+        </div>
+      </section>
+    ) : (
+      <div class="notice notice--warn">
         <Icon name="info" />
         <div><strong>The real podcast files haven't been added yet</strong><p>Each lesson already has an episode slot in config/media.json. Until the MP3/MP4 links are added, episodes show “not added yet”. The “Player test” episode uses tiny bundled test media so the players can be tried now.</p></div>
       </div>
     )}
+
+    <div class="section-head">
+      <div><h2>Browse episodes</h2><p>Choose an episode; the mini-player stays available as you navigate</p></div>
+    </div>
     <div class="filters">
       <label class="visually-hidden" for="pod-filter">Filter episodes</label>
-      <input id="pod-filter" class="input" style="max-width:20rem" type="search" placeholder="Filter episodes" data-filter-text />
+      <input id="pod-filter" class="input" type="search" placeholder="Filter episodes" data-filter-text />
+      <label class="visually-hidden" for="pod-kind">Format</label>
+      <select id="pod-kind" data-filter-kind>
+        <option value="">All episodes</option>
+        <option value="audio">Audio</option>
+        <option value="video">Video podcast</option>
+      </select>
       <label class="visually-hidden" for="pod-section">Section</label>
       <select id="pod-section" data-filter-section>
         <option value="">All sections</option>
@@ -34,23 +66,23 @@ const real = episodes.filter((e) => !e.test);
       <span class="small muted" data-filter-count aria-live="polite"></span>
     </div>
     {tests.length > 0 && (
-      <section class="section-block" data-filter-group aria-labelledby="pt-h">
-        <div class="section-block__head"><h2 id="pt-h">Player test</h2></div>
+      <section data-filter-group aria-labelledby="pt-h" style="margin-bottom:1.5rem">
+        <h3 id="pt-h" class="video-list__section" style="position:static;padding-left:0">Player test</h3>
         <ul class="episode-list">{tests.map((ep) => <EpisodeCard episode={ep} />)}</ul>
       </section>
     )}
     {sections.map((s) => {
       const eps = real.filter((e) => e.lessons.some((l) => s.lessons.includes(l)));
       return eps.length > 0 && (
-        <section class="section-block" data-filter-group aria-labelledby={`p-${s.id}`}>
-          <div class="section-block__head"><h2 id={`p-${s.id}`}>{s.title}</h2></div>
+        <section data-filter-group aria-labelledby={`p-${s.id}`} style="margin-bottom:1.5rem">
+          <h3 id={`p-${s.id}`} class="video-list__section" style="position:static;padding-left:0">{s.title}</h3>
           <ul class="episode-list">{eps.map((ep) => <EpisodeCard episode={ep} />)}</ul>
         </section>
       );
     })}
     {real.filter((e) => !e.lessons.length).length > 0 && (
-      <section class="section-block" data-filter-group>
-        <div class="section-block__head"><h2>Other episodes</h2></div>
+      <section data-filter-group aria-labelledby="p-other">
+        <h3 id="p-other" class="video-list__section" style="position:static;padding-left:0">Other episodes</h3>
         <ul class="episode-list">{real.filter((e) => !e.lessons.length).map((ep) => <EpisodeCard episode={ep} />)}</ul>
       </section>
     )}

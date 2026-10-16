@@ -1,54 +1,81 @@
 ---
 import Base from "../layouts/Base.astro";
 import Icon from "../components/Icon.astro";
+import PageHead from "../components/PageHead.astro";
 import ProgressBar from "../components/ProgressBar.astro";
 import { getLessons } from "../lib/content";
 import { lessonPath, withBase } from "../lib/routes";
 
 const base = import.meta.env.BASE_URL;
-const index = getLessons().map((l) => ({ id: l.id, label: l.label, title: l.title, href: withBase(base, lessonPath(l.id)) }));
-const SECTIONS = [
-  { key: "bookmarks", title: "Bookmarks", icon: "bookmark", empty: "No bookmarks yet. Use Bookmark on any lesson." },
-  { key: "started", title: "In progress", icon: "clock", empty: "Nothing in progress. Lessons you open but haven't completed appear here." },
-  { key: "done", title: "Completed", icon: "check", empty: "No completed lessons yet. Use Mark as Completed on a lesson when you finish it." },
-  { key: "recent", title: "Recently studied", icon: "lessons", empty: "Nothing opened yet." },
-  { key: "listened", title: "Listening history", icon: "podcast", empty: "No podcasts played yet." },
+const index = getLessons().map((l, i) => ({ id: l.id, n: i + 1, label: l.label, title: l.title, section: l.sectionTitle, href: withBase(base, lessonPath(l.id)) }));
+const ids = index.map((l) => l.id).join(",");
+const LISTS = [
+  { key: "started", title: "In progress", icon: "lessons", empty: "Nothing in progress. Lessons you open but haven't completed appear here." },
+  { key: "done", title: "Completed", icon: "check", empty: "No completed lessons yet. Use Mark complete on a lesson when you finish it." },
 ] as const;
 ---
 <Base title="My study" nav="mystudy" description="Bookmarks, progress and listening history saved in this browser">
-  <div class="container container--narrow" data-my-study>
+  <div class="page" data-my-study>
     <script is:inline type="application/json" data-lesson-index set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
-    <div class="page-head">
-      <h1>My Study</h1>
-      <p>Everything this browser remembers about your studying. It is stored only on this device — use <b>Back up</b> to move it to another browser.</p>
-    </div>
-    <nav class="study-tabs" aria-label="My study sections">
-      <a href="#ms-progress">Progress</a>
-      <a href="#ms-bookmarks">Bookmarks</a>
-      <a href="#ms-recent">Recently viewed</a>
-      <a href="#ms-listened">Listening</a>
-    </nav>
-    <section class="card study-progress" aria-labelledby="ms-progress" data-section-progress={index.map((l) => l.id).join(",")}>
-      <h2 id="ms-progress" class="card-title">Overall progress</h2>
-      <div class="study-progress__row"><span data-count>0 of {index.length} done</span><b data-pct>0%</b></div>
-      <ProgressBar />
-    </section>
-    {SECTIONS.map((s) => (
-      <section class="section-block" aria-labelledby={`ms-${s.key}`}>
-        <div class="section-block__head"><h2 id={`ms-${s.key}`}><Icon name={s.icon} /> {s.title} <span class="small muted" data-ms-count={s.key}></span></h2></div>
-        <ul class="study-list" data-ms={s.key} hidden></ul>
-        <p class="empty" data-ms-empty={s.key}>{s.empty}</p>
+    <PageHead eyebrow="Your personal learning space" title="My Study" sub="Return to bookmarks, track your learning, and pick up recent activity. Everything here is stored only in this browser.">
+      <a slot="actions" class="btn" href={withBase(base, "preferences/")}><Icon name="user" /> Preferences</a>
+    </PageHead>
+
+    <div class="grid g3 study-summary">
+      <section class="card" aria-labelledby="ms-progress" data-section-progress={ids}>
+        <h2 id="ms-progress" class="label" style="margin:0">Course progress</h2>
+        <div class="row"><strong class="big" data-pct>0%</strong><span class="pill pill--blue" data-ms-done-count>0 / {index.length}</span></div>
+        <ProgressBar />
       </section>
-    ))}
-    <section class="section-block card" aria-labelledby="ms-data">
-      <h2 id="ms-data" class="card-title">Your data</h2>
-      <p class="small muted" style="margin-top:0">A backup is a small JSON file with your progress, bookmarks, podcast positions and settings. Restoring it replaces what this browser has.</p>
-      <div class="btn-row">
-        <button class="btn btn--sm" type="button" data-ms-export><Icon name="file" /> Back up progress</button>
-        <label class="btn btn--sm"><Icon name="file" /> Restore from backup<input class="visually-hidden" type="file" accept="application/json,.json" data-ms-import /></label>
-        <button class="btn btn--sm" type="button" data-ms-reset><Icon name="close" /> Reset all progress</button>
+      <section class="card" aria-labelledby="ms-bm-sum">
+        <h2 id="ms-bm-sum" class="label" style="margin:0">Bookmarked</h2>
+        <div class="row"><strong class="big" data-ms-n-bookmarks>0</strong><span class="pill pill--amber">Saved for later</span></div>
+        <p class="small muted">Lessons to revisit.</p>
+      </section>
+      <section class="card" aria-labelledby="ms-act">
+        <h2 id="ms-act" class="label" style="margin:0">Recent activity</h2>
+        <div class="row"><strong class="big" data-ms-when>—</strong><span class="pill" data-ms-active>No activity yet</span></div>
+        <p class="small muted" data-ms-last>Open any lesson to start.</p>
+      </section>
+    </div>
+
+    <section aria-labelledby="ms-recent">
+      <div class="section-head"><div><h2 id="ms-recent">Continue where you left off <span class="small muted" data-ms-count="recent"></span></h2><p>Recent study activity</p></div></div>
+      <div class="card" style="padding-block:.35rem">
+        <ul class="lesson-list" data-ms="recent" hidden></ul>
+        <p class="empty" data-ms-empty="recent" style="margin:.9rem 0">Nothing opened yet.</p>
       </div>
-      <p class="small" role="status" data-ms-status style="min-height:1.4em;margin:.75rem 0 0"></p>
     </section>
+
+    <section aria-labelledby="ms-bookmarks">
+      <div class="section-head"><div><h2 id="ms-bookmarks">Bookmarks <span class="small muted" data-ms-count="bookmarks"></span></h2><p>Keep important lessons close at hand</p></div></div>
+      <ul class="grid g2 bookmark-grid" data-ms="bookmarks" hidden></ul>
+      <p class="empty" data-ms-empty="bookmarks">No bookmarks yet. Use Bookmark on any lesson.</p>
+    </section>
+
+    <div class="grid g2" style="margin-top:1.8rem;align-items:start">
+      {LISTS.map((s) => (
+        <section class="card" aria-labelledby={`ms-${s.key}`} style="padding-bottom:.5rem">
+          <h2 id={`ms-${s.key}`} class="card-title"><Icon name={s.icon} /> {s.title} <span class="small muted" data-ms-count={s.key}></span></h2>
+          <ul class="lesson-list" data-ms={s.key} hidden></ul>
+          <p class="empty" data-ms-empty={s.key} style="margin-bottom:.75rem">{s.empty}</p>
+        </section>
+      ))}
+      <section class="card" aria-labelledby="ms-listened" style="padding-bottom:.5rem">
+        <h2 id="ms-listened" class="card-title"><Icon name="podcast" /> Listening history <span class="small muted" data-ms-count="listened"></span></h2>
+        <ul class="lesson-list" data-ms="listened" hidden></ul>
+        <p class="empty" data-ms-empty="listened" style="margin-bottom:.75rem">No podcasts played yet.</p>
+      </section>
+      <section class="card" aria-labelledby="ms-data">
+        <h2 id="ms-data" class="card-title"><Icon name="file" /> Your data</h2>
+        <p class="small muted" style="margin-top:0">A backup is a small JSON file with your progress, bookmarks, podcast positions and settings. Restoring it replaces what this browser has.</p>
+        <div class="btn-row">
+          <button class="btn btn--sm" type="button" data-ms-export><Icon name="download" /> Back up progress</button>
+          <label class="btn btn--sm"><Icon name="file" /> Restore from backup<input class="visually-hidden" type="file" accept="application/json,.json" data-ms-import /></label>
+          <button class="btn btn--sm" type="button" data-ms-reset><Icon name="close" /> Reset all progress</button>
+        </div>
+        <p class="small" role="status" data-ms-status style="min-height:1.4em;margin:.75rem 0 0"></p>
+      </section>
+    </div>
   </div>
 </Base>

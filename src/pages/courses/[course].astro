@@ -3,6 +3,7 @@ import ProgressBar from "../../components/ProgressBar.astro";
 import Base from "../../layouts/Base.astro";
 import Icon from "../../components/Icon.astro";
 import LessonRow from "../../components/LessonRow.astro";
+import PageHead from "../../components/PageHead.astro";
 import { getCourses, getLesson, type Lesson } from "../../lib/content";
 import type { Course } from "../../lib/config";
 import { lessonPath, withBase } from "../../lib/routes";
@@ -15,87 +16,81 @@ const base = import.meta.env.BASE_URL;
 const ids = course.sections.flatMap((s) => s.lessons);
 const lessons = ids.map((id) => getLesson(id) as Lesson);
 const videos = lessons.filter((l) => l.lecture?.youtubeId).length;
-// course order for the browser's "Continue" button (progress itself is read from this browser's storage)
-const order = lessons.map((l) => ({ id: l.id, label: l.label, href: withBase(base, lessonPath(l.id)) }));
-const SECTION_ICONS = ["courses", "layers", "notes", "check", "list", "external", "interview"] as const;
+const interviews = ids.filter((id) => /^interview/.test(id)).length;
+// course order for the browser's "Continue" button and milestone (progress itself is read from this browser's storage)
+const order = lessons.map((l) => ({ id: l.id, label: l.label, title: l.title, section: l.sectionTitle, href: withBase(base, lessonPath(l.id)) }));
 // "Day 1 – Day 10" style range for a section, from its lessons' own labels
 const range = (s: Course["sections"][number]) => {
-  // "Interview Part 1" → "Part 1", so the range stays on one line
   const short = (id: string) => (getLesson(id)?.label ?? "").replace(/^Interview /, "");
   const a = short(s.lessons[0]);
   const b = short(s.lessons[s.lessons.length - 1]);
   return s.lessons.length > 1 ? `${a} – ${b}` : a;
 };
-const TABS = [
-  { label: "Lessons", href: null },
-  { label: "Videos", href: "videos/" },
-  { label: "Podcasts", href: "podcasts/" },
-  { label: "Revise", href: "revise/" },
-  { label: "Resources", href: "notes/" },
-];
+const first = lessons[0];
 ---
 <Base title={course.title} nav="courses">
-  <div class="container course-page">
+  <div class="page">
     <ol class="breadcrumb"><li><a href={withBase(base, "courses/")}>Courses</a></li><li>{course.title}</li></ol>
+    <PageHead eyebrow="Structured learning" title={course.title} sub="A clear path through concepts, with progress and lesson status in one place.">
+      <span slot="actions" class="pill pill--green">{ids.length} lessons</span>
+    </PageHead>
 
-    <header class="course-banner" data-section-progress={ids.join(",")}>
-      <div class="course-banner__text">
-        <h1>{course.title}</h1>
-        <p>{course.description}</p>
-        <ul class="course-stats">
-          <li><b>{ids.length}</b> lessons</li>
-          <li><b>{course.sections.length}</b> sections</li>
-          {videos > 0 && <li><b>{videos}</b> lecture videos</li>}
-        </ul>
-        <div class="course-banner__progress">
-          <ProgressBar />
-          <span data-count>0 of {ids.length} done</span>
+    <section class="hero" aria-label="Your progress in this course" data-section-progress={ids.join(",")}>
+      <div>
+        <span class="pill pill--blue">Foundation path</span>
+        <p class="sub" style="margin-top:.85rem">{course.description}</p>
+        <div class="pill-row" style="margin-top:1rem">
+          <span class="pill">{ids.length} lessons</span>
+          <span class="pill">{course.sections.length} sections</span>
+          {interviews > 0 && <span class="pill">{interviews} interview sessions</span>}
+          {videos > 0 && <span class="pill">Notes + videos + revision</span>}
         </div>
-        <p class="course-banner__last" data-course-last hidden><Icon name="clock" /> Last studied: <a href="#"></a> <span data-when></span></p>
-      </div>
-      <div class="course-banner__side">
-        <span class="course-banner__mark" aria-hidden="true">M</span>
-        <a class="btn btn--primary btn--lg" href={order[0]?.href} data-course-continue={JSON.stringify(order)}>
-          <span data-text>Start with {order[0]?.label}</span><Icon name="right" />
-        </a>
-      </div>
-    </header>
-
-    <nav class="course-tabs" aria-label="Course views">
-      {TABS.map((t) => t.href
-        ? <a href={withBase(base, t.href)}>{t.label}</a>
-        : <a href="#lessons" aria-current="page">{t.label}</a>)}
-    </nav>
-
-    <div class="course-body" id="lessons" data-course-sections>
-      <nav class="section-nav" aria-label="Sections in this course">
-        {course.sections.map((s, i) => (
-          <a href={`#${s.id}`} data-section-link={s.id}>
-            <span class="section-nav__icon" aria-hidden="true"><Icon name={SECTION_ICONS[i % SECTION_ICONS.length]} /></span>
-            <span class="section-nav__text"><b>{s.title}</b><small>{range(s)}</small></span>
-            <Icon name="right" class="section-nav__chev" />
+        <div class="hero__progress">
+          <div class="progress-line"><span>Your progress</span><b data-pct>0%</b></div>
+          <ProgressBar />
+          <p class="hero__counts" data-count>0 of {ids.length} done</p>
+        </div>
+        <div class="btn-row" style="margin-top:1.1rem">
+          <a class="btn btn--primary" href={order[0]?.href} data-course-continue={JSON.stringify(order)}>
+            <span data-text>Start with {order[0]?.label}</span><Icon name="right" />
           </a>
-        ))}
-      </nav>
+        </div>
+        <p class="hero__counts" data-course-last hidden><Icon name="clock" /> Last studied: <a href="#"></a> <span data-when></span></p>
+      </div>
+      <a class="hero-art" href={order[0]?.href} data-milestone>
+        <small>Your next milestone</small>
+        <strong data-milestone-text>Start with {first.sectionTitle} and build your first Mule application.</strong>
+        <span data-milestone-next>Next: {first.label} · {first.title} →</span>
+      </a>
+    </section>
 
-      <div class="course-sections">
-        {course.sections.map((s) => (
-          <section class="section-block section-panel" id={s.id} aria-labelledby={`${s.id}-h`} data-section-progress={s.lessons.join(",")}>
-            <div class="section-panel__head">
-              <h2 id={`${s.id}-h`}>{s.title}</h2>
-              {s.description && <p>{s.description}</p>}
-              <div class="section-panel__meta">
-                <span>{s.lessons.length} lessons</span>
-                <span data-count>0 of {s.lessons.length} done</span>
-              </div>
-              <ProgressBar thin />
-            </div>
-            <ul class="lesson-list lesson-list--course">
+    <div class="section-head" id="curriculum">
+      <div><h2>Course curriculum</h2><p>Expand a section to explore its lessons</p></div>
+      <button class="btn btn--sm" type="button" data-expand-all aria-pressed="false">Expand all sections</button>
+    </div>
+    <div class="curriculum" data-curriculum>
+      {course.sections.map((s, i) => (
+        <details class="card" id={s.id} data-section-progress={s.lessons.join(",")} open={i === 0}>
+          <summary>
+            <span class="row">
+              <span class="stat-icon" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+              <span>
+                <h2>{s.title}</h2>
+                <span class="small muted">{range(s)}{s.description && <> · {s.description}</>}</span>
+              </span>
+            </span>
+            <span class="row">
+              <span class="pill section-state" data-section-state data-count>0 of {s.lessons.length} done</span>
+              <Icon name="chevronDown" class="chev" />
+            </span>
+          </summary>
+          <div class="curriculum__body">
+            <ul class="lesson-list">
               {s.lessons.map((id) => <LessonRow lesson={getLesson(id) as Lesson} variant="course" n={ids.indexOf(id) + 1} />)}
             </ul>
-          </section>
-        ))}
-      </div>
+          </div>
+        </details>
+      ))}
     </div>
   </div>
 </Base>

@@ -1,13 +1,13 @@
 ---
 /**
- * Shared frame for every lesson view: lesson sidebar (wide screens) / drawer (smaller screens), breadcrumb,
- * title, complete/bookmark, resource tabs, previous/next lesson.
+ * Shared frame for every lesson view: breadcrumb, title, bookmark / complete / all lessons, the resource tabs,
+ * and previous / next lesson. The "All lessons" drawer lists every lesson with its status.
  */
 import Base from "../layouts/Base.astro";
 import Icon from "./Icon.astro";
 import LessonNav from "./LessonNav.astro";
-import ProgressBar from "./ProgressBar.astro";
 import { getCourses, getLesson, type Lesson } from "../lib/content";
+import { formatLength } from "../lib/duration";
 import { lessonHasView, lessonPath, withBase, type View } from "../lib/routes";
 
 interface Props {
@@ -17,79 +17,72 @@ interface Props {
   viewLabel: string;
 }
 const { lesson, view, viewLabel } = Astro.props;
+// Notes, slides and revision views have their own main heading, so the lesson title is not an h1 there.
 const compact = view !== "lecture" && view !== "podcast";
 const base = import.meta.env.BASE_URL;
 const u = (v: View, id = lesson.id) => withBase(base, lessonPath(id, v));
 const course = getCourses().find((c) => c.id === lesson.courseId)!;
-type IconName = "lecture" | "podcast" | "text" | "notes" | "file" | "slides" | "check";
-const tabs: { view: View; label: string; icon: IconName; why: string }[] = [
-  { view: "lecture", label: "Overview", icon: "lecture", why: "" },
-  { view: "podcast", label: "Podcast", icon: "podcast", why: "No summary podcast has been added for this lesson yet" },
-  { view: "simple", label: "Simple", icon: "text", why: "No simple notes for this lesson" },
-  { view: "detailed", label: "Detailed", icon: "notes", why: "No detailed notes for this lesson" },
-  { view: "super", label: "Super-detailed", icon: "file", why: "No super-detailed notes for this lesson" },
-  { view: "slides", label: `Slides${lesson.slides ? ` (${lesson.slides})` : ""}`, icon: "slides", why: "No slides for this lesson" },
-  { view: "revise", label: "Revise", icon: "check", why: "No notes to revise from" },
+type Tab = { label: string; why: string } & ({ view: View } | { href: string | null });
+const tabs: Tab[] = [
+  { view: "lecture", label: "Overview", why: "" },
+  { view: "simple", label: "Simple notes", why: "No simple notes for this lesson" },
+  { view: "detailed", label: "Detailed notes", why: "No detailed notes for this lesson" },
+  { view: "super", label: "Super-detailed", why: "No super-detailed notes for this lesson" },
+  { view: "slides", label: `Slides${lesson.slides ? ` (${lesson.slides})` : ""}`, why: "No slides for this lesson" },
+  { href: lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : null, label: "Video", why: "No lecture video has been added for this lesson yet" },
+  { view: "podcast", label: "Podcast", why: "No summary podcast has been added for this lesson yet" },
+  { view: "revise", label: "Revision", why: "No notes to revise from" },
 ];
 const prev = lesson.prev ? getLesson(lesson.prev) : null;
 const next = lesson.next ? getLesson(lesson.next) : null;
 // Keep the same tab when moving between lessons, if the other lesson has it.
 const navHref = (l: Lesson) => u(lessonHasView(l, view) ? view : "lecture", l.id);
+const sub = [
+  lesson.sectionTitle,
+  lesson.lecture?.duration != null ? `${formatLength(lesson.lecture.duration)} lecture` : "",
+  lesson.slides > 0 ? `${lesson.slides} slides` : "",
+].filter(Boolean).join(" · ");
 ---
 <Base title={`${viewLabel} · ${lesson.label}: ${lesson.title}`} description={`${lesson.label} — ${lesson.title}`} nav="lessons">
-  <div class="lesson-layout" data-lesson-page={lesson.id} data-view={view} data-title={`${lesson.label} — ${lesson.title}`}>
-    <aside class="lesson-sidebar" aria-label="Course lessons">
-      <div class="sidebar-progress" data-section-progress={course.sections.flatMap((s) => s.lessons).join(",")}>
-        <p class="sidebar-progress__title">Course progress</p>
-        <a href={withBase(base, `courses/${course.id}/`)} class="sidebar-progress__course">{course.title}</a>
-        <div class="sidebar-progress__bar"><ProgressBar /><b data-pct>0%</b></div>
-        <span class="small muted" data-count>0 of {course.sections.flatMap((s) => s.lessons).length} done</span>
+  <div class="lesson-page" data-lesson-page={lesson.id} data-view={view} data-title={`${lesson.label} — ${lesson.title}`}>
+    <ol class="breadcrumb">
+      <li><a href={withBase(base, "courses/")}>Courses</a></li>
+      <li><a href={withBase(base, `courses/${course.id}/`)}>{course.title}</a></li>
+      <li><a href={withBase(base, `courses/${course.id}/#${lesson.sectionId}`)}>{lesson.sectionTitle}</a></li>
+    </ol>
+    <div class="head lesson-head">
+      <div class="head__text">
+        <p class="eyebrow">{course.title} / {lesson.label}</p>
+        {compact ? <p class="lesson-head__title">{lesson.title}</p> : <h1 class="lesson-head__title">{lesson.title}</h1>}
+        <p class="sub">{sub}</p>
       </div>
-      <nav aria-label="Lessons in this course">
-        <LessonNav lesson={lesson} view={view} idPrefix="side" />
-      </nav>
-    </aside>
-
-    <div class="lesson-main">
-      <ol class="breadcrumb">
-        <li><a href={withBase(base, "courses/")}>Courses</a></li>
-        <li><a href={withBase(base, `courses/${course.id}/`)}>{course.title}</a></li>
-        <li><a href={withBase(base, `courses/${course.id}/#${lesson.sectionId}`)}>{lesson.sectionTitle}</a></li>
-      </ol>
-      <div class:list={["lesson-head", { "lesson-head--compact": compact }]}>
-        {/* Notes, slides and revision views have their own main heading, so the lesson title is not repeated as h1 there. */}
-        {compact ? <p class="eyebrow">{lesson.label} · {lesson.title}</p> : <h1>{lesson.label} – {lesson.title}</h1>}
-        {!compact && <p class="lesson-head__sub">{lesson.sectionTitle}{lesson.lecture?.duration != null && <> · {Math.round(lesson.lecture.duration / 60)} min lecture</>}{lesson.slides > 0 && <> · {lesson.slides} slides</>}</p>}
+      <div class="head__actions lesson-actions">
+        <button class="btn" type="button" data-open-jump aria-haspopup="dialog" aria-controls="lesson-drawer"><Icon name="list" /><span>All lessons</span></button>
+        <button class="btn" type="button" data-toggle-bookmark aria-pressed="false"><Icon name="bookmark" /><span data-text>Bookmark</span></button>
+        <button class="btn btn--primary" type="button" data-toggle-done aria-pressed="false"><Icon name="check" /><span data-text>Mark complete</span></button>
       </div>
-
-      <div class="lesson-bar">
-        <nav class="lesson-tabs" aria-label="Lesson resources">
-          {tabs.map((t) => (
-            lessonHasView(lesson, t.view)
-              ? <a href={u(t.view)} aria-current={t.view === view ? "page" : undefined}>{t.label}</a>
-              : <span aria-disabled="true" title={t.why}>{t.label}<span class="visually-hidden"> (not available: {t.why})</span></span>
-          ))}
-        </nav>
-        <div class="lesson-actions">
-          <button class="btn btn--sm btn--primary lesson-actions__done" type="button" data-toggle-done aria-pressed="false"><Icon name="check" /><span data-text>Mark as Completed</span></button>
-          <button class="btn btn--sm btn--icon" type="button" data-toggle-bookmark aria-pressed="false" title="Bookmark this lesson"><Icon name="bookmark" /><span data-text class="visually-hidden">Bookmark</span></button>
-          <button class="btn btn--sm btn--icon" type="button" data-open-jump aria-haspopup="dialog" aria-controls="lesson-drawer" title="All lessons"><Icon name="list" /><span class="visually-hidden">Lessons</span></button>
-          <span class="lesson-actions__step">
-            {prev ? <a class="btn btn--sm btn--icon" href={navHref(prev)} aria-label={`Previous: ${prev.label}`} title={`Previous: ${prev.label} — ${prev.title}`}><Icon name="left" /></a>
-                  : <span class="btn btn--sm btn--icon" aria-disabled="true" title="This is the first lesson"><Icon name="left" /></span>}
-            {next ? <a class="btn btn--sm btn--icon" href={navHref(next)} aria-label={`Next: ${next.label}`} title={`Next: ${next.label} — ${next.title}`}><Icon name="right" /></a>
-                  : <span class="btn btn--sm btn--icon" aria-disabled="true" title="This is the last lesson"><Icon name="right" /></span>}
-          </span>
-        </div>
-      </div>
-
-      <slot />
-
-      <nav class="pager" aria-label="Previous and next lesson">
-        {prev && <a class="prev" href={navHref(prev)} rel="prev"><Icon name="left" /><span class="pager__text"><small>Previous lesson</small><span>{prev.label} — {prev.title}</span></span></a>}
-        {next && <a class="next" href={navHref(next)} rel="next"><span class="pager__text"><small>Next lesson</small><span>{next.label} — {next.title}</span></span><Icon name="right" /></a>}
-      </nav>
     </div>
+
+    <nav class="lesson-tabs" aria-label="Lesson resources">
+      {tabs.map((t) => {
+        const href = "view" in t ? (lessonHasView(lesson, t.view) ? u(t.view) : null) : t.href;
+        const current = "view" in t && t.view === view;
+        return href
+          ? <a href={href} aria-current={current ? "page" : undefined}>{t.label}</a>
+          : <span aria-disabled="true" title={t.why}>{t.label}<span class="visually-hidden"> (not available: {t.why})</span></span>;
+      })}
+    </nav>
+
+    <slot />
+
+    <nav class="lesson-pager" aria-label="Previous and next lesson">
+      {prev
+        ? <a class="nav-card" href={navHref(prev)} rel="prev"><Icon name="left" /><span class="nav-card__text"><small>Previous lesson</small><strong>{prev.label} · {prev.title}</strong></span></a>
+        : <span class="nav-card" aria-disabled="true"><Icon name="left" /><span class="nav-card__text"><small>Previous lesson</small><strong>This is the first lesson</strong></span></span>}
+      {next
+        ? <a class="nav-card nav-card--next" href={navHref(next)} rel="next"><span class="nav-card__text"><small>Next lesson</small><strong>{next.label} · {next.title}</strong></span><Icon name="right" /></a>
+        : <span class="nav-card nav-card--next" aria-disabled="true"><span class="nav-card__text"><small>Next lesson</small><strong>This is the last lesson</strong></span><Icon name="right" /></span>}
+    </nav>
   </div>
 
   <dialog class="jump-dialog" id="lesson-drawer" data-jump-dialog aria-label="Jump to a lesson" data-filter-scope>

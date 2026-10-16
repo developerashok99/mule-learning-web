@@ -40,6 +40,17 @@ function loadPagefind(): Promise<Pagefind | null> {
 
 export const NOTE_TYPES = ["Simple notes", "Detailed notes", "Super-detailed notes"];
 
+/** small line icons per result type (same drawings as components/Icon.astro) */
+const svg = (d: string) => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const TYPE_ICONS: Record<string, string> = {
+  Lesson: svg('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="m10 8 4.5 2.5L10 13V8ZM8 21h8"/>'),
+  "Simple notes": svg('<path d="M4 7V5h16v2M9 19h6M12 5v14"/>'),
+  "Detailed notes": svg('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>'),
+  "Super-detailed notes": svg('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6"/>'),
+  Slides: svg('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/>'),
+  Podcast: svg('<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2ZM3 15a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2Z"/>'),
+};
+
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -82,16 +93,18 @@ export function setupSearch() {
   const renderChips = () => chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.searchType === type)));
   renderChips();
 
-  // with an empty box: recent searches (this browser) and popular topics
+  // with an empty box: recent searches (this browser); with a query: the results panel
   const idle = document.querySelector<HTMLElement>("[data-search-idle]");
+  const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+  const resultsTitle = document.querySelector<HTMLElement>("[data-results-title]");
   const recentList = idle?.querySelector<HTMLElement>("[data-recent-searches]");
   const renderIdle = (q: string) => {
+    if (panel) panel.hidden = !q;
+    if (resultsTitle) resultsTitle.textContent = q ? `Results for “${q}”` : "Results";
     if (!idle) return;
-    idle.hidden = !!q;
-    if (q || !recentList) return;
-    const items = recentSearches();
-    recentList.closest("section")!.hidden = !items.length;
-    recentList.replaceChildren(...items.map((s) => {
+    const items = q ? [] : recentSearches();
+    idle.hidden = !items.length;
+    recentList?.replaceChildren(...items.map((s) => {
       const li = el("li");
       const a = el("a", "", s);
       a.href = `${location.pathname}?q=${encodeURIComponent(s)}`;
@@ -108,6 +121,13 @@ export function setupSearch() {
     clearSearches();
     renderIdle("");
   }, { signal });
+  // popular topics run in place (they are plain links without JavaScript)
+  document.querySelectorAll<HTMLAnchorElement>("[data-query]").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    input.value = a.dataset.query!;
+    void run();
+    input.focus();
+  }, { signal }));
 
   let token = 0;
   const run = async () => {
@@ -156,11 +176,16 @@ export function setupSearch() {
     list.replaceChildren(
       ...groups.map((g) => {
         const li = el("li");
+        const icon = el("span", "resulticon");
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = TYPE_ICONS[g.best.type] ?? TYPE_ICONS.Lesson;
+        const body = el("div", "result-body");
         const heading = el("a", "result-title", g.lesson ? `${g.lesson} — ${g.lessonTitle}` : g.lessonTitle);
         heading.href = g.best.url;
         heading.dataset.result = "";
-        const where = el("div", "small muted", g.lesson ? `Best match: ${g.best.type === "Lesson" ? "Overview" : g.best.type}` : g.best.type);
-        li.append(where, heading, safeExcerpt(g.best.excerpt));
+        const where = el("span", "result-where", g.lesson ? `Best match: ${g.best.type === "Lesson" ? "Overview" : g.best.type}` : g.best.type);
+        body.append(where, heading, safeExcerpt(g.best.excerpt));
+        li.append(icon, body);
         if (g.hits.length > 1) {
           const also = el("div", "match-links");
           also.append(el("span", "small muted", "Also found in:"));
@@ -170,7 +195,7 @@ export function setupSearch() {
             a.setAttribute("aria-label", `${g.lesson} ${h.type}`);
             also.append(a);
           }
-          li.append(also);
+          body.append(also);
         }
         const subs = g.best.subs.slice(0, 3);
         if (subs.length) {
@@ -182,7 +207,7 @@ export function setupSearch() {
             sli.append(sa);
             ul.append(sli);
           }
-          li.append(ul);
+          body.append(ul);
         }
         return li;
       }),

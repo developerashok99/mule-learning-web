@@ -61,7 +61,7 @@ export function setupVideos() {
     markBtn?.setAttribute("aria-pressed", String(on));
     const t1 = doneBtn?.querySelector("[data-text]");
     const t2 = markBtn?.querySelector("[data-text]");
-    if (t1) t1.textContent = done ? "Lesson completed" : "Mark lesson complete";
+    if (t1) t1.textContent = done ? "Completed" : "Mark complete";
     if (t2) t2.textContent = on ? "Bookmarked" : "Bookmark";
   };
   doneBtn?.addEventListener("click", () => { setCompleted(id, !isCompleted(id)); render(); }, { signal });

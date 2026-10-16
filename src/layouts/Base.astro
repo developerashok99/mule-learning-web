@@ -2,39 +2,49 @@
 import { ClientRouter } from "astro:transitions";
 import Icon from "../components/Icon.astro";
 import AudioPlayer from "../components/AudioPlayer.astro";
-import { getManifest } from "../lib/content";
+import { getCourses, getManifest } from "../lib/content";
 import "../styles/global.css";
 
+type NavKey = "home" | "videos" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy" | "preferences";
 interface Props {
   title: string;
   description?: string;
   /** Which primary nav item is current */
-  nav?: "home" | "videos" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy";
+  nav?: NavKey;
 }
 const { title, description = "Personal MuleSoft study platform: lectures, summary podcasts and notes.", nav } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 const pageTitle = title === "Home" ? "Mule Learning Hub" : `${title} · Mule Learning Hub`;
 const manifest = getManifest();
-// top navigation (desktop / tablet), in the order of the design mockups
-const NAV = [
+const courseCount = getCourses().length;
+// sidebar (wider than 800px): two groups, as in the design prototype
+const WORKSPACE = [
   { key: "home", href: base, label: "Home", icon: "home" },
-  { key: "courses", href: `${base}courses/`, label: "Courses", icon: "courses" },
+  { key: "courses", href: `${base}courses/`, label: "Courses", icon: "courses", count: String(courseCount) },
   { key: "lessons", href: `${base}lessons/`, label: "Lessons", icon: "lessons" },
-  { key: "podcasts", href: `${base}podcasts/`, label: "Podcasts", icon: "podcast" },
   { key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" },
-  { key: "revise", href: `${base}revise/`, label: "Revise", icon: "edit" },
-  { key: "mystudy", href: `${base}my-study/`, label: "My Study", icon: "bookmark" },
-  { key: "search", href: `${base}search/`, label: "Search", icon: "search" },
+  { key: "podcasts", href: `${base}podcasts/`, label: "Podcasts", icon: "podcast" },
 ] as const;
-// bottom tab bar on phones
+const TOOLS = [
+  { key: "revise", href: `${base}revise/`, label: "Revision", icon: "edit" },
+  { key: "mystudy", href: `${base}my-study/`, label: "My Study", icon: "bookmark", bookmarks: true },
+  { key: "search", href: `${base}search/`, label: "Search", icon: "search" },
+  { key: "preferences", href: `${base}preferences/`, label: "Preferences", icon: "user" },
+] as const;
+// bottom tab bar on phones and small tablets
 const BOTTOM = [
   { key: "home", href: base, label: "Home", icon: "home" },
   { key: "courses", href: `${base}courses/`, label: "Courses", icon: "courses" },
-  { key: "lessons", href: `${base}lessons/`, label: "Lessons", icon: "lessons" },
-  { key: "search", href: `${base}search/`, label: "Search", icon: "search" },
-  { key: "mystudy", href: `${base}my-study/`, label: "My Study", icon: "user" },
+  { key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" },
+  { key: "podcasts", href: `${base}podcasts/`, label: "Audio", icon: "podcast" },
+  { key: "mystudy", href: `${base}my-study/`, label: "My Study", icon: "bookmark" },
 ] as const;
 const current = nav === "notes" ? "lessons" : nav;
+const CRUMB: Record<NavKey, string> = {
+  home: "Home", courses: "Courses", lessons: "Lessons", notes: "Notes", videos: "Videos", podcasts: "Podcasts",
+  revise: "Revision", mystudy: "My Study", search: "Search", preferences: "Preferences", about: "About & help",
+};
+const crumb = nav ? CRUMB[nav] : title;
 ---
 <!doctype html>
 <html lang="en" data-base={base}>
@@ -43,8 +53,8 @@ const current = nav === "notes" ? "lessons" : nav;
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#141d2b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1723" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={`${base}icons/icon.svg`} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={`${base}icons/icon-192.png`} />
     <link rel="manifest" href={`${base}manifest.webmanifest`} />
@@ -61,7 +71,6 @@ const current = nav === "notes" ? "lessons" : nav;
           r.dataset.theme = dark ? "dark" : "light";
           r.dataset.width = p.width === "wide" ? "wide" : "normal";
           if (p.scale) r.style.setProperty("--read-scale", String(p.scale));
-          r.dataset.lessonnav = p.lessonNav === "hidden" ? "hidden" : "shown";
         }
         apply(document);
         document.addEventListener("astro:before-swap", function (e) { apply(e.newDocument); });
@@ -71,41 +80,66 @@ const current = nav === "notes" ? "lessons" : nav;
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="site-header">
-      <div class="site-header__inner">
-        <a class="brand" href={base} aria-label="Mule Learning Hub home">
-          <span class="brand__mark" aria-hidden="true">M</span>
-          <span class="brand__name">Mule Learning Hub</span>
-        </a>
-        <nav class="main-nav" aria-label="Main">
-          {NAV.map((n) => <a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}>{n.label}</a>)}
-        </nav>
+
+    <aside class="sidebar" aria-label="Site">
+      <a class="brand" href={base} aria-label="Mule Learning Hub home">
+        <span class="brand__mark" aria-hidden="true">M</span>
+        <span class="brand__text"><strong>Mule Learning Hub</strong><small>Learn. Build. Master.</small></span>
+      </a>
+      <nav class="side-nav" aria-label="Main">
+        <p class="side-nav__label" aria-hidden="true">Workspace</p>
+        <ul>
+          {WORKSPACE.map((n) => (
+            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"count" in n && <span class="side-nav__count" aria-hidden="true">{n.count}</span>}</a></li>
+          ))}
+        </ul>
+        <p class="side-nav__label" aria-hidden="true">Study tools</p>
+        <ul>
+          {TOOLS.map((n) => (
+            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"bookmarks" in n && <span class="side-nav__count" data-bookmark-count hidden aria-hidden="true"></span>}</a></li>
+          ))}
+        </ul>
+      </nav>
+      <div class="side-profile">
+        <span class="side-profile__avatar" aria-hidden="true">ML</span>
+        <span>My learning space<small>Progress saved in this browser</small></span>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <a class="topbar__mark brand__mark" href={base} aria-label="Mule Learning Hub home">M</a>
+        <p class="topbar__crumb"><span>Workspace /</span> <b>{crumb}</b></p>
+        <form class="topbar__search" role="search" action={`${base}search/`} method="get">
+          <label class="visually-hidden" for="global-search">Search lessons, topics and notes</label>
+          <Icon name="search" />
+          <input id="global-search" type="search" name="q" placeholder="Search lessons, topics, notes…" autocomplete="off" data-global-search />
+        </form>
         <div class="header-actions">
-          <a class="icon-btn" href={`${base}search/`} aria-label="Search notes and lessons" title="Search (press /)"><Icon name="search" /></a>
-          <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark theme">
+          <a class="icon-btn icon-btn--boxed hide-phone" href={`${base}revise/`} aria-label="Revision: glossary and flashcards" title="Revision"><Icon name="edit" /></a>
+          <button class="icon-btn icon-btn--boxed theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark theme" title="Light / dark theme">
             <Icon name="sun" class="sun" /><Icon name="moon" class="moon" />
           </button>
-          <a class="avatar-btn" href={`${base}my-study/`} aria-label="My study: bookmarks and progress" title="My study (saved in this browser)" aria-current={nav === "mystudy" ? "page" : undefined}><Icon name="user" /></a>
+          <a class="icon-btn icon-btn--boxed" href={`${base}my-study/`} aria-label="My study: bookmarks and progress" title="My study (saved in this browser)" aria-current={nav === "mystudy" ? "page" : undefined}><Icon name="user" /></a>
         </div>
+      </header>
+
+      <div class="offline-banner" data-offline-banner role="status" hidden>
+        You're offline. Pages you've opened before still work; search, audio and video need a connection.
       </div>
-    </header>
+      <main id="main" tabindex="-1">
+        <slot />
+      </main>
 
-    <div class="offline-banner" data-offline-banner role="status" hidden>
-      You're offline. Pages you've opened before still work; search, audio and video need a connection.
-    </div>
-    <main id="main" tabindex="-1">
-      <slot />
-    </main>
-
-    <footer class="site-footer">
-      <div class="site-footer__inner">
+      <footer class="site-footer">
         <span>Personal study site. Progress is saved in this browser only.</span>
         <span>
           <a href={`${base}about/`}>About &amp; help</a> ·
+          <a href={`${base}preferences/`}>Preferences</a> ·
           Notes from <a href="https://github.com/developerashok99/green-c-mule-notes" rel="noopener">green-c-mule-notes</a>{manifest.commit && <> @ <code>{manifest.commit.slice(0, 7)}</code></>}
         </span>
-      </div>
-    </footer>
+      </footer>
+    </div>
 
     <nav class="bottom-nav" aria-label="Main">
       {BOTTOM.map((n) => <a href={n.href} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} />{n.label}</a>)}

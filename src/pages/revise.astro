@@ -5,6 +5,7 @@
  */
 import Base from "../layouts/Base.astro";
 import Icon from "../components/Icon.astro";
+import PageHead from "../components/PageHead.astro";
 import { getCourses, getLesson, getLessons, knownIds, readNote } from "../lib/content";
 import { renderMarkdown } from "../lib/markdown";
 import { lessonHasView, lessonPath, withBase } from "../lib/routes";
@@ -22,10 +23,23 @@ interface Entry {
 }
 const entries = new Map<string, Entry>();
 const qCount = new Map<string, number>();
+// flashcards: every interview question of the super-detailed notes, with its answer copied unchanged
+const cards: { s: string; d: string; l: string; href: string; q: string; a: string }[] = [];
 for (const l of getLessons()) {
   const src = readNote(l.id, "super");
   const q = findSection(src, /interview question|questions discussed/i);
-  qCount.set(l.id, q ? parseQuestions(q.body).length : 0);
+  const qs = q ? parseQuestions(q.body) : [];
+  qCount.set(l.id, qs.length);
+  for (const x of qs) {
+    cards.push({
+      s: l.sectionId,
+      d: l.sectionTitle,
+      l: l.label,
+      href: withBase(base, lessonPath(l.id, "revise")) + "#rv-selftest",
+      q: await inline(x.question, l.id),
+      a: (await renderMarkdown(x.answer, { kind: "super", sid: l.id, base, known })).html,
+    });
+  }
   const t = findSection(src, /terminolog/i);
   if (!t) continue;
   for (const row of parseTermTable(t.body)) {
@@ -47,21 +61,66 @@ const letterOf = (k: string) => {
 };
 const letters = [...new Set(sorted.map((e) => letterOf(e.key)))];
 const sections = getCourses().flatMap((c) => c.sections);
+const withTests = [...qCount.values()].filter((n) => n > 0).length;
+const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.filter((c) => c.s === sec.id).length })).filter((d) => d.n > 0);
 ---
-<Base title="Revision" nav="revise" description="Revision hub: glossary of key terms and per-lesson self-tests">
-  <div class="container container--narrow">
-    <div class="page-head">
-      <h1>Revision</h1>
-      <p>Quick review material taken directly from the notes — nothing here is rewritten or summarised by the site.</p>
-    </div>
+<Base title="Revision" nav="revise" description="Revision studio: flashcards from the interview questions, a glossary of key terms and per-lesson self-tests">
+  <div class="page page--read">
+    <PageHead eyebrow="Recall before rereading" title="Revision studio" sub="Strengthen recall with flashcards, concise definitions and self-checks, all taken word for word from the notes.">
+      <span slot="actions" class="pill pill--blue">Practice mode</span>
+    </PageHead>
+    <ul class="grid g3" style="list-style:none;margin:0;padding:0" aria-label="Revision material">
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true">Aa</span><div><strong>{sorted.length}</strong><small>Glossary terms</small></div></div><p class="small muted" style="margin:.75rem 0 0">From the “Important Terminology” tables of the notes.</p></li>
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong>{cards.length}</strong><small>Flashcards</small></div></div><p class="small muted" style="margin:.75rem 0 0">The interview questions, with their answers hidden until you reveal them.</p></li>
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong>{withTests}</strong><small>Lesson self-tests</small></div></div><p class="small muted" style="margin:.75rem 0 0">Outline, must-remember points and a self-test for each lesson.</p></li>
+    </ul>
 
-    <section class="section-block" aria-labelledby="rv-lessons">
-      <div class="section-block__head"><h2 id="rv-lessons">Revise a lesson</h2><p>Outline, Must Remember, Quick Recap, key terms, a self-test from the interview questions, and the code examples.</p></div>
-      {sections.map((s) => (
-        <details class="lesson-nav__section card" style="padding:.25rem .5rem;margin-bottom:.5rem">
-          <summary>{s.title} <span class="small muted">{s.lessons.length} lessons</span></summary>
-          <ul class="study-list" style="margin:.25rem 0 .5rem">
-            {s.lessons.map((id) => getLesson(id)!).filter((l) => lessonHasView(l, "revise")).map((l) => (
+    {cards.length > 0 && (
+      <section aria-labelledby="fc-h" data-flashcards>
+        <script is:inline type="application/json" data-cards set:html={JSON.stringify(cards).replace(/</g, "\\u003c")} />
+        <div class="section-head">
+          <div><h2 id="fc-h">Flashcard practice</h2><p>Try to answer before revealing the explanation</p></div>
+          <span class="pill" data-fc-count aria-live="polite">Card 1 of {cards.length}</span>
+        </div>
+        <div class="card flashcard">
+          <span class="pill pill--blue" data-fc-topic>{cards[0].d} · {cards[0].l}</span>
+          <div class="flashcard__q" data-fc-q set:html={cards[0].q} />
+          <div class="prose flashcard__a" data-fc-a hidden set:html={cards[0].a} />
+          <p class="flashcard__src" data-fc-src hidden><a href={cards[0].href}>Open the {cards[0].l} self-test →</a></p>
+          <button class="btn btn--primary" type="button" data-fc-reveal aria-expanded="false">Reveal answer</button>
+          <div class="btn-row" style="margin-top:1rem">
+            <button class="btn" type="button" data-fc-prev><Icon name="left" /> Previous</button>
+            <button class="btn" type="button" data-fc-shuffle aria-pressed="false">Shuffle</button>
+            <button class="btn" type="button" data-fc-next>Next card <Icon name="right" /></button>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Topic collections</h2><p>Choose a subject to revise</p></div></div>
+        <div class="grid g3" role="group" aria-label="Flashcard topics">
+          <button class="card card--hover topic-card" type="button" data-deck="" aria-pressed="true">
+            <span class="stat-icon" aria-hidden="true">All</span>
+            <h3>Whole course</h3>
+            <span class="small muted">Every question in course order</span>
+            <span class="pill">{cards.length} cards</span>
+          </button>
+          {decks.map((d) => (
+            <button class="card card--hover topic-card" type="button" data-deck={d.id} aria-pressed="false">
+              <span class="stat-icon" aria-hidden="true">{d.title.split(/[\s&]+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2)}</span>
+              <h3>{d.title}</h3>
+              <span class="small muted">Interview questions from this section</span>
+              <span class="pill">{d.n} cards</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="revise-lessons" aria-labelledby="rv-lessons">
+      <div class="section-head"><div><h2 id="rv-lessons">Revise a lesson</h2><p>Outline, Must Remember, Quick Recap, key terms, a self-test from the interview questions, and the code examples.</p></div></div>
+      {sections.map((sec) => (
+        <details class="card">
+          <summary>{sec.title} <span class="pill">{sec.lessons.length} lessons</span></summary>
+          <ul class="study-list">
+            {sec.lessons.map((id) => getLesson(id)!).filter((l) => lessonHasView(l, "revise")).map((l) => (
               <li data-lesson-done={l.id}>
                 <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
                 <span class="visually-hidden" data-status-label>Not started</span>
@@ -74,11 +133,12 @@ const sections = getCourses().flatMap((c) => c.sections);
       ))}
     </section>
 
-    <section class="section-block" aria-labelledby="rv-glossary" data-filter-scope>
-      <div class="section-block__head">
+    <section aria-labelledby="rv-glossary" data-filter-scope>
+      <div class="section-head"><div>
         <h2 id="rv-glossary">Glossary</h2>
         <p>{sorted.length} terms from the “Important Terminology” tables of the super-detailed notes. Where lessons define a term differently, each definition is shown with its lesson.</p>
-      </div>
+      </div></div>
+      <div class="card">
       <div class="filters">
         <label class="visually-hidden" for="gl-filter">Filter the glossary</label>
         <input id="gl-filter" class="input" style="max-width:24rem" type="search" placeholder="Filter terms, e.g. “vCore”, “payload”" data-filter-text />
@@ -108,6 +168,7 @@ const sections = getCourses().flatMap((c) => c.sections);
         </div>
       ))}
       <p class="empty" data-filter-empty hidden>No terms match.</p>
+      </div>
     </section>
   </div>
 </Base>

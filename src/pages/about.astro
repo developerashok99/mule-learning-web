@@ -1,16 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
 import { getManifest } from "../lib/content";
+import PageHead from "../components/PageHead.astro";
 const m = getManifest();
 const synced = new Date(m.syncedAt).toUTCString().replace(/:\d\d GMT/, " UTC");
 ---
 <Base title="About & help" nav="about">
-  <div class="container container--narrow">
-    <div class="page-head">
-      <h1>About &amp; help</h1>
-      <p>A personal study site for the MuleSoft (Mule 4) course: the full lecture, a short summary podcast and three levels of notes for every lesson.</p>
-    </div>
-    <div class="prose">
+  <div class="page page--narrow">
+    <PageHead eyebrow="Help" title="About & help" sub="A personal study site for the MuleSoft (Mule 4) course: the full lecture, a short summary podcast and three levels of notes for every lesson." />
+    <div class="card article"><div class="prose">
       <h2>How to study a lesson</h2>
       <ol>
         <li><b>Simple notes</b> (5 min) — know what's coming.</li>
@@ -19,11 +17,11 @@ const synced = new Date(m.syncedAt).toUTCString().replace(/:\d\d GMT/, " UTC");
         <li><b>Super-detailed notes</b> — the complete reference: demos, troubleshooting, interview Q&amp;A.</li>
         <li><b>Summary podcast</b> — revise the next day, or listen on a walk. Audio keeps playing while you browse the site.</li>
         <li><b>Revise</b> — the outline, Must Remember, Quick Recap, key terms and a self-test from the interview questions, all taken word-for-word from the notes.</li>
-        <li>Press <b>Mark as Completed</b> when you're done.</li>
+        <li>Press <b>Mark complete</b> when you're done.</li>
       </ol>
 
       <h2>Lesson status</h2>
-      <p>A lesson is <b>not started</b> until you open it, <b>in progress</b> once you have opened it, and <b>completed</b> when you press <i>Mark as Completed</i>. The dashboard's <i>Recommended next</i> is the first unfinished lesson after your furthest completed one.</p>
+      <p>A lesson is <b>not started</b> until you open it, <b>in progress</b> once you have opened it, and <b>completed</b> when you press <i>Mark complete</i>. The dashboard's <i>Recommended next</i> is the first unfinished lesson after your furthest completed one.</p>
 
       <h2>Search tips</h2>
       <ul>
@@ -36,7 +34,7 @@ const synced = new Date(m.syncedAt).toUTCString().replace(/:\d\d GMT/, " UTC");
       <p>The <b>main lecture</b> is the original, full-length class on YouTube (often 1–2 hours). The <b>summary podcast</b> is a separate, much shorter recap (about 10–12 minutes) in two formats with the same content: a <b>video podcast</b> with slides or animation, and an <b>audio podcast</b>.</p>
 
       <h2>Your progress stays in this browser</h2>
-      <p>Completed lessons, bookmarks, recently opened lessons, podcast positions, playback speed, reading progress and display settings are saved in this browser's local storage. There is no account: <b>progress does not sync between devices or browsers</b>, and clearing site data or using a private window resets it. On <a href={`${import.meta.env.BASE_URL}my-study/`}>My study</a> you can download a backup file and restore it in another browser.</p>
+      <p>Completed lessons, bookmarks, recently opened lessons, podcast positions, playback speed, reading progress and display settings are saved in this browser's local storage. There is no account: <b>progress does not sync between devices or browsers</b>, and clearing site data or using a private window resets it. On <a href={`${import.meta.env.BASE_URL}my-study/`}>My Study</a> you can download a backup file and restore it in another browser.</p>
 
       <h2>Offline</h2>
       <p>Pages and slide images you have already opened keep working without a connection (a notice appears at the top while you're offline). Lessons you haven't opened, search, lecture videos and podcasts need a connection — audio and video are never stored for offline use.</p>
@@ -61,6 +59,6 @@ const synced = new Date(m.syncedAt).toUTCString().replace(/:\d\d GMT/, " UTC");
       <h2>Content source</h2>
       <p>The notes and slides come unchanged from the <a href="https://github.com/developerashok99/green-c-mule-notes">green-c-mule-notes</a> repository{m.commit && <> (commit <code>{m.commit.slice(0, 7)}</code>)</>}, synchronised when this site was built ({synced}). The original notes website is at <a href="https://developerashok99.github.io/green-c-mule-notes/">developerashok99.github.io/green-c-mule-notes</a> and also has quizzes, flashcards and mind maps.</p>
       <p>Lecture video and podcast links are configured in <code>config/media.json</code> of the <a href="https://github.com/developerashok99/mule-learning-web">mule-learning-web</a> repository — see its README.</p>
-    </div>
+    </div></div>
   </div>
 </Base>

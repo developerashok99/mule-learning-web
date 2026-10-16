@@ -24,9 +24,10 @@ const EMPTY = !lecture?.youtubeId;
   <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {lecture?.youtubeId ? (
       <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${title}`} aria-label={`Play lecture video: ${title}`}>
+        <span class="yt-facade__kicker">Main lecture · full length</span>
+        <span class="yt-facade__title">{title}</span>
         <span class="yt-facade__play"><Icon name="play" /></span>
-        <span>Play lecture on YouTube</span>
-        <small>Loads from youtube-nocookie.com when you press play</small>
+        <small>Click to play · loads from youtube-nocookie.com</small>
       </button>
     ) : lecture?.invalid ? (
       <div class="media-state" role="status">

@@ -36,9 +36,10 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
   <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {ep.youtubeId ? (
       <button class="yt-facade" type="button" data-yt={ep.youtubeId} data-start="0" data-watch={ep.watchUrl} data-title={`Video podcast: ${ep.title}`} aria-label={`Play video podcast: ${ep.title}`}>
+        <span class="yt-facade__kicker">Summary podcast · video</span>
+        <span class="yt-facade__title">{ep.title}</span>
         <span class="yt-facade__play"><Icon name="play" /></span>
-        <span>Play video podcast</span>
-        <small>Loads from youtube-nocookie.com when you press play</small>
+        <small>Click to play · loads from youtube-nocookie.com</small>
       </button>
     ) : ep.videoUrl ? (
       <video controls playsinline preload="metadata" data-episode-video={ep.id} aria-label={`Video podcast: ${ep.title}`}>
@@ -56,7 +57,7 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
   <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>
 
   <div class:list={["audio-card", { "audio-card--empty": !ep.audioUrl }]}>
-    <div class="audio-card__art" aria-hidden="true"><span>M</span><Icon name="mic" /></div>
+    <div class="audio-card__art" aria-hidden="true"><Icon name="podcast" /></div>
     <div class="audio-card__body">
       <h4 class="audio-card__label"><Icon name="podcast" /> Audio podcast <span class="muted">· same summary, audio only</span></h4>
       {ep.audioUrl ? (

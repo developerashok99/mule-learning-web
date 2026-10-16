@@ -5,7 +5,7 @@ import EpisodeCard from "../../../components/EpisodeCard.astro";
 import Icon from "../../../components/Icon.astro";
 import { getLessons, readNote, readSlides, type Lesson } from "../../../lib/content";
 import { renderMarkdown } from "../../../lib/markdown";
-import { NOTE_LEVELS, lessonPath, withBase } from "../../../lib/routes";
+import { NOTE_LEVELS, lessonHasView, lessonPath, withBase } from "../../../lib/routes";
 import { knownIds } from "../../../lib/content";
 import { NOTES_GITHUB } from "../../../lib/links";
 
@@ -32,24 +32,26 @@ const playable = lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl);
 ---
 <LessonShell lesson={lesson} view="lecture" viewLabel="Lecture">
   <div class="lesson-grid">
-    <div data-pagefind-body data-pagefind-filter="type:Lesson" data-pagefind-meta={`lesson:${lesson.label}`}>
+    <div class="grid" data-pagefind-body data-pagefind-filter="type:Lesson" data-pagefind-meta={`lesson:${lesson.label}`}>
       <span class="visually-hidden" data-pagefind-meta="title" data-pagefind-ignore>{lesson.label} — {lesson.title}</span>
+      <div class="card">
+        <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} playerHref={lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : undefined} />
+      </div>
+
       {topics.length > 0 && (
-        <section class="takeaways" aria-labelledby="topics-h">
-          <h2 id="topics-h"><Icon name="check" /> What this lesson covers</h2>
+        <section class="card takeaways" aria-labelledby="topics-h">
+          <span class="pill pill--blue">Key concepts</span>
+          <h2 id="topics-h" style="font-size:1.15rem;margin:.75rem 0 0">What this lesson covers</h2>
           <ul>
             {topics.map((t) => <li><Icon name="check" />{t}</li>)}
           </ul>
         </section>
       )}
 
-      <LectureVideo lecture={lesson.lecture} title={`${lesson.label} — ${lesson.title}`} playerHref={lesson.lecture?.youtubeId ? withBase(base, `videos/${lesson.id}/`) : undefined} />
-
-
-      <section style="margin-top:1.75rem" aria-labelledby="pod-h" data-pagefind-ignore>
-        <h2 id="pod-h" style="font-size:1.1rem;margin:0 0 .5rem">Summary podcast</h2>
+      <section class="card" aria-labelledby="pod-h" data-pagefind-ignore>
+        <h2 id="pod-h" class="card-title"><Icon name="podcast" /> Summary podcast</h2>
         {playable.length ? (
-          <ul class="episode-list">{playable.map((ep) => <EpisodeCard episode={ep} />)}</ul>
+          <ul class="episode-list episode-list--single">{playable.map((ep) => <EpisodeCard episode={ep} />)}</ul>
         ) : (
           <div class="notice"><Icon name="info" /><div><strong>No summary podcast for this lesson yet</strong><p>The video and audio summary will appear here once its links are added to config/media.json.</p></div></div>
         )}
@@ -83,6 +85,7 @@ const playable = lesson.podcasts.filter((ep) => ep.audioUrl || ep.videoUrl);
         ))}
         <li><a href={`${NOTES_GITHUB}/blob/main/${lesson.id}.md`} target="_blank" rel="noopener noreferrer"><Icon name="github" /><span>Source notes<small>green-c-mule-notes on GitHub</small></span></a></li>
       </ul>
+      {lessonHasView(lesson, "revise") && <a class="btn btn--soft" style="width:100%;margin-top:1rem" href={withBase(base, lessonPath(lesson.id, "revise"))}>Practice this lesson →</a>}
     </aside>
   </div>
 </LessonShell>

@@ -1,13 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
 import Icon from "../components/Icon.astro";
+import PageHead from "../components/PageHead.astro";
 import ProgressBar from "../components/ProgressBar.astro";
-import { getCourses, getLessons, getPodcasts } from "../lib/content";
+import { getCourses, getLessons } from "../lib/content";
 import { lessonHasView, lessonPath, withBase, type View } from "../lib/routes";
 
 const base = import.meta.env.BASE_URL;
 const lessons = getLessons();
-const courses = getCourses();
+const course = getCourses()[0];
 const RES: { view: View; label: string }[] = [
   { view: "lecture", label: "Overview" },
   { view: "podcast", label: "Podcast" },
@@ -24,196 +25,128 @@ const index = lessons.map((l) => ({
   title: l.title,
   href: withBase(base, lessonPath(l.id)),
   section: l.sectionTitle,
+  secs: l.lecture?.duration ?? 0,
+  video: l.lecture?.youtubeId ? withBase(base, `videos/${l.id}/`) : "",
   res: RES.filter((r) => lessonHasView(l, r.view)).map((r) => ({ view: r.view, label: r.label, href: withBase(base, lessonPath(l.id, r.view)) })),
 }));
 const first = lessons[0];
-const withVideo = lessons.filter((l) => l.lecture?.youtubeId && !l.lecture.demo).length;
-const withPodcast = getPodcasts().filter((p) => !p.test && (p.audioUrl || p.videoUrl)).length;
 const allIds = lessons.map((l) => l.id).join(",");
-const course = courses[0];
-const interviews = lessons.filter((l) => /^interview/.test(l.id)).length;
-const STATS = [
-  { icon: "book", tint: "blue", big: String(lessons.length), label: "Structured lessons", note: `${courses.reduce((n, c) => n + c.sections.length, 0)} sections, three levels of notes` },
-  { icon: "lecture", tint: "violet", big: "", label: "Video lectures", note: withVideo ? `${withVideo} full-length class recordings` : "Class recordings" },
-  { icon: "podcast", tint: "green", big: "", label: "Podcasts", note: withPodcast ? `${withPodcast} summary episodes so far` : "Lesson summaries" },
-  { icon: "interview", tint: "orange", big: "", label: "Interview prep", note: interviews ? `${interviews} sessions of questions and answers` : "Questions and answers" },
-] as const;
-const QUICK = [
-  { href: "lessons/", icon: "calendar", tint: "blue", label: "All Lessons", note: "Browse by day" },
-  { href: "videos/", icon: "play", tint: "red", label: "Video Lectures", note: "Watch on YouTube" },
-  { href: "podcasts/", icon: "mic", tint: "pink", label: "Audio Podcasts", note: "Listen on the go" },
-  { href: "revise/", icon: "edit", tint: "green", label: "Revise", note: "Quick revision" },
-  { href: "search/", icon: "search", tint: "blue", label: "Search Notes", note: "Find anything" },
-  { href: "my-study/", icon: "bookmark", tint: "violet", label: "My Study", note: "Track your progress" },
-] as const;
-const CHIPS = [
-  { label: "API Design", icon: "layers", pos: "c1" },
-  { label: "DataWeave", icon: "text", pos: "c2" },
-  { label: "Integrations", icon: "courses", pos: "c3" },
-  { label: "Security", icon: "check", pos: "c4" },
-  { label: "Connectors", icon: "external", pos: "c5" },
-  { label: "Deployment", icon: "download", pos: "c6" },
+const courseHref = withBase(base, `courses/${course.id}/`);
+const TOOLS = [
+  { href: "videos/", icon: "video", title: "Lecture videos", text: "Watch with a playlist and quick navigation.", cta: "Open video library" },
+  { href: "podcasts/", icon: "podcast", title: "Podcasts & audio", text: "Listen to recaps and revisit concepts.", cta: "Explore audio" },
+  { href: "revise/", icon: "edit", title: "Revision studio", text: "Review glossary terms and test yourself with flashcards.", cta: "Start revising" },
 ] as const;
 ---
 <Base title="Home" nav="home">
-  <div class="container" data-dashboard>
+  <div class="page" data-dashboard>
     <script is:inline type="application/json" data-lesson-index set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
-    <section class="home-hero" aria-labelledby="home-h">
-      <div class="home-hero__text">
-        <p class="pill">Complete learning path</p>
-        <h1 id="home-h">Master MuleSoft <span>Step by Step</span></h1>
-        <p class="home-hero__lead">Structured notes, video lectures, podcasts, diagrams and interview preparation — everything in one place.</p>
-        <div class="btn-row home-hero__actions">
-          <a class="btn btn--primary btn--lg" href={withBase(base, lessonPath(first.id, "simple"))} data-hero-start><span data-text>Start Learning</span></a>
-          <a class="btn btn--lg" href={withBase(base, `courses/${course.id}/`)}>View Courses</a>
+    <PageHead eyebrow="Your learning workspace" title="Welcome, learner." sub="Pick up where you left off, keep your momentum, and make your next MuleSoft concept click.">
+      <a slot="actions" class="btn" href={courseHref}>Explore course <Icon name="external" /></a>
+    </PageHead>
+
+    <section class="hero" aria-labelledby="cur-h" data-section-progress={allIds}>
+      <div>
+        <span class="pill pill--blue">● Current course</span>
+        <h2 id="cur-h">Build real integrations with MuleSoft.</h2>
+        <p class="sub">{course.description}</p>
+        <div class="btn-row" style="margin-top:1.25rem">
+          <a class="btn btn--primary" href={withBase(base, lessonPath(first.id, "simple"))} data-hero-start><Icon name="play" /><span data-text>Start learning</span></a>
+          <a class="btn" href={courseHref}>Course outline</a>
+        </div>
+        <div class="hero__progress">
+          <div class="progress-line"><span>Course progress</span><b data-count>0 of {lessons.length} done</b></div>
+          <ProgressBar />
+          <p class="hero__counts"><b data-n-done>0</b> completed · <b data-n-started>0</b> in progress · <b data-n-new>{lessons.length}</b> not started</p>
         </div>
       </div>
-      <div class="home-hero__art" aria-hidden="true">
-        <svg class="hero-laptop" viewBox="0 0 320 240" fill="none">
-          <defs>
-            <linearGradient id="hl-screen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e3a8a"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
-            <linearGradient id="hl-cloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93c5fd"/><stop offset="1" stop-color="#3b82f6"/></linearGradient>
-          </defs>
-          <ellipse cx="160" cy="214" rx="130" ry="14" fill="#2563eb" opacity=".10"/>
-          <path d="M128 70a26 26 0 0 1 50-9 20 20 0 1 1 6 39h-58a16 16 0 0 1 2-30Z" fill="url(#hl-cloud)" opacity=".9"/>
-          <path d="M160 18v34M148 30l12-12 12 12" stroke="#2563eb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="70" y="100" width="180" height="104" rx="10" fill="#0f172a"/>
-          <rect x="78" y="108" width="164" height="88" rx="5" fill="url(#hl-screen)"/>
-          <circle cx="160" cy="152" r="26" fill="none" stroke="#fff" stroke-width="5"/>
-          <text x="160" y="161" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="26" fill="#fff">M</text>
-          <path d="M48 204h224l-14 14H62Z" fill="#cbd5e1"/>
-          <path d="M48 204h224" stroke="#94a3b8" stroke-width="2"/>
-        </svg>
-        {CHIPS.map((c) => <span class={`hero-chip hero-chip--${c.pos}`}><Icon name={c.icon} />{c.label}</span>)}
-      </div>
+      <a class="hero-art" href={courseHref}>
+        <small>{course.title}</small>
+        <strong>From first flow to production-ready APIs.</strong>
+        <span>{lessons.length} lessons · learning path →</span>
+      </a>
     </section>
 
-    <ul class="stat-cards" aria-label="What is in the course">
-      {STATS.map((st) => (
-        <li class="stat-card">
-          <span class={`tile-icon tile-icon--${st.tint}`} aria-hidden="true"><Icon name={st.icon} /></span>
-          <span class="stat-card__text">{st.big ? <><b class="stat-card__big">{st.big}</b><small>{st.label}</small></> : <><b>{st.label}</b><small>{st.note}</small></>}</span>
-        </li>
-      ))}
+    <div class="section-head">
+      <div><h2>Learning at a glance</h2><p>Your study activity, saved in this browser</p></div>
+      <a class="btn btn--sm" href={withBase(base, "my-study/")}>My Study <Icon name="right" /></a>
+    </div>
+    <ul class="grid g4" style="list-style:none;margin:0;padding:0" aria-label="Study summary">
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong data-total-done>0</strong><small>Lessons completed</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="clock" /></span><div><strong data-hours-done>0 h</strong><small>Lecture hours completed</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="bookmark" /></span><div><strong data-n-bookmarks>0</strong><small>Bookmarked lessons</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="lessons" /></span><div><strong data-n-progress>0</strong><small>Lessons in progress</small></div></div></li>
     </ul>
 
-    <section class="home-block" aria-labelledby="feat-h">
-      <div class="home-block__head"><h2 id="feat-h">Featured Courses</h2><a href={withBase(base, "courses/")}>View all courses <Icon name="right" /></a></div>
-      <article class="feature-course" data-section-progress={allIds}>
-        <div class="course-art" aria-hidden="true">
-          <span class="course-art__m">M</span>
-          <span class="course-art__i course-art__i--1"><Icon name="lecture" /></span>
-          <span class="course-art__i course-art__i--2"><Icon name="courses" /></span>
-          <span class="course-art__i course-art__i--3"><Icon name="layers" /></span>
+    <div class="section-head">
+      <div><h2 data-c-heading>Start learning</h2><p>Jump straight back into your course</p></div>
+      <a class="btn btn--sm" href={withBase(base, "lessons/")}>All lessons <Icon name="right" /></a>
+    </div>
+    <article class="card coursebox">
+      <a class="thumb" href={courseHref} aria-hidden="true" tabindex="-1">M4</a>
+      <div data-c-welcome>
+        <div class="pill-row"><span class="pill pill--blue">{first.label}</span><span class="pill">Start here</span></div>
+        <h3>{first.label} — {first.title}</h3>
+        <p class="small muted">Read the Simple notes for a five-minute overview, then watch the lecture with the Detailed notes open.</p>
+        <div class="btn-row">
+          <a class="btn btn--primary btn--sm" href={withBase(base, lessonPath(first.id, "simple"))}>Start with {first.label} <Icon name="right" /></a>
+          {first.lecture?.youtubeId && <a class="btn btn--sm" href={withBase(base, `videos/${first.id}/`)}>Watch lecture</a>}
         </div>
-        <div class="feature-course__body">
-          <h3><a href={withBase(base, `courses/${course.id}/`)}>{course.title}</a></h3>
-          <p>{course.description}</p>
-          <div class="feature-course__foot">
-            <a class="btn btn--primary" href={withBase(base, `courses/${course.id}/`)} data-hero-continue>Continue Learning</a>
-            <div class="feature-course__progress">
-              <span class="small muted">Progress</span>
-              <span class="small" data-count>0 of {lessons.length} done</span>
-              <ProgressBar />
-            </div>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <section class="home-block" aria-labelledby="qa-h">
-      <div class="home-block__head"><h2 id="qa-h">Quick Access</h2></div>
-      <nav class="quick-access" aria-label="Quick links">
-        {QUICK.map((q) => (
-          <a href={withBase(base, q.href)}>
-            <span class={`tile-icon tile-icon--${q.tint}`} aria-hidden="true"><Icon name={q.icon} /></span>
-            <b>{q.label}</b><small>{q.note}</small>
-          </a>
-        ))}
-      </nav>
-    </section>
-
-    <div class="home-block__head home-block__head--study"><h2>Your study</h2><a href={withBase(base, "my-study/")}>My Study <Icon name="right" /></a></div>
-    <div class="dash-grid">
-      <div class="dash-main">
-      <section class="card card--feature o1 dash-continue" aria-labelledby="cont-h">
-        <h2 id="cont-h" class="card-title"><Icon name="play" /> <span data-c-heading>Start learning</span></h2>
-        <div data-c-welcome>
-          <p class="eyebrow">Day 1 of {lessons.length}</p>
-          <h3 class="dash-continue__title">{first.label} — {first.title}</h3>
-          <ol class="dash-steps">
-            <li>Read the <b>Simple notes</b> for a 5-minute overview.</li>
-            <li>Watch the <b>lecture</b> with the <b>Detailed notes</b> open.</li>
-            <li>Use <b>Super-detailed notes</b> and <b>Slides</b> as the full reference.</li>
-            <li>Check yourself in <b>Revise</b>, then press <b>Mark as Completed</b>.</li>
-          </ol>
-          <a class="btn btn--primary" href={withBase(base, lessonPath(first.id, "simple"))}>Start with {first.label} <Icon name="right" /></a>
-        </div>
-        <div data-c-resume hidden>
-          <p class="eyebrow" data-c-eyebrow></p>
-          <h3 class="dash-continue__title" data-c-title></h3>
-          <div class="dash-continue__read" data-c-read hidden>
-            <div class="progress progress--thin"><span class="p-done"></span></div>
-            <span class="small muted" data-c-read-text></span>
-          </div>
-          <div class="btn-row">
-            <a class="btn btn--primary" data-c-go href="#"><span data-text>Continue</span> <Icon name="right" /></a>
-          </div>
-          <nav class="dash-res" aria-label="Resources for this lesson" data-c-res></nav>
-        </div>
-      </section>
-      <section class="card o2" aria-labelledby="next-h" data-next-card>
-        <h2 id="next-h" class="card-title"><Icon name="right" /> Recommended next</h2>
-        <div data-next-up>
-          <a class="dash-next" href={withBase(base, lessonPath(first.id))} data-next-link><b>{first.label}</b> {first.title}</a>
-          <p class="small muted" data-next-why style="margin:.4rem 0 0">The first lesson of the course.</p>
-        </div>
-        <p class="small muted" data-next-done hidden style="margin:0">Every lesson is marked complete — use <a href={withBase(base, "revise/")}>Revision</a> to keep it fresh.</p>
-      </section>
-      <section class="card o4" aria-labelledby="ip-h">
-        <h2 id="ip-h" class="card-title"><span class="done-mark" data-status="started" aria-hidden="true"></span> In progress</h2>
-        <ul class="mini-list" data-in-progress hidden></ul>
-        <p class="muted small" data-empty style="margin:0">Lessons you have opened but not marked complete appear here.</p>
-      </section>
-      <section class="card o6" aria-labelledby="bm-h">
-        <h2 id="bm-h" class="card-title"><Icon name="bookmark" /> Bookmarks</h2>
-        <ul class="mini-list" data-bookmarks hidden></ul>
-        <p class="muted small" data-empty style="margin:0">Use <b>Bookmark</b> on any lesson to keep it here.</p>
-        <p class="small" style="margin:.75rem 0 0"><a href={withBase(base, "my-study/")}>My study: all bookmarks and progress →</a></p>
-      </section>
-      <section class="card o7" aria-labelledby="played-h">
-        <h2 id="played-h" class="card-title"><Icon name="podcast" /> Recently played podcasts</h2>
-        <ul class="mini-list" data-played hidden></ul>
-        <p class="muted small" data-empty style="margin:0">Podcasts you listen to appear here with where you stopped. <a href={withBase(base, "podcasts/")}>Browse podcasts</a></p>
-      </section>
       </div>
-      <div class="dash-side">
-      <section class="card o3" aria-labelledby="prog-h">
-        <h2 id="prog-h" class="card-title"><Icon name="check" /> Course progress</h2>
-        <div data-section-progress={allIds}>
-          <p class="stat-line"><strong data-total-done>0</strong><span class="muted">of {lessons.length} lessons completed</span></p>
-          <ProgressBar />
+      <div data-c-resume hidden>
+        <div class="pill-row"><span class="pill pill--blue" data-c-day></span><span class="pill" data-c-eyebrow></span></div>
+        <h3 data-c-title></h3>
+        <p class="small muted" data-c-section></p>
+        <div class="dash-read" data-c-read hidden>
+          <div class="progress progress--thin"><span class="p-done"></span></div>
+          <span class="small muted" data-c-read-text></span>
         </div>
-        <p class="status-legend">
-          <span><span class="done-mark" data-status="done" aria-hidden="true"></span><b data-n-done>0</b> completed</span>
-          <span><span class="done-mark" data-status="started" aria-hidden="true"></span><b data-n-started>0</b> in progress</span>
-          <span><span class="done-mark" aria-hidden="true"></span><b data-n-new>{lessons.length}</b> not started</span>
-        </p>
-        <div class="section-progress">
-          {courses.flatMap((c) => c.sections.map((s) => (
-            <a href={withBase(base, `courses/${c.id}/#${s.id}`)} data-section-progress={s.lessons.join(",")}>
-              <span>{s.title}</span><span class="small muted" data-count>0 of {s.lessons.length} done</span>
-              <ProgressBar thin />
-            </a>
-          )))}
+        <div class="btn-row">
+          <a class="btn btn--primary btn--sm" data-c-go href="#"><span data-text>Resume lesson</span> <Icon name="right" /></a>
+          <a class="btn btn--sm" data-c-watch href="#" hidden>Watch lecture</a>
         </div>
-      </section>
-      <section class="card o5" aria-labelledby="recent-h">
-        <h2 id="recent-h" class="card-title"><Icon name="clock" /> Recently opened</h2>
+        <nav class="dash-res" aria-label="Resources for this lesson" data-c-res></nav>
+      </div>
+    </article>
+    <p class="small muted" style="margin:.75rem 0 0" data-next-card>
+      <span data-next-up><b>Recommended next:</b> <a class="dash-next" href={withBase(base, lessonPath(first.id))} data-next-link><b>{first.label}</b> {first.title}</a> <span data-next-why>The first lesson of the course.</span></span>
+      <span data-next-done hidden>Every lesson is marked complete — use <a href={withBase(base, "revise/")}>Revision</a> to keep it fresh.</span>
+    </p>
+
+    <div class="section-head"><div><h2>Your study tools</h2><p>Everything you need, without losing your place</p></div></div>
+    <nav class="grid g3 study-tools" aria-label="Quick links">
+      {TOOLS.map((t) => (
+        <a class="card card--hover" href={withBase(base, t.href)}>
+          <span class="stat-icon" aria-hidden="true"><Icon name={t.icon} /></span>
+          <h3>{t.title}</h3>
+          <p class="small muted">{t.text}</p>
+          <b>{t.cta} →</b>
+        </a>
+      ))}
+    </nav>
+
+    <div class="section-head"><div><h2>Recent activity</h2><p>Only what you have done in this browser</p></div></div>
+    <div class="grid g2">
+      <section class="card" aria-labelledby="recent-h">
+        <h3 id="recent-h" class="card-title"><Icon name="clock" /> Recently opened</h3>
         <ul class="mini-list" data-recent hidden></ul>
         <p class="muted small" data-empty style="margin:0">Lessons you open will appear here.</p>
       </section>
-      </div>
+      <section class="card" aria-labelledby="ip-h">
+        <h3 id="ip-h" class="card-title"><Icon name="lessons" /> In progress</h3>
+        <ul class="mini-list" data-in-progress hidden></ul>
+        <p class="muted small" data-empty style="margin:0">Lessons you have opened but not marked complete appear here.</p>
+      </section>
+      <section class="card" aria-labelledby="bm-h">
+        <h3 id="bm-h" class="card-title"><Icon name="bookmark" /> Bookmarks</h3>
+        <ul class="mini-list" data-bookmarks hidden></ul>
+        <p class="muted small" data-empty style="margin:0">Use <b>Bookmark</b> on any lesson to keep it here.</p>
+      </section>
+      <section class="card" aria-labelledby="played-h">
+        <h3 id="played-h" class="card-title"><Icon name="podcast" /> Recently played podcasts</h3>
+        <ul class="mini-list" data-played hidden></ul>
+        <p class="muted small" data-empty style="margin:0">Podcasts you listen to appear here with where you stopped. <a href={withBase(base, "podcasts/")}>Browse podcasts</a></p>
+      </section>
     </div>
   </div>
 </Base>

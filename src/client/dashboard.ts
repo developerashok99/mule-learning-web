@@ -10,6 +10,10 @@ interface IndexItem {
   title: string;
   href: string;
   section: string;
+  /** lecture length in seconds (0 when unknown) */
+  secs: number;
+  /** the lecture on the Videos tab, "" when there is none */
+  video: string;
   res: { view: string; label: string; href: string }[];
 }
 
@@ -63,19 +67,26 @@ export function setupDashboard() {
     $("[data-c-welcome]")!.hidden = true;
     $("[data-c-resume]")!.hidden = false;
     $("[data-c-heading]")!.textContent = done.has(last.id) ? "Last studied" : "Continue learning";
+    $("[data-c-day]")!.textContent = l.label;
     $("[data-c-eyebrow]")!.textContent = `${VIEW_NAMES[last.view] ?? "Lesson"} · opened ${timeAgo(last.at)}${done.has(last.id) ? " · completed" : ""}`;
     $("[data-c-title]")!.textContent = `${l.label} — ${l.title}`;
+    $("[data-c-section]")!.textContent = l.section;
+    const watch = $<HTMLAnchorElement>("[data-c-watch]");
+    if (watch && l.video) {
+      watch.href = l.video;
+      watch.hidden = false;
+    }
+    const title = document.querySelector<HTMLElement>("[data-head-title]");
+    if (title) title.textContent = "Welcome back, learner.";
     // the hero's main button resumes too
     const hero = $<HTMLAnchorElement>("[data-hero-start]");
     if (hero && !done.has(last.id)) {
       hero.href = last.href;
-      hero.querySelector("[data-text]")!.textContent = "Continue Learning";
+      hero.querySelector("[data-text]")!.textContent = "Continue learning";
     }
-    const feat = $<HTMLAnchorElement>("[data-hero-continue]");
-    if (feat) feat.href = last.href;
     const go = $<HTMLAnchorElement>("[data-c-go]")!;
     go.href = last.href;
-    go.querySelector("[data-text]")!.textContent = `Continue: ${VIEW_NAMES[last.view] ?? "lesson"}`;
+    go.querySelector("[data-text]")!.textContent = done.has(last.id) ? `Open ${VIEW_NAMES[last.view] ?? "lesson"}` : `Resume: ${VIEW_NAMES[last.view] ?? "lesson"}`;
     if (NOTE_VIEWS.has(last.view)) {
       const pct = readingProgress(`${last.id}/${last.view}`);
       if (pct > 0) {
@@ -141,4 +152,10 @@ export function setupDashboard() {
   set("[data-n-done]", done.size);
   set("[data-n-started]", started.size);
   set("[data-n-new]", index.length - done.size - started.size);
+  set("[data-n-progress]", started.size);
+  set("[data-n-bookmarks]", bookmarkIds().filter((id) => byId.has(id)).length);
+  // lecture time of the completed lessons, from the real video lengths
+  const secs = index.filter((l) => done.has(l.id)).reduce((n, l) => n + (l.secs || 0), 0);
+  const hours = $("[data-hours-done]");
+  if (hours) hours.textContent = !secs ? "0 h" : secs >= 3600 ? `${(secs / 3600).toFixed(1).replace(/\.0$/, "")} h` : `${Math.round(secs / 60)} min`;
 }

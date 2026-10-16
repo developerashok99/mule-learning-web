@@ -1,32 +1,49 @@
 ---
 import Base from "../layouts/Base.astro";
 import Icon from "../components/Icon.astro";
-import SearchBox from "../components/SearchBox.astro";
+import PageHead from "../components/PageHead.astro";
 import { withBase } from "../lib/routes";
 
 const base = import.meta.env.BASE_URL;
-
-// course topics that every section of the notes covers (shown as quick searches)
-const TOPICS = ["DataWeave", "RAML", "HTTP Listener", "Error handling", "Connectors", "Deployment", "Security policies", "APIkit", "Batch", "Interview"];
+// course topics that the notes cover in depth (shown as quick searches)
+const TOPICS = ["DataWeave", "RAML", "HTTP Listener", "Error handling", "Connectors", "Deployment", "Security policies", "APIkit", "Batch", "MUnit"];
+const TYPES = ["Simple notes", "Detailed notes", "Super-detailed notes", "Slides", "Lesson", "Podcast"];
 ---
 <Base title="Search" nav="search">
-  <div class="container container--narrow">
-    <div class="page-head">
-      <h1>Search</h1>
-      <p>Searches every lesson's notes, slide captions and podcast descriptions. Press <kbd>/</kbd> anywhere to come here.</p>
-    </div>
-    <SearchBox scope="all" syncUrl autofocus placeholder="Search notes, lessons, topics…" />
-    <div class="search-idle" data-search-idle>
-      <section aria-labelledby="rs-h" hidden>
-        <div class="search-idle__head"><h2 id="rs-h">Recent searches</h2><button class="btn btn--ghost btn--sm" type="button" data-clear-searches>Clear</button></div>
-        <ul class="recent-searches" data-recent-searches></ul>
-      </section>
-      <section aria-labelledby="pt-h">
-        <h2 id="pt-h">Popular topics</h2>
-        <div class="chips">
-          {TOPICS.map((t) => <a class="chip" href={withBase(base, `search/?q=${encodeURIComponent(t)}`)}><Icon name="search" />{t}</a>)}
-        </div>
-      </section>
-    </div>
+  <div class="page page--read" data-search="all" data-sync-url="true" data-autofocus="true">
+    <PageHead eyebrow="Find it quickly" title="Search the knowledge base" sub="Search lessons, notes, slide captions and podcast descriptions in one place. Press / anywhere to search." />
+    <section class="card searchhero" aria-labelledby="sq-h">
+      <span class="pill pill--blue">Course search</span>
+      <h2 id="sq-h">What do you want to understand?</h2>
+      <form role="search" class="searchlarge">
+        <label class="visually-hidden" for="q-all">Search notes and lessons</label>
+        <input id="q-all" class="input" type="search" name="q" placeholder="Try DataWeave, RAML, or error handling…" autocomplete="off" data-search-input />
+        <button class="btn btn--primary btn--lg" type="submit">Search <Icon name="right" /></button>
+      </form>
+      <div class="chips" role="group" aria-label="Limit to">
+        <button class="chip" type="button" data-search-type="" aria-pressed="true">All</button>
+        {TYPES.map((t) => <button class="chip" type="button" data-search-type={t} aria-pressed="false">{t}</button>)}
+      </div>
+      <div class="pill-row" role="group" aria-label="Popular topics" style="margin-top:1rem">
+        <span class="tiny muted">Popular:</span>
+        {TOPICS.map((t) => <a class="pill" href={withBase(base, `search/?q=${encodeURIComponent(t)}`)} data-query={t}>{t}</a>)}
+      </div>
+    </section>
+
+    <section data-search-panel hidden aria-labelledby="res-h">
+      <div class="section-head">
+        <div><h2 id="res-h" data-results-title>Results</h2><p class="small muted" data-search-status aria-live="polite"></p></div>
+        <span class="pill">Indexed content</span>
+      </div>
+      <div class="card" style="padding-block:.25rem"><ol class="search-results" data-search-results></ol></div>
+    </section>
+
+    <section data-search-idle aria-labelledby="rs-h" hidden>
+      <div class="section-head">
+        <div><h2 id="rs-h">Recent searches</h2><p>Saved in this browser</p></div>
+        <button class="btn btn--sm btn--ghost" type="button" data-clear-searches>Clear</button>
+      </div>
+      <div class="card" style="padding-block:.25rem"><ul class="recent-searches" data-recent-searches></ul></div>
+    </section>
   </div>
 </Base>

@@ -1,5 +1,5 @@
 ---
-/** One summary podcast episode in a list: audio play button, progress, link to the video version. */
+/** One summary podcast episode: what formats exist, what it covers, audio play button, link to the video version. */
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
@@ -16,28 +16,34 @@ const base = import.meta.env.BASE_URL;
 const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
 const sections = [...new Set(lessons.map((l) => l.sectionId))].join(" ");
 const available = !!(ep.audioUrl || ep.videoUrl);
+const kinds = [ep.audioUrl && "audio", ep.videoUrl && "video"].filter(Boolean).join(" ");
+// "Day 5" → "D5", "Interview Part 1" → "IP1"
+const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w) => (/^\d+$/.test(w) ? w : w[0])).join("").toUpperCase().slice(0, 4);
 ---
-<li class="episode" data-filter-item={`${ep.title} ${ep.description} ${lessons.map((l) => `${l.label} ${l.title}`).join(" ")}`} data-sections={sections} data-available={String(available)}>
-  {ep.audioUrl
-    ? <button class="play-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>
-    : <button class="play-btn" type="button" disabled aria-label={`Audio not available yet: ${ep.title}`}><Icon name="play" /></button>}
-  <div>
+<li class="episode" data-filter-item={`${ep.title} ${ep.description} ${lessons.map((l) => `${l.label} ${l.title}`).join(" ")}`} data-sections={sections} data-available={String(available)} data-kinds={kinds}>
+  <span class="epicon" aria-hidden="true">{abbr}</span>
+  <div class="episode__body">
+    <div class="pill-row">
+      {ep.audioUrl && <span class="pill pill--green">Audio</span>}
+      {ep.videoUrl && <span class="pill pill--blue">Video podcast</span>}
+      {!available && <span class="pill">Not added yet</span>}
+      {ep.test && <span class="pill pill--amber">Test media</span>}
+      {ep.demo && <span class="pill pill--amber">Demo</span>}
+    </div>
     <h3 class="episode__title">{compact ? ep.title : <a href={withBase(base, podcastPath(ep.id))}>{ep.title}</a>}</h3>
     <div class="episode__meta">
-      <span class="kind-label kind-label--summary">Summary</span>
-      {ep.test && <span class="badge badge--warn">Test media</span>}
-      {ep.demo && <span class="badge badge--warn">Demo</span>}
       {ep.duration != null && <span><Icon name="clock" /> {formatLength(ep.duration)}</span>}
-      {ep.audioUrl ? <span class="badge badge--accent"><Icon name="podcast" /> Audio</span> : <span class="badge">Audio not added yet</span>}
-      {ep.videoUrl ? <span class="badge badge--accent"><Icon name="video" /> Video</span> : <span class="badge">Video not added yet</span>}
       {lessons.length > 0 && <span>Covers {lessons.map((l, i) => <>{i > 0 && ", "}<a href={withBase(base, lessonPath(l.id))}>{l.label}</a></>)}</span>}
     </div>
     {ep.description && <p class="episode__desc">{ep.description}</p>}
+    <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
+    {!compact && ep.videoUrl && (
+      <div class="episode__actions">
+        <a class="btn btn--sm" href={withBase(base, podcastPath(ep.id))}><Icon name="video" /> Watch video podcast</a>
+      </div>
+    )}
   </div>
-  <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
-  {!compact && ep.videoUrl && (
-    <div class="episode__actions">
-      <a class="btn btn--sm" href={withBase(base, podcastPath(ep.id))}><Icon name="video" /> Watch video podcast</a>
-    </div>
-  )}
+  {ep.audioUrl
+    ? <button class="play-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>
+    : <button class="play-btn" type="button" disabled aria-label={`Audio not available yet: ${ep.title}`}><Icon name="play" /></button>}
 </li>

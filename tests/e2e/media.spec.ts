@@ -57,8 +57,8 @@ test.describe("audio podcast player", () => {
     const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
     await nav.getByRole("link", { name: "Courses", exact: true }).click();
     await expect(page).toHaveURL(/courses\/$/);
-    await nav.getByRole("link", { name: "Lessons" }).click();
-    await page.getByRole("link", { name: /Course Introduction/ }).click();
+    await page.getByRole("link", { name: "Open course" }).click();
+    await page.getByRole("link", { name: /Course Introduction/ }).first().click();
     await expect(page).toHaveURL(/lessons\/day01\/$/);
     const s = await audioState(page);
     expect(s.paused).toBe(false);
@@ -75,14 +75,14 @@ test.describe("audio podcast player", () => {
     await page.goto("podcasts/test-fixture/");
     await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).click();
     await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.5);
-    await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: "Lessons" }).click();
-    await expect(page).toHaveURL(/lessons\/$/);
+    await page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: "Courses", exact: true }).click();
+    await expect(page).toHaveURL(/courses\/$/);
     await page.goBack();
     await expect(page).toHaveURL(/podcasts\/test-fixture\/$/);
     const afterBack = await audioState(page);
     expect(afterBack.paused).toBe(false);
     await page.goForward();
-    await expect(page).toHaveURL(/lessons\/$/);
+    await expect(page).toHaveURL(/courses\/$/);
     await page.waitForTimeout(500);
     const afterForward = await audioState(page);
     expect(afterForward.paused).toBe(false);

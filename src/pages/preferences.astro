@@ -1,0 +1,81 @@
+---
+import Base from "../layouts/Base.astro";
+import Icon from "../components/Icon.astro";
+import PageHead from "../components/PageHead.astro";
+import { withBase } from "../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const SCALES = [
+  { v: 0.9, label: "90%" },
+  { v: 1, label: "100%" },
+  { v: 1.1, label: "110%" },
+  { v: 1.2, label: "120%" },
+  { v: 1.35, label: "135%" },
+];
+---
+<Base title="Preferences" nav="preferences" description="Theme, reading and playback settings, saved in this browser">
+  <div class="page" data-preferences>
+    <PageHead eyebrow="Make the workspace yours" title="Preferences" sub="Comfortable study settings, accessible controls, and local-first privacy. Changes apply straight away and are saved in this browser." />
+    <div class="grid g2" style="align-items:start">
+      <section class="card" aria-labelledby="pf-look">
+        <h2 id="pf-look" style="font-size:1.15rem;margin:0 0 .2rem">Appearance</h2>
+        <p class="small muted" style="margin:0">Choose the most comfortable reading experience.</p>
+        <div class="setting">
+          <div><b id="pf-theme">Theme</b><span class="small">Dark reduces glare in low light. System follows your device.</span></div>
+          <div class="segmented" role="group" aria-labelledby="pf-theme">
+            <button type="button" data-pref-theme="" aria-pressed="false">System</button>
+            <button type="button" data-pref-theme="light" aria-pressed="false">Light</button>
+            <button type="button" data-pref-theme="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><b id="pf-scale">Notes text size</b><span class="small">Also changed with A− / A+ on any notes page.</span></div>
+          <div class="segmented" role="group" aria-labelledby="pf-scale">
+            {SCALES.map((s) => <button type="button" data-pref-scale={s.v} aria-pressed="false">{s.label}</button>)}
+          </div>
+        </div>
+        <div class="setting">
+          <div><b id="pf-width">Notes width</b><span class="small">Comfortable keeps lines short; Wide uses the full width.</span></div>
+          <div class="segmented" role="group" aria-labelledby="pf-width">
+            <button type="button" data-pref-width="normal" aria-pressed="false">Comfortable</button>
+            <button type="button" data-pref-width="wide" aria-pressed="false">Wide</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><b>Reduced motion</b><span class="small" data-pref-motion>Follows your device's motion setting.</span></div>
+          <span class="pill">System setting</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="pf-study">
+        <h2 id="pf-study" style="font-size:1.15rem;margin:0 0 .2rem">Study preferences</h2>
+        <p class="small muted" style="margin:0">How lessons, videos and your progress behave.</p>
+        <div class="setting">
+          <div><b id="pf-auto">Play the next video automatically</b><span class="small">On the Videos tab, when a lecture ends.</span></div>
+          <button class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="pf-auto" data-pref-autoplay></button>
+        </div>
+        <div class="setting">
+          <div><b>Remember my progress</b><span class="small">Completion, bookmarks and positions stay in this browser. Nothing is sent anywhere.</span></div>
+          <span class="pill pill--green">Local only</span>
+        </div>
+        <div class="setting">
+          <div><b>Offline support</b><span class="small" data-pref-offline>Pages you have opened keep working without a connection.</span></div>
+          <span class="pill pill--blue">PWA</span>
+        </div>
+        <div class="setting">
+          <div><b>External media</b><span class="small">YouTube loads only after you press play.</span></div>
+          <span class="pill">Click to load</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:1rem" aria-labelledby="pf-data">
+      <h2 id="pf-data" style="font-size:1.15rem;margin:0 0 .4rem">Your data</h2>
+      <p class="small muted" style="margin:0 0 .9rem">There is no account, so progress does not sync between devices. Use a backup file to move it to another browser.</p>
+      <div class="btn-row">
+        <a class="btn btn--sm" href={withBase(base, "my-study/#ms-data")}><Icon name="download" /> Back up or restore progress</a>
+        <a class="btn btn--sm btn--ghost" href={withBase(base, "about/")}><Icon name="info" /> About &amp; help</a>
+      </div>
+    </section>
+  </div>
+</Base>

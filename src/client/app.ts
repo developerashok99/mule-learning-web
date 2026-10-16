@@ -12,6 +12,8 @@ import { setupSearch } from "./search";
 import { setupMyStudy } from "./mystudy";
 import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
+import { setupFlashcards } from "./flashcards";
+import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
 import { bookmarkIds, startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recent, recordVisit, setBookmarked, setCompleted, setPrefs, timeAgo } from "./store";
@@ -81,7 +83,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
   const el = document.activeElement as HTMLElement | null;
   if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-  const box = document.querySelector<HTMLInputElement>("[data-search-input]");
+  // the search page's own box, otherwise the search field in the top bar
+  const box = document.querySelector<HTMLInputElement>("[data-search-input]") ?? document.querySelector<HTMLInputElement>("[data-global-search]");
   e.preventDefault();
   if (box) box.focus();
   else location.href = `${base}search/`;
@@ -137,6 +140,13 @@ function markDone() {
     if (pct) pct.textContent = `${ids.length ? Math.round((n / ids.length) * 100) : 0}%`;
     const text = el.querySelector<HTMLElement>("[data-count]");
     if (text) text.textContent = el.closest("summary") ? `${n}/${ids.length}` : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
+    const state = el.querySelector<HTMLElement>("[data-section-state]");
+    if (state) state.dataset.state = ids.length && n === ids.length ? "done" : n || s ? "active" : "new";
+  });
+  // sidebar: number of bookmarks next to My Study
+  document.querySelectorAll<HTMLElement>("[data-bookmark-count]").forEach((el) => {
+    el.textContent = String(marked.size);
+    el.hidden = !marked.size;
   });
 }
 
@@ -152,7 +162,7 @@ function setupLesson() {
     const done = isCompleted(id);
     if (doneBtn) {
       doneBtn.setAttribute("aria-pressed", String(done));
-      doneBtn.querySelector("[data-text]")!.textContent = done ? "Completed" : "Mark as Completed";
+      doneBtn.querySelector("[data-text]")!.textContent = done ? "Completed" : "Mark complete";
     }
     const on = isBookmarked(id);
     if (markBtn) {
@@ -171,20 +181,6 @@ function setupLesson() {
   });
   render();
 
-  // phones: the lesson actions sit under the title so the tab row keeps its full width
-  // (wider screens: in the sticky tab bar, as in the design). The same elements move, so their listeners stay.
-  const actions = page.querySelector<HTMLElement>(".lesson-actions");
-  const head = page.querySelector<HTMLElement>(".lesson-head");
-  const bar = page.querySelector<HTMLElement>(".lesson-bar");
-  const phone = window.matchMedia("(max-width: 760px)");
-  const place = () => {
-    if (!actions || !head || !bar) return;
-    if (phone.matches && actions.parentElement !== head) head.append(actions);
-    else if (!phone.matches && actions.parentElement !== bar) bar.append(actions);
-  };
-  phone.addEventListener("change", place, { signal: pageSignal() });
-  place();
-
   // keep the active tab visible in the scrollable tab bar on phones
   // (scrollLeft rather than scrollIntoView, which would move the keyboard focus starting point)
   const tabs = page.querySelector<HTMLElement>(".lesson-tabs");
@@ -193,61 +189,31 @@ function setupLesson() {
     tabs.scrollLeft = active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2;
   }
 
-  // "Lessons": toggles the sidebar where there is room for it, otherwise opens the drawer
+  // "All lessons": the drawer with every lesson, filterable, opened on the current one
   const dlg = document.querySelector<HTMLDialogElement>("[data-jump-dialog]");
   const body = dlg?.querySelector<HTMLElement>(".jump-dialog__body");
   const filter = dlg?.querySelector<HTMLInputElement>("input");
-  const wide = window.matchMedia("(min-width: 1400px)");
-  const sidebar = document.querySelector<HTMLElement>(".lesson-sidebar");
-  const centre = (box: HTMLElement | null | undefined) => {
-    const cur = box?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (box && cur) box.scrollTop = cur.offsetTop - box.clientHeight / 2;
-  };
-  const openBtn = page.querySelector<HTMLButtonElement>("[data-open-jump]");
-  const renderToggle = () => {
-    if (!openBtn) return;
-    if (wide.matches) {
-      const shown = document.documentElement.dataset.lessonnav !== "hidden";
-      openBtn.setAttribute("aria-expanded", String(shown));
-      openBtn.removeAttribute("aria-haspopup");
-      openBtn.title = shown ? "Hide the lesson list" : "Show the lesson list";
-    } else {
-      openBtn.removeAttribute("aria-expanded");
-      openBtn.setAttribute("aria-haspopup", "dialog");
-      openBtn.title = "Show all lessons";
-    }
-  };
-  openBtn?.addEventListener("click", () => {
-    if (wide.matches) {
-      const hide = document.documentElement.dataset.lessonnav !== "hidden";
-      document.documentElement.dataset.lessonnav = hide ? "hidden" : "shown";
-      setPrefs({ lessonNav: hide ? "hidden" : "shown" });
-      renderToggle();
-      if (!hide) centre(sidebar);
-      return;
-    }
+  page.querySelector<HTMLButtonElement>("[data-open-jump]")?.addEventListener("click", () => {
     if (!dlg) return;
     dlg.showModal();
     if (filter) {
       filter.value = "";
       filter.dispatchEvent(new Event("input"));
     }
-    centre(body);
+    const cur = body?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (body && cur) body.scrollTop = cur.offsetTop - body.clientHeight / 2;
     // focus the current lesson link so arrow/Tab navigation starts in context
-    dlg.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+    cur?.focus({ preventScroll: true });
   });
-  wide.addEventListener("change", renderToggle, { signal: pageSignal() });
-  renderToggle();
-  centre(sidebar);
   dlg?.querySelector("[data-close]")?.addEventListener("click", () => dlg.close());
   dlg?.addEventListener("click", (e) => e.target === dlg && dlg.close());
 }
 
-/** Course page: "Continue" points at the next unfinished lesson (from this browser's progress). */
+/** Course page: "Continue" and the milestone point at the next unfinished lesson (from this browser's progress). */
 function setupCourse() {
   const btn = document.querySelector<HTMLAnchorElement>("[data-course-continue]");
   if (!btn) return;
-  let order: { id: string; label: string; href: string }[] = [];
+  let order: { id: string; label: string; title: string; section: string; href: string }[] = [];
   try {
     order = JSON.parse(btn.dataset.courseContinue || "[]");
   } catch {
@@ -257,15 +223,29 @@ function setupCourse() {
   const started = startedIds().some((id) => order.some((l) => l.id === id));
   const rec = recommend(order, done);
   const text = btn.querySelector("[data-text]");
-  if (!rec || !text) {
-    btn.hidden = !rec;
-    setupSectionTabs(order[0]?.id ?? "");
-    return;
+  const next = rec ? order[rec.i] : null;
+  if (next && text) {
+    btn.href = next.href;
+    text.textContent = done.size || started ? `Continue: ${next.label}` : `Start with ${next.label}`;
+  } else btn.hidden = true;
+
+  // milestone: finish the section the next lesson is in, then move on to the following one
+  const ms = document.querySelector<HTMLAnchorElement>("[data-milestone]");
+  if (ms) {
+    const msText = ms.querySelector("[data-milestone-text]")!;
+    const msNext = ms.querySelector("[data-milestone-next]")!;
+    if (next) {
+      const sections = [...new Set(order.map((o) => o.section))];
+      const after = sections[sections.indexOf(next.section) + 1];
+      ms.href = next.href;
+      if (done.size || started) msText.textContent = after ? `Finish ${next.section} and move into ${after}.` : `Finish ${next.section} to complete the course.`;
+      msNext.textContent = `Next: ${next.label} · ${next.title} →`;
+    } else {
+      msText.textContent = "Every lesson is complete. Keep it fresh with revision.";
+      msNext.textContent = "Open the revision studio →";
+      ms.href = `${base}revise/`;
+    }
   }
-  const l = order[rec.i];
-  btn.href = l.href;
-  text.textContent = done.size || started ? `Continue: ${l.label}` : `Start with ${l.label}`;
-  setupSectionTabs(l.id);
 
   // "Last studied": the most recently opened lesson of this course, in the view it was opened in
   const lastBox = document.querySelector<HTMLElement>("[data-course-last]");
@@ -279,39 +259,44 @@ function setupCourse() {
     lastBox.querySelector("[data-when]")!.textContent = timeAgo(last.at);
     lastBox.hidden = false;
   }
+  setupCurriculum(next?.id);
 }
 
 /**
- * Course page on wide screens: the section list works as tabs, showing one section's lessons at a time
- * (the section in the URL hash, else the one holding the next lesson). Narrow screens show every section.
+ * Course curriculum: one collapsible card per section. Opens the section in the URL (#api-design) or the one
+ * holding the next lesson, marks that lesson with a Continue button, and "Expand all" opens or closes every section.
  */
-function setupSectionTabs(nextId: string) {
-  const box = document.querySelector<HTMLElement>("[data-course-sections]");
+function setupCurriculum(nextId?: string) {
+  const box = document.querySelector<HTMLElement>("[data-curriculum]");
   if (!box) return;
-  const links = [...box.querySelectorAll<HTMLAnchorElement>("[data-section-link]")];
-  const panels = [...box.querySelectorAll<HTMLElement>(".section-panel")];
-  const wide = window.matchMedia("(min-width: 1024px)");
-  const fromHash = () => panels.find((p) => `#${p.id}` === location.hash)?.id;
-  const holding = panels.find((p) => p.querySelector(`[data-lesson-done="${nextId}"]`))?.id;
-  let current = fromHash() ?? holding ?? panels[0]?.id;
-  const render = () => {
-    box.classList.toggle("is-tabbed", wide.matches);
-    for (const p of panels) p.hidden = wide.matches && p.id !== current;
-    for (const a of links) {
-      if (a.dataset.sectionLink === current && wide.matches) a.setAttribute("aria-current", "true");
-      else a.removeAttribute("aria-current");
-    }
+  const sections = [...box.querySelectorAll<HTMLDetailsElement>(":scope > details")];
+  box.querySelectorAll<HTMLElement>("[data-next]").forEach((el) => delete el.dataset.next);
+  const row = nextId ? box.querySelector<HTMLElement>(`[data-lesson-done="${nextId}"]`) : null;
+  if (row) row.dataset.next = "true";
+  const openFor = (hash: string) => {
+    const target = sections.find((d) => `#${d.id}` === hash);
+    if (!target) return false;
+    target.open = true;
+    target.scrollIntoView();
+    return true;
   };
-  for (const a of links) {
-    a.addEventListener("click", (e) => {
-      if (!wide.matches) return;
-      e.preventDefault();
-      current = a.dataset.sectionLink!;
-      history.replaceState(history.state, "", `#${current}`);
-      render();
-    }, { signal: pageSignal() });
+  if (!openFor(location.hash) && row) {
+    for (const d of sections) d.open = d.contains(row);
   }
-  wide.addEventListener("change", render, { signal: pageSignal() });
+  window.addEventListener("hashchange", () => openFor(location.hash), { signal: pageSignal() });
+  const all = document.querySelector<HTMLButtonElement>("[data-expand-all]");
+  const render = () => {
+    if (!all) return;
+    const open = sections.every((d) => d.open);
+    all.textContent = open ? "Collapse all sections" : "Expand all sections";
+    all.setAttribute("aria-pressed", String(open));
+  };
+  all?.addEventListener("click", () => {
+    const open = !sections.every((d) => d.open);
+    sections.forEach((d) => (d.open = open));
+    render();
+  }, { signal: pageSignal() });
+  sections.forEach((d) => d.addEventListener("toggle", render, { signal: pageSignal() }));
   render();
 }
 
@@ -347,5 +332,7 @@ document.addEventListener("astro:page-load", () => {
   setupDashboard();
   setupMyStudy();
   setupSearch();
+  setupFlashcards();
+  setupPreferences();
 });
 window.addEventListener("mls:store", markDone);

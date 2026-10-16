@@ -2,31 +2,46 @@
 import ProgressBar from "../../components/ProgressBar.astro";
 import Base from "../../layouts/Base.astro";
 import Icon from "../../components/Icon.astro";
-import { getCourses } from "../../lib/content";
+import PageHead from "../../components/PageHead.astro";
+import { getCourses, getLesson } from "../../lib/content";
 import { withBase } from "../../lib/routes";
 
 const base = import.meta.env.BASE_URL;
 const courses = getCourses();
 ---
 <Base title="Courses" nav="courses">
-  <div class="container">
-    <div class="page-head">
-      <h1>Courses</h1>
-      <p>Each course is divided into sections; open one to see its lessons and your progress.</p>
-    </div>
-    <div class="grid grid--2">
+  <div class="page">
+    <PageHead eyebrow="Structured learning" title="Courses" sub="A clear path through concepts, with progress and lesson status in one place.">
+      <span slot="actions" class="pill pill--green">{courses.length} active course{courses.length === 1 ? "" : "s"}</span>
+    </PageHead>
+    <div class="grid">
       {courses.map((c) => {
         const ids = c.sections.flatMap((s) => s.lessons);
+        const interviews = ids.filter((id) => /^interview/.test(id)).length;
+        const videos = ids.filter((id) => getLesson(id)?.lecture?.youtubeId).length;
         return (
-          <article class="card" data-section-progress={ids.join(",")}>
-            <h2 class="card-title" style="font-size:1.25rem"><Icon name="courses" /><a href={withBase(base, `courses/${c.id}/`)}>{c.title}</a></h2>
-            <p class="muted">{c.description}</p>
-            <p class="small"><b>{ids.length} lessons</b> in {c.sections.length} sections · <span data-count>0 of {ids.length} done</span></p>
-            <ProgressBar />
-            <ol class="small" style="margin:1rem 0 0;padding-left:1.25rem">
-              {c.sections.map((s) => <li><a href={withBase(base, `courses/${c.id}/#${s.id}`)}>{s.title}</a> <span class="muted">({s.lessons.length})</span></li>)}
-            </ol>
-            <div class="btn-row" style="margin-top:1rem"><a class="btn btn--primary" href={withBase(base, `courses/${c.id}/`)}>Open course <Icon name="right" /></a></div>
+          <article class="hero" data-section-progress={ids.join(",")}>
+            <div>
+              <span class="pill pill--blue">Foundation path</span>
+              <h2><a href={withBase(base, `courses/${c.id}/`)} style="color:inherit;text-decoration:none">{c.title}</a></h2>
+              <p class="sub">{c.description}</p>
+              <div class="pill-row" style="margin-top:1rem">
+                <span class="pill">{ids.length} lessons</span>
+                <span class="pill">{c.sections.length} sections</span>
+                {interviews > 0 && <span class="pill">{interviews} interview sessions</span>}
+                {videos > 0 && <span class="pill">{videos} lecture videos</span>}
+              </div>
+              <div class="hero__progress">
+                <div class="progress-line"><span>Your progress</span><b data-count>0 of {ids.length} done</b></div>
+                <ProgressBar />
+              </div>
+              <div class="btn-row" style="margin-top:1.25rem"><a class="btn btn--primary" href={withBase(base, `courses/${c.id}/`)}>Open course <Icon name="right" /></a></div>
+            </div>
+            <a class="hero-art" href={withBase(base, `courses/${c.id}/#curriculum`)}>
+              <small>Course curriculum</small>
+              <strong>{c.sections.map((s) => s.title).slice(0, 3).join(", ")} and more.</strong>
+              <span>{c.sections.length} sections →</span>
+            </a>
           </article>
         );
       })}
