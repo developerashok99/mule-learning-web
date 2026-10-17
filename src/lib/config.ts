@@ -1,5 +1,5 @@
 import { parseDuration } from "./duration";
-import { parseYouTubeId, parseYouTubeStart, watchUrl } from "./youtube";
+import { parseYouTubeId, parseYouTubePlaylist, parseYouTubeStart, watchUrl } from "./youtube";
 
 export interface CourseSection {
   id: string;
@@ -40,6 +40,8 @@ export interface Episode {
 export interface MediaConfig {
   lectures: Record<string, Lecture>;
   podcasts: Episode[];
+  /** YouTube playlist id of the video podcasts, if configured */
+  podcastPlaylist: string | null;
 }
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
@@ -136,6 +138,9 @@ export function parseMedia(raw: unknown, known: string[]): MediaConfig {
   }
   const podcasts: Episode[] = [];
   const ids = new Set<string>();
+  // the YouTube playlist that holds the video podcasts ("Open on YouTube" plays inside it)
+  const podcastPlaylist = parseYouTubePlaylist(str(raw.podcastPlaylist));
+  if (str(raw.podcastPlaylist) && !podcastPlaylist) problems.push(`media.json podcastPlaylist "${raw.podcastPlaylist}" is not a YouTube playlist id or link`);
   const showTest = raw.showTestEpisodes !== false;
   (Array.isArray(raw.podcasts) ? raw.podcasts : []).forEach((p: unknown, i: number) => {
     const where = `media.json podcasts[${i}]`;
@@ -165,12 +170,12 @@ export function parseMedia(raw: unknown, known: string[]): MediaConfig {
       duration,
       videoUrl: video || null,
       youtubeId,
-      watchUrl: youtubeId ? watchUrl(youtubeId, parseYouTubeStart(video)) : null,
+      watchUrl: youtubeId ? watchUrl(youtubeId, parseYouTubeStart(video), podcastPlaylist) : null,
       audioUrl: str(p.audioUrl) || null,
       test: p.test === true,
       demo: p.demo === true,
     });
   });
   if (problems.length) throw new ConfigError(problems);
-  return { lectures, podcasts };
+  return { lectures, podcasts, podcastPlaylist };
 }

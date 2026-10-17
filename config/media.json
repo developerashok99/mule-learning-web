@@ -1,6 +1,7 @@
 {
   "$comment": "THE ONE FILE FOR MEDIA URLS. See README → 'Adding media'. lectures: one entry per lesson id (YouTube URL or 11-character video id). podcasts: summary episodes; one episode can cover several lessons. Empty strings mean 'not added yet' and the site shows a friendly placeholder. URLs that are not absolute (http/https) are relative to the site root, e.g. test-media/…",
   "showTestEpisodes": true,
+  "podcastPlaylist": "PLdYfFuuCJATo",
   "lectures": {
     "day01": {
       "youtube": "https://www.youtube.com/watch?v=hNUO2bE-Y-o",
@@ -489,8 +490,8 @@
         "day16"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "12:13",
+      "videoUrl": "https://www.youtube.com/watch?v=IDCEtksprMU",
       "audioUrl": ""
     },
     {
@@ -500,8 +501,8 @@
         "day17"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "13:45",
+      "videoUrl": "https://www.youtube.com/watch?v=FgdeM3IPYfo",
       "audioUrl": ""
     },
     {
@@ -511,8 +512,8 @@
         "day18"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "12:53",
+      "videoUrl": "https://www.youtube.com/watch?v=y7Wg9cuW-OE",
       "audioUrl": ""
     },
     {
@@ -522,8 +523,8 @@
         "day19"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "12:14",
+      "videoUrl": "https://www.youtube.com/watch?v=vy2RQnsiL6I",
       "audioUrl": ""
     },
     {
@@ -533,8 +534,8 @@
         "day20"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:43",
+      "videoUrl": "https://www.youtube.com/watch?v=g8T4CfKjjHg",
       "audioUrl": ""
     },
     {
@@ -544,8 +545,8 @@
         "day21"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "12:26",
+      "videoUrl": "https://www.youtube.com/watch?v=7j5XzYCxi28",
       "audioUrl": ""
     },
     {
@@ -555,8 +556,8 @@
         "day22"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "11:04",
+      "videoUrl": "https://www.youtube.com/watch?v=VXMeBBN2FwI",
       "audioUrl": ""
     },
     {
@@ -566,8 +567,8 @@
         "day23"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:39",
+      "videoUrl": "https://www.youtube.com/watch?v=wPEwGcBMyms",
       "audioUrl": ""
     },
     {
@@ -577,8 +578,8 @@
         "day24"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:29",
+      "videoUrl": "https://www.youtube.com/watch?v=7MyflLdGGbY",
       "audioUrl": ""
     },
     {
@@ -588,8 +589,8 @@
         "day25"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:07",
+      "videoUrl": "https://www.youtube.com/watch?v=qaJzKnV3qhI",
       "audioUrl": ""
     },
     {
@@ -599,8 +600,8 @@
         "day26"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:10",
+      "videoUrl": "https://www.youtube.com/watch?v=O4EcQMjaILc",
       "audioUrl": ""
     },
     {
@@ -610,8 +611,8 @@
         "day27"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "11:21",
+      "videoUrl": "https://www.youtube.com/watch?v=j9glbefv3uQ",
       "audioUrl": ""
     },
     {
@@ -621,8 +622,8 @@
         "day28"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:49",
+      "videoUrl": "https://www.youtube.com/watch?v=Mx1fcsw3Ti4",
       "audioUrl": ""
     },
     {
@@ -632,8 +633,8 @@
         "day29"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "11:31",
+      "videoUrl": "https://www.youtube.com/watch?v=1gKWTR5dBtA",
       "audioUrl": ""
     },
     {
@@ -643,8 +644,8 @@
         "day30"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:28",
+      "videoUrl": "https://www.youtube.com/watch?v=aXd1WFUdzI4",
       "audioUrl": ""
     },
     {
@@ -654,8 +655,8 @@
         "day31"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "11:37",
+      "videoUrl": "https://www.youtube.com/watch?v=vHuAzi6LeXQ",
       "audioUrl": ""
     },
     {
@@ -665,8 +666,8 @@
         "day32"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:52",
+      "videoUrl": "https://www.youtube.com/watch?v=x_M_0WFVTrY",
       "audioUrl": ""
     },
     {
@@ -676,8 +677,8 @@
         "day33"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:22",
+      "videoUrl": "https://www.youtube.com/watch?v=txrmXkgnJgY",
       "audioUrl": ""
     },
     {
@@ -687,8 +688,8 @@
         "day34"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:24",
+      "videoUrl": "https://www.youtube.com/watch?v=oj0ec8Xxctc",
       "audioUrl": ""
     },
     {
@@ -698,8 +699,8 @@
         "day35"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:50",
+      "videoUrl": "https://www.youtube.com/watch?v=MImeZf036-Q",
       "audioUrl": ""
     },
     {
@@ -709,8 +710,8 @@
         "day36"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:45",
+      "videoUrl": "https://www.youtube.com/watch?v=53VIBU_ZEzU",
       "audioUrl": ""
     },
     {
@@ -720,8 +721,8 @@
         "day37"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:02",
+      "videoUrl": "https://www.youtube.com/watch?v=XRIix1xFNFI",
       "audioUrl": ""
     },
     {
@@ -731,8 +732,8 @@
         "day38"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:49",
+      "videoUrl": "https://www.youtube.com/watch?v=q41YBljq9po",
       "audioUrl": ""
     },
     {
@@ -742,8 +743,8 @@
         "day39"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:18",
+      "videoUrl": "https://www.youtube.com/watch?v=gzZCBxRnwgk",
       "audioUrl": ""
     },
     {
@@ -753,8 +754,8 @@
         "day40"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "7:54",
+      "videoUrl": "https://www.youtube.com/watch?v=cZ1kp3odkl0",
       "audioUrl": ""
     },
     {
@@ -764,8 +765,8 @@
         "day41"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "7:36",
+      "videoUrl": "https://www.youtube.com/watch?v=q-WLd-6mEYI",
       "audioUrl": ""
     },
     {
@@ -775,8 +776,8 @@
         "day42"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:09",
+      "videoUrl": "https://www.youtube.com/watch?v=i6AYGTUOK5M",
       "audioUrl": ""
     },
     {
@@ -786,8 +787,8 @@
         "day43"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:50",
+      "videoUrl": "https://www.youtube.com/watch?v=iZLItZaERTs",
       "audioUrl": ""
     },
     {
@@ -797,8 +798,8 @@
         "day44"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "7:32",
+      "videoUrl": "https://www.youtube.com/watch?v=lBqINk9xKxU",
       "audioUrl": ""
     },
     {
@@ -808,8 +809,8 @@
         "day45"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "7:20",
+      "videoUrl": "https://www.youtube.com/watch?v=4M0Z2RQvPVw",
       "audioUrl": ""
     },
     {
@@ -819,8 +820,8 @@
         "day46"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:01",
+      "videoUrl": "https://www.youtube.com/watch?v=Vm-Tolmrvt0",
       "audioUrl": ""
     },
     {
@@ -830,8 +831,8 @@
         "day47"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:45",
+      "videoUrl": "https://www.youtube.com/watch?v=Z7iAJjnRnUs",
       "audioUrl": ""
     },
     {
@@ -841,8 +842,8 @@
         "day48"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:13",
+      "videoUrl": "https://www.youtube.com/watch?v=SsdmABedHyc",
       "audioUrl": ""
     },
     {
@@ -852,8 +853,8 @@
         "day49"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:26",
+      "videoUrl": "https://www.youtube.com/watch?v=39Q0h9Es7es",
       "audioUrl": ""
     },
     {
@@ -863,8 +864,8 @@
         "day50"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:55",
+      "videoUrl": "https://www.youtube.com/watch?v=AvmJktk4JWA",
       "audioUrl": ""
     },
     {
@@ -874,8 +875,8 @@
         "day51"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:49",
+      "videoUrl": "https://www.youtube.com/watch?v=gkKeGFP-Jfs",
       "audioUrl": ""
     },
     {
@@ -885,8 +886,8 @@
         "day52"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "6:27",
+      "videoUrl": "https://www.youtube.com/watch?v=BPDjEDmq1_4",
       "audioUrl": ""
     },
     {
@@ -896,8 +897,8 @@
         "day53"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "6:26",
+      "videoUrl": "https://www.youtube.com/watch?v=bQmJaXBmz_w",
       "audioUrl": ""
     },
     {
@@ -907,8 +908,8 @@
         "day54"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:46",
+      "videoUrl": "https://www.youtube.com/watch?v=QFOs8trfyco",
       "audioUrl": ""
     },
     {
@@ -918,8 +919,8 @@
         "day55"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:52",
+      "videoUrl": "https://www.youtube.com/watch?v=UtCCjjo5zPw",
       "audioUrl": ""
     },
     {
@@ -929,8 +930,8 @@
         "day57"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "8:45",
+      "videoUrl": "https://www.youtube.com/watch?v=v0EQ-J5gEks",
       "audioUrl": ""
     },
     {
@@ -940,8 +941,8 @@
         "day58"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:12",
+      "videoUrl": "https://www.youtube.com/watch?v=aAPY5q30sYc",
       "audioUrl": ""
     },
     {
@@ -951,8 +952,8 @@
         "interview-part1"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:23",
+      "videoUrl": "https://www.youtube.com/watch?v=jDxudn-rRrI",
       "audioUrl": ""
     },
     {
@@ -962,8 +963,8 @@
         "interview-part2"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "10:02",
+      "videoUrl": "https://www.youtube.com/watch?v=NACi23kd7pc",
       "audioUrl": ""
     },
     {
@@ -973,8 +974,8 @@
         "interview-part3"
       ],
       "description": "",
-      "duration": "",
-      "videoUrl": "",
+      "duration": "9:58",
+      "videoUrl": "https://www.youtube.com/watch?v=ox_pmGPIZUY",
       "audioUrl": ""
     }
   ]

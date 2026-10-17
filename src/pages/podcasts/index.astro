@@ -3,7 +3,8 @@ import Base from "../../layouts/Base.astro";
 import EpisodeCard from "../../components/EpisodeCard.astro";
 import Icon from "../../components/Icon.astro";
 import PageHead from "../../components/PageHead.astro";
-import { getCourses, getPodcasts } from "../../lib/content";
+import { getCourses, getPodcastPlaylist, getPodcasts } from "../../lib/content";
+import { playlistUrl } from "../../lib/youtube";
 import { formatLength } from "../../lib/duration";
 import { podcastPath, withBase } from "../../lib/routes";
 
@@ -15,11 +16,15 @@ const tests = episodes.filter((e) => e.test);
 const playable = real.filter((e) => e.audioUrl || e.videoUrl);
 // featured: the first real episode that can be played (course order)
 const featured = playable[0] ?? null;
+const playlist = getPodcastPlaylist();
 ---
 <Base title="Podcasts" nav="podcasts">
   <div class="page" data-filter-scope>
     <PageHead eyebrow="Learn on the go" title="Podcasts & audio" sub="Revisit ideas through short recaps of the lectures, as video podcast episodes and audio. They are for revision, not a replacement for the full lecture or the notes.">
-      <span slot="actions" class="pill pill--blue">Persistent mini-player</span>
+      <Fragment slot="actions">
+        <span class="pill pill--blue">Persistent mini-player</span>
+        {playlist && <a class="btn" href={playlistUrl(playlist)} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Playlist on YouTube</a>}
+      </Fragment>
     </PageHead>
 
     {featured ? (

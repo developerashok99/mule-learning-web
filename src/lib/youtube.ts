@@ -48,6 +48,26 @@ export function parseYouTubeStart(input: string | null | undefined): number {
   return (+(m[1] ?? 0)) * 3600 + (+(m[2] ?? 0)) * 60 + +(m[3] ?? 0);
 }
 
-export function watchUrl(id: string, start = 0): string {
-  return `https://www.youtube.com/watch?v=${id}${start ? `&t=${start}s` : ""}`;
+/** Playlist ids are "PL…" style letters, digits, _ and -. */
+const LIST = /^[A-Za-z0-9_-]{10,64}$/;
+
+/** Extracts a playlist id from a youtube.com / studio.youtube.com playlist URL (list= or /playlist/<id>) or a bare id. */
+export function parseYouTubePlaylist(input: string | null | undefined): string | null {
+  const value = (input ?? "").trim();
+  if (!value) return null;
+  if (LIST.test(value) && !value.includes("/")) return value;
+  try {
+    const url = new URL(value.includes("://") ? value : `https://${value}`);
+    const id = url.searchParams.get("list") ?? url.pathname.match(/\/playlist\/([^/?#]+)/)?.[1] ?? null;
+    return id && LIST.test(id) ? id : null;
+  } catch {
+    return null;
+  }
 }
+
+/** Watch page link; with `list`, the video opens inside that playlist (next / previous on YouTube). */
+export function watchUrl(id: string, start = 0, list: string | null = null): string {
+  return `https://www.youtube.com/watch?v=${id}${list ? `&list=${list}` : ""}${start ? `&t=${start}s` : ""}`;
+}
+
+export const playlistUrl = (list: string) => `https://www.youtube.com/playlist?list=${list}`;

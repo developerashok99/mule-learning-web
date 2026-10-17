@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseYouTubeId, parseYouTubeStart, watchUrl } from "../../src/lib/youtube";
+import { parseYouTubeId, parseYouTubePlaylist, parseYouTubeStart, playlistUrl, watchUrl } from "../../src/lib/youtube";
 import { formatClock, formatLength, parseDuration } from "../../src/lib/duration";
 import { resolveRepoPath, rewriteLink, NOTES_GITHUB } from "../../src/lib/links";
 import { checkMediaUrl, parseCourses, parseMedia, ConfigError } from "../../src/lib/config";
@@ -31,6 +31,7 @@ describe("parseYouTubeId", () => {
     expect(parseYouTubeStart("https://www.youtube.com/embed/M7lc1UVf-VE?start=15")).toBe(15);
     expect(parseYouTubeStart("M7lc1UVf-VE")).toBe(0);
     expect(watchUrl("M7lc1UVf-VE", 90)).toBe("https://www.youtube.com/watch?v=M7lc1UVf-VE&t=90s");
+    expect(watchUrl("M7lc1UVf-VE", 0, "PLdYfFuuCJATo")).toBe("https://www.youtube.com/watch?v=M7lc1UVf-VE&list=PLdYfFuuCJATo");
   });
 });
 
@@ -142,4 +143,15 @@ describe("config validation", () => {
       expect((e as ConfigError).problems.length).toBeGreaterThanOrEqual(5);
     }
   });
+});
+
+describe("parseYouTubePlaylist", () => {
+  it.each([
+    ["PLdYfFuuCJATo", "PLdYfFuuCJATo"],
+    ["https://www.youtube.com/playlist?list=PLdYfFuuCJATo", "PLdYfFuuCJATo"],
+    ["https://www.youtube.com/watch?v=M7lc1UVf-VE&list=PLdYfFuuCJATo", "PLdYfFuuCJATo"],
+    ["https://studio.youtube.com/playlist/PLdYfFuuCJATo/videos", "PLdYfFuuCJATo"],
+  ])("accepts %s", (input, id) => expect(parseYouTubePlaylist(input)).toBe(id));
+  it.each(["", "not a playlist", "https://example.com/x"])("rejects %j", (input) => expect(parseYouTubePlaylist(input)).toBeNull());
+  it("links to the playlist page", () => expect(playlistUrl("PLdYfFuuCJATo")).toBe("https://www.youtube.com/playlist?list=PLdYfFuuCJATo"));
 });
