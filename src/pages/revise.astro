@@ -10,6 +10,7 @@ import { getCourses, getLesson, getLessons, knownIds, readNote } from "../lib/co
 import { renderMarkdown } from "../lib/markdown";
 import { lessonHasView, lessonPath, withBase } from "../lib/routes";
 import { findSection, parseQuestions, parseTermTable } from "../lib/revision";
+import { cardId } from "../lib/srs";
 
 const base = import.meta.env.BASE_URL;
 const known = knownIds();
@@ -24,7 +25,7 @@ interface Entry {
 const entries = new Map<string, Entry>();
 const qCount = new Map<string, number>();
 // flashcards: every interview question of the super-detailed notes, with its answer copied unchanged
-const cards: { s: string; d: string; l: string; href: string; q: string; a: string }[] = [];
+const cards: { id: string; s: string; d: string; l: string; href: string; q: string; a: string }[] = [];
 for (const l of getLessons()) {
   const src = readNote(l.id, "super");
   const q = findSection(src, /interview question|questions discussed/i);
@@ -32,6 +33,7 @@ for (const l of getLessons()) {
   qCount.set(l.id, qs.length);
   for (const x of qs) {
     cards.push({
+      id: cardId(l.id, x.question),
       s: l.sectionId,
       d: l.sectionTitle,
       l: l.label,
@@ -79,27 +81,50 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
       <section aria-labelledby="fc-h" data-flashcards>
         <script is:inline type="application/json" data-cards set:html={JSON.stringify(cards).replace(/</g, "\\u003c")} />
         <div class="section-head">
-          <div><h2 id="fc-h">Flashcard practice</h2><p>Try to answer before revealing the explanation</p></div>
-          <span class="pill" data-fc-count aria-live="polite">Card 1 of {cards.length}</span>
+          <div><h2 id="fc-h">Flashcard practice</h2><p data-fc-summary>Try to answer before revealing the explanation</p></div>
+          <div class="segmented" role="group" aria-label="Practice mode">
+            <button type="button" data-fc-mode="review" aria-pressed="true">Review <span data-fc-due></span></button>
+            <button type="button" data-fc-mode="browse" aria-pressed="false">Browse all</button>
+          </div>
         </div>
-        <div class="card flashcard">
-          <span class="pill pill--blue" data-fc-topic>{cards[0].d} · {cards[0].l}</span>
+        <div class="card flashcard" tabindex="-1">
+          <div class="pill-row" style="justify-content:center"><span class="pill pill--blue" data-fc-topic>{cards[0].d} · {cards[0].l}</span><span class="pill" data-fc-count aria-live="polite">Card 1 of {cards.length}</span></div>
           <div class="flashcard__q" data-fc-q set:html={cards[0].q} />
           <div class="prose flashcard__a" data-fc-a hidden set:html={cards[0].a} />
           <p class="flashcard__src" data-fc-src hidden><a href={cards[0].href}>Open the {cards[0].l} self-test →</a></p>
           <button class="btn btn--primary" type="button" data-fc-reveal aria-expanded="false">Reveal answer</button>
-          <div class="btn-row" style="margin-top:1rem">
+          <div class="grade-row" data-fc-grades hidden role="group" aria-label="How well did you remember it?">
+            <button class="btn grade grade--again" type="button" data-grade="again">Again <small data-wait="again"></small></button>
+            <button class="btn grade grade--hard" type="button" data-grade="hard">Hard <small data-wait="hard"></small></button>
+            <button class="btn grade grade--good" type="button" data-grade="good">Good <small data-wait="good"></small></button>
+            <button class="btn grade grade--easy" type="button" data-grade="easy">Easy <small data-wait="easy"></small></button>
+          </div>
+          <div class="btn-row" style="margin-top:1rem" data-fc-browse hidden>
             <button class="btn" type="button" data-fc-prev><Icon name="left" /> Previous</button>
             <button class="btn" type="button" data-fc-shuffle aria-pressed="false">Shuffle</button>
             <button class="btn" type="button" data-fc-next>Next card <Icon name="right" /></button>
           </div>
         </div>
+        <div class="card flashcard flashcard--done" data-fc-done hidden>
+          <span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="check" /></span>
+          <h3 style="margin:.8rem 0 .3rem">All caught up</h3>
+          <p class="muted" data-fc-next-due style="margin:0 0 1rem">Nothing is due right now.</p>
+          <div class="btn-row">
+            <button class="btn btn--primary" type="button" data-fc-more>Learn more new cards</button>
+            <button class="btn" type="button" data-fc-mode="browse">Browse all</button>
+          </div>
+        </div>
+        <details class="srs-help">
+          <summary>How the review schedule works</summary>
+          <p>After you reveal the answer, grade how well you remembered it. <b>Again</b> shows the card again in 10 minutes and restarts it. <b>Hard</b> waits a little longer than last time. <b>Good</b> waits 1 day, then 3 days, then about 2.5× longer each time. <b>Easy</b> waits even longer. Each grade's wait is shown on its button. Review shows the cards that are due first, then up to <span data-fc-per-day>15</span> new cards a day (change this in Preferences). The schedule is kept in this browser and included in My Study backups.</p>
+        </details>
         <div class="section-head"><div><h2>Topic collections</h2><p>Choose a subject to revise</p></div></div>
         <div class="grid g3" role="group" aria-label="Flashcard topics">
           <button class="card card--hover topic-card" type="button" data-deck="" aria-pressed="true">
             <span class="stat-icon" aria-hidden="true">All</span>
             <h3>Whole course</h3>
             <span class="small muted">Every question in course order</span>
+            <span class="small" data-deck-stat=""></span>
             <span class="pill">{cards.length} cards</span>
           </button>
           {decks.map((d) => (
@@ -107,6 +132,7 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
               <span class="stat-icon" aria-hidden="true">{d.title.split(/[\s&]+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2)}</span>
               <h3>{d.title}</h3>
               <span class="small muted">Interview questions from this section</span>
+              <span class="small" data-deck-stat={d.id}></span>
               <span class="pill">{d.n} cards</span>
             </button>
           ))}

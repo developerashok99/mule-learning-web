@@ -5,10 +5,12 @@
 import { formatClock } from "../lib/duration";
 import { KEYS, mediaProgress, read, saveMediaProgress, write } from "./store";
 
-interface EpisodeInfo {
+export interface EpisodeInfo {
   id: string;
   title: string;
   src: string;
+  /** size of the audio file in bytes, when known */
+  bytes: number | null;
   href: string;
   duration: number | null;
   lessons: { id: string; label: string; href: string }[];
@@ -38,6 +40,14 @@ let seeking = false;
 let lastSave = 0;
 
 export const getEpisode = (id: string) => episodes.find((e) => e.id === id) ?? null;
+export const allEpisodes = () => episodes;
+
+/** Where an episode's audio comes from; the app swaps in the downloaded file (src/client/downloads.ts). */
+let resolveSrc: (ep: EpisodeInfo) => string | null = () => null;
+export function setSourceResolver(fn: (ep: EpisodeInfo) => string | null) {
+  resolveSrc = fn;
+}
+const srcOf = (ep: EpisodeInfo) => resolveSrc(ep) ?? ep.src;
 export const currentId = () => current?.id ?? null;
 export const isPlaying = () => !!current && !audio.paused && !audio.ended;
 
@@ -150,7 +160,7 @@ export function load(id: string, autoplay: boolean): boolean {
   current = ep;
   titleEl.textContent = ep.title;
   titleEl.href = ep.href;
-  audio.src = ep.src;
+  audio.src = srcOf(ep);
   const saved = mediaProgress("audio", ep.id);
   const startAt = saved?.pos ?? 0;
   const applyStart = () => {
@@ -168,6 +178,21 @@ export function load(id: string, autoplay: boolean): boolean {
   if (autoplay) void play();
   renderState();
   return true;
+}
+
+/** Re-points the loaded episode at its current source (e.g. once it is downloaded), keeping the position. */
+export function refreshSource() {
+  if (!current) return;
+  const want = srcOf(current);
+  if (audio.src === want || audio.currentSrc === want) return;
+  const at = audio.currentTime || mediaProgress("audio", current.id)?.pos || 0;
+  const wasPlaying = !audio.paused;
+  audio.src = want;
+  audio.addEventListener("loadedmetadata", () => {
+    if (at > 0) audio.currentTime = at;
+    renderTime();
+    if (wasPlaying) void play();
+  }, { once: true });
 }
 
 async function play() {
@@ -268,7 +293,10 @@ audio.addEventListener("ended", () => {
 audio.addEventListener("error", () => {
   if (!current) return;
   const code = audio.error?.code;
-  const why = code === 4 ? "the file was not found or its format isn't supported" : code === 2 ? "a network error occurred" : "it could not be decoded";
+  const local = srcOf(current) !== current.src;
+  const why = !local && navigator.onLine === false
+    ? "you're offline and this episode isn't downloaded"
+    : code === 4 ? "the file was not found or its format isn't supported" : code === 2 ? "a network error occurred" : "it could not be decoded";
   setStatus(`Can't play: ${why}`, "error");
   renderState();
 });
@@ -292,6 +320,17 @@ if ("mediaSession" in navigator) {
     }
   }
 }
+
+/** For the app's lock-screen / notification controls (src/client/native.ts). */
+export const controls = {
+  play: () => void play(),
+  pause: () => audio.pause(),
+  skip,
+  step,
+  seekTo: (t: number) => (audio.currentTime = t),
+  audio,
+  current: () => current,
+};
 
 // Page play buttons (delegated: works for pages loaded later by client-side navigation).
 document.addEventListener("click", (e) => {

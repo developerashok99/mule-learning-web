@@ -16,7 +16,7 @@ import { setupFlashcards } from "./flashcards";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
-import { bookmarkIds, startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recent, recordVisit, setBookmarked, setCompleted, setPrefs, timeAgo } from "./store";
+import { bookmarkIds, startedIds, statusOf, completedIds, isBookmarked, isCompleted, prefs, recent, recordVisit, setBookmarked, setCompleted, setPrefs, srsStates, timeAgo } from "./store";
 
 const base = document.documentElement.dataset.base || "/";
 
@@ -90,7 +90,12 @@ document.addEventListener("keydown", (e) => {
   else location.href = `${base}search/`;
 });
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+const inApp = document.documentElement.dataset.app === "android";
+// the Android app: downloads, offline audio, lock-screen controls, back button (src/client/native.ts)
+if (inApp) void import("./native").then((m) => m.setupNative()).catch((e) => console.warn("native features unavailable", e));
+
+// the app has its pages bundled, so it needs no service worker
+if (!inApp && "serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {
       /* offline support is optional */
@@ -142,6 +147,14 @@ function markDone() {
     if (text) text.textContent = el.closest("summary") ? `${n}/${ids.length}` : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
     const state = el.querySelector<HTMLElement>("[data-section-state]");
     if (state) state.dataset.state = ids.length && n === ids.length ? "done" : n || s ? "active" : "new";
+  });
+  // sidebar: flashcards due for review next to Revision
+  const now = Date.now();
+  const due = Object.values(srsStates()).filter((c) => c && typeof c.due === "number" && c.due <= now).length;
+  document.querySelectorAll<HTMLElement>("[data-due-count]").forEach((el) => {
+    el.textContent = String(due);
+    el.setAttribute("aria-label", `${due} flashcards due`);
+    el.hidden = !due;
   });
   // sidebar: number of bookmarks next to My Study
   document.querySelectorAll<HTMLElement>("[data-bookmark-count]").forEach((el) => {

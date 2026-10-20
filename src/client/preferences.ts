@@ -17,6 +17,7 @@ export function setupPreferences() {
     press("[data-pref-scale]", (b) => Number(b.dataset.prefScale) === (p.scale ?? 1));
     press("[data-pref-width]", (b) => b.dataset.prefWidth === (p.width === "wide" ? "wide" : "normal"));
     page.querySelector("[data-pref-autoplay]")?.setAttribute("aria-checked", String(p.videoAutoplay !== false));
+    press("[data-pref-new]", (b) => Number(b.dataset.prefNew) === (p.newPerDay ?? 15));
   };
 
   page.querySelectorAll<HTMLElement>("[data-pref-theme]").forEach((b) =>
@@ -39,6 +40,11 @@ export function setupPreferences() {
       const width = b.dataset.prefWidth === "wide" ? "wide" : "normal";
       root.dataset.width = width;
       setPrefs({ width });
+      render();
+    }, { signal }));
+  page.querySelectorAll<HTMLElement>("[data-pref-new]").forEach((b) =>
+    b.addEventListener("click", () => {
+      setPrefs({ newPerDay: Number(b.dataset.prefNew) });
       render();
     }, { signal }));
   page.querySelector("[data-pref-autoplay]")?.addEventListener("click", () => {

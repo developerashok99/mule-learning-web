@@ -55,6 +55,12 @@ const SCALES = [
           <button class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="pf-auto" data-pref-autoplay></button>
         </div>
         <div class="setting">
+          <div><b id="pf-new">New flashcards per day</b><span class="small">How many new cards a review session may start each day. Due cards are always shown.</span></div>
+          <div class="segmented" role="group" aria-labelledby="pf-new">
+            {[5, 10, 15, 20, 30].map((n) => <button type="button" data-pref-new={n} aria-pressed="false">{n}</button>)}
+          </div>
+        </div>
+        <div class="setting">
           <div><b>Remember my progress</b><span class="small">Completion, bookmarks and positions stay in this browser. Nothing is sent anywhere.</span></div>
           <span class="pill pill--green">Local only</span>
         </div>

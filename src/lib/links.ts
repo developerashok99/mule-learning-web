@@ -1,4 +1,4 @@
-import { lessonPath, withBase, type View } from "./routes";
+import { APP_BUILD, lessonPath, withBase, type View } from "./routes";
 
 export const NOTES_GITHUB = "https://github.com/developerashok99/green-c-mule-notes";
 
@@ -57,7 +57,10 @@ export function rewriteLink(url: string, kind: SourceKind, sid: string, base: st
   else if ((m = repoPath.match(new RegExp(`^super-detailed-notes/${SID}\\.md$`)))) out = lesson(m[1], "super");
   else if ((m = repoPath.match(new RegExp(`^slides/${SID}/?(README\\.md)?$`)))) out = lesson(m[1], "slides");
   else if ((m = repoPath.match(new RegExp(`^slides/${SID}/([^/]+\\.(?:jpe?g|png|gif|webp|svg))$`, "i")))) {
-    out = { href: withBase(base, `notes-assets/slides/${m[1]}/${encodeURIComponent(m[2])}`), external: false };
+    // the app bundles only the 560px thumbnails (every slide has one), so notes keep their images offline
+    out = APP_BUILD
+      ? { href: withBase(base, `notes-assets/thumbs/${m[1]}/${encodeURIComponent(m[2].replace(/\.[^.]+$/, ".webp"))}`), external: false }
+      : { href: withBase(base, `notes-assets/slides/${m[1]}/${encodeURIComponent(m[2])}`), external: false };
   } else if (/^(detailed-notes|super-detailed-notes)\/?$/.test(repoPath) || repoPath === "README.md") {
     out = { href: withBase(base, "notes/"), external: false };
   }

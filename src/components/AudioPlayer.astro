@@ -16,6 +16,7 @@ const episodes = getPodcasts()
     id: p.id,
     title: p.title,
     src: withBase(base, p.audioUrl!),
+    bytes: p.audioBytes,
     href: withBase(base, podcastPath(p.id)),
     duration: p.duration,
     lessons: p.lessons.map((l) => ({ id: l, label: getLesson(l)?.label ?? l, href: withBase(base, lessonPath(l)) })),

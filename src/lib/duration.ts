@@ -26,3 +26,11 @@ export function formatLength(seconds: number | null): string {
   const m = Math.round((seconds % 3600) / 60);
   return h ? `${h} h${m ? ` ${m} min` : ""}` : `${m} min`;
 }
+
+/** 5222156 → "5.0 MB" */
+export function formatBytes(n: number): string {
+  if (n <= 0) return "0 MB";
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}

@@ -22,7 +22,8 @@ const playlist = getPodcastPlaylist();
   <div class="page" data-filter-scope>
     <PageHead eyebrow="Learn on the go" title="Podcasts & audio" sub="Revisit ideas through short recaps of the lectures, as video podcast episodes and audio. They are for revision, not a replacement for the full lecture or the notes.">
       <Fragment slot="actions">
-        <span class="pill pill--blue">Persistent mini-player</span>
+        <span class="pill pill--blue web-only">Persistent mini-player</span>
+        <a class="btn btn--primary app-only" href={withBase(base, "downloads/")}><Icon name="download" /> Downloads</a>
         {playlist && <a class="btn" href={playlistUrl(playlist)} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Playlist on YouTube</a>}
       </Fragment>
     </PageHead>

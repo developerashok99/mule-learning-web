@@ -42,6 +42,7 @@ const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w
         <a class="btn btn--sm" href={withBase(base, podcastPath(ep.id))}><Icon name="video" /> Watch video podcast</a>
       </div>
     )}
+    {ep.audioUrl && !ep.test && <div class="dl-slot app-only" data-download={ep.id}></div>}
   </div>
   {ep.audioUrl
     ? <button class="play-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>

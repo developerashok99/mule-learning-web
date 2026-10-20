@@ -3,9 +3,10 @@ import { ClientRouter } from "astro:transitions";
 import Icon from "../components/Icon.astro";
 import AudioPlayer from "../components/AudioPlayer.astro";
 import { getCourses, getManifest } from "../lib/content";
+import { APP_BUILD } from "../lib/routes";
 import "../styles/global.css";
 
-type NavKey = "home" | "videos" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy" | "preferences";
+type NavKey = "home" | "videos" | "courses" | "lessons" | "notes" | "podcasts" | "search" | "about" | "revise" | "mystudy" | "preferences" | "downloads";
 interface Props {
   title: string;
   description?: string;
@@ -17,6 +18,7 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
 const pageTitle = title === "Home" ? "Mule Learning Hub" : `${title} · Mule Learning Hub`;
 const manifest = getManifest();
 const courseCount = getCourses().length;
+const DOWNLOADS = { key: "downloads", href: `${base}downloads/`, label: "Downloads", icon: "download" } as const;
 // sidebar (wider than 800px): two groups, as in the design prototype
 const WORKSPACE = [
   { key: "home", href: base, label: "Home", icon: "home" },
@@ -24,6 +26,8 @@ const WORKSPACE = [
   { key: "lessons", href: `${base}lessons/`, label: "Lessons", icon: "lessons" },
   { key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" },
   { key: "podcasts", href: `${base}podcasts/`, label: "Podcasts", icon: "podcast" },
+  // offline audio lives in the app
+  ...(APP_BUILD ? [DOWNLOADS] : []),
 ] as const;
 const TOOLS = [
   { key: "revise", href: `${base}revise/`, label: "Revision", icon: "edit" },
@@ -31,23 +35,23 @@ const TOOLS = [
   { key: "search", href: `${base}search/`, label: "Search", icon: "search" },
   { key: "preferences", href: `${base}preferences/`, label: "Preferences", icon: "user" },
 ] as const;
-// bottom tab bar on phones and small tablets
+// bottom tab bar on phones and small tablets; the app swaps Videos (needs the internet) for Review (works offline)
 const BOTTOM = [
   { key: "home", href: base, label: "Home", icon: "home" },
   { key: "courses", href: `${base}courses/`, label: "Courses", icon: "courses" },
-  { key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" },
+  APP_BUILD ? ({ key: "revise", href: `${base}revise/`, label: "Review", icon: "edit" } as const) : ({ key: "videos", href: `${base}videos/`, label: "Videos", icon: "video" } as const),
   { key: "podcasts", href: `${base}podcasts/`, label: "Audio", icon: "podcast" },
   { key: "mystudy", href: `${base}my-study/`, label: "My Study", icon: "bookmark" },
 ] as const;
-const current = nav === "notes" ? "lessons" : nav;
+const current = nav === "notes" ? "lessons" : nav === "downloads" && !APP_BUILD ? "podcasts" : nav;
 const CRUMB: Record<NavKey, string> = {
   home: "Home", courses: "Courses", lessons: "Lessons", notes: "Notes", videos: "Videos", podcasts: "Podcasts",
-  revise: "Revision", mystudy: "My Study", search: "Search", preferences: "Preferences", about: "About & help",
+  revise: "Revision", mystudy: "My Study", search: "Search", preferences: "Preferences", about: "About & help", downloads: "Downloads",
 };
 const crumb = nav ? CRUMB[nav] : title;
 ---
 <!doctype html>
-<html lang="en" data-base={base}>
+<html lang="en" data-base={base} data-app={APP_BUILD ? "android" : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -96,7 +100,7 @@ const crumb = nav ? CRUMB[nav] : title;
         <p class="side-nav__label" aria-hidden="true">Study tools</p>
         <ul>
           {TOOLS.map((n) => (
-            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"bookmarks" in n && <span class="side-nav__count" data-bookmark-count hidden aria-hidden="true"></span>}</a></li>
+            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"bookmarks" in n && <span class="side-nav__count" data-bookmark-count hidden aria-hidden="true"></span>}{n.key === "revise" && <span class="side-nav__count side-nav__count--due" data-due-count hidden title="Flashcards due for review"></span>}</a></li>
           ))}
         </ul>
       </nav>

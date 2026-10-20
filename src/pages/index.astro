@@ -5,6 +5,7 @@ import PageHead from "../components/PageHead.astro";
 import ProgressBar from "../components/ProgressBar.astro";
 import { getCourses, getLessons } from "../lib/content";
 import { lessonHasView, lessonPath, withBase, type View } from "../lib/routes";
+import { allCardIds } from "../lib/cards";
 
 const base = import.meta.env.BASE_URL;
 const lessons = getLessons();
@@ -32,6 +33,7 @@ const index = lessons.map((l) => ({
 const first = lessons[0];
 const allIds = lessons.map((l) => l.id).join(",");
 const courseHref = withBase(base, `courses/${course.id}/`);
+const cardIds = allCardIds();
 const TOOLS = [
   { href: "videos/", icon: "video", title: "Lecture videos", text: "Watch with a playlist and quick navigation.", cta: "Open video library" },
   { href: "podcasts/", icon: "podcast", title: "Podcasts & audio", text: "Listen to recaps and revisit concepts.", cta: "Explore audio" },
@@ -66,6 +68,24 @@ const TOOLS = [
         <span>{lessons.length} lessons · learning path →</span>
       </a>
     </section>
+
+    {cardIds.length > 0 && (
+      <>
+        <div class="section-head"><div><h2>Review</h2><p>Flashcards from the interview questions, scheduled for when you are about to forget them</p></div></div>
+        <section class="card review-panel" aria-label="Flashcard review" data-review>
+          <script is:inline type="application/json" data-review-ids set:html={JSON.stringify(cardIds)} />
+          <div class="review-panel__nums">
+            <div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="clock" /></span><div><strong data-rv-due>0</strong><small>Due now</small></div></div>
+            <div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong data-rv-new>0</strong><small>New cards left today</small></div></div>
+            <div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="check" /></span><div><strong data-rv-learned>0</strong><small>of {cardIds.length} cards learned</small></div></div>
+          </div>
+          <div>
+            <a class="btn btn--primary" href={withBase(base, "revise/#fc-h")} data-rv-go>Start review <Icon name="right" /></a>
+            <p class="small muted" data-rv-next style="margin:.5rem 0 0"></p>
+          </div>
+        </section>
+      </>
+    )}
 
     <div class="section-head">
       <div><h2>Learning at a glance</h2><p>Your study activity, saved in this browser</p></div>

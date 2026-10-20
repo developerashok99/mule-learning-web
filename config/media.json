@@ -327,7 +327,8 @@
       "description": "",
       "duration": "10:53",
       "videoUrl": "https://www.youtube.com/watch?v=xHrXwwO2Baw",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day01-explained-full.mp3",
+      "audioBytes": 5222156
     },
     {
       "id": "day02",
@@ -338,7 +339,8 @@
       "description": "",
       "duration": "10:08",
       "videoUrl": "https://www.youtube.com/watch?v=UxuS7dDKlGE",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day02-explained-full.mp3",
+      "audioBytes": 4864374
     },
     {
       "id": "day03",
@@ -349,7 +351,8 @@
       "description": "",
       "duration": "10:53",
       "videoUrl": "https://www.youtube.com/watch?v=Ujfn31blkxg",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day03-explained-full.mp3",
+      "audioBytes": 5224541
     },
     {
       "id": "day04",
@@ -360,7 +363,8 @@
       "description": "",
       "duration": "12:39",
       "videoUrl": "https://www.youtube.com/watch?v=MPfVzTlXTVI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day04-explained-full.mp3",
+      "audioBytes": 6065911
     },
     {
       "id": "day05",
@@ -371,7 +375,8 @@
       "description": "",
       "duration": "10:37",
       "videoUrl": "https://www.youtube.com/watch?v=K0bJVQnuBhU",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day05-explained-full.mp3",
+      "audioBytes": 5092390
     },
     {
       "id": "day06",
@@ -382,7 +387,8 @@
       "description": "",
       "duration": "26:23",
       "videoUrl": "https://www.youtube.com/watch?v=BIeTm7T_Fi4",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day06-explained-full.mp3",
+      "audioBytes": 12659076
     },
     {
       "id": "day07",
@@ -393,7 +399,8 @@
       "description": "",
       "duration": "18:24",
       "videoUrl": "https://www.youtube.com/watch?v=TVnXwtwa5kI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day07-explained-full.mp3",
+      "audioBytes": 8828133
     },
     {
       "id": "day08",
@@ -404,7 +411,8 @@
       "description": "",
       "duration": "16:14",
       "videoUrl": "https://www.youtube.com/watch?v=QAPtEtHcM2I",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day08-explained-full.mp3",
+      "audioBytes": 7791810
     },
     {
       "id": "day09",
@@ -415,7 +423,8 @@
       "description": "",
       "duration": "12:53",
       "videoUrl": "https://www.youtube.com/watch?v=7oaAbp-8GFI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day09-explained-full.mp3",
+      "audioBytes": 6183131
     },
     {
       "id": "day10",
@@ -426,7 +435,8 @@
       "description": "",
       "duration": "14:05",
       "videoUrl": "https://www.youtube.com/watch?v=itxWLqHzuLk",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day10-explained-full.mp3",
+      "audioBytes": 6759161
     },
     {
       "id": "day11",
@@ -437,7 +447,8 @@
       "description": "",
       "duration": "15:03",
       "videoUrl": "https://www.youtube.com/watch?v=J8KPvIekFvg",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day11-explained-full.mp3",
+      "audioBytes": 7222798
     },
     {
       "id": "day12",
@@ -448,7 +459,8 @@
       "description": "",
       "duration": "11:43",
       "videoUrl": "https://www.youtube.com/watch?v=qdwpXeABvgs",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day12-explained-full.mp3",
+      "audioBytes": 5625301
     },
     {
       "id": "day13",
@@ -459,7 +471,8 @@
       "description": "",
       "duration": "11:46",
       "videoUrl": "https://www.youtube.com/watch?v=v1rkG8k793Y",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day13-explained-full.mp3",
+      "audioBytes": 5648977
     },
     {
       "id": "day14",
@@ -470,7 +483,8 @@
       "description": "",
       "duration": "13:44",
       "videoUrl": "https://www.youtube.com/watch?v=le4KJZw-9c8",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day14-explained-full.mp3",
+      "audioBytes": 6586625
     },
     {
       "id": "day15",
@@ -481,7 +495,8 @@
       "description": "",
       "duration": "11:49",
       "videoUrl": "https://www.youtube.com/watch?v=sjHDV3kJ82Y",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day15-explained-full.mp3",
+      "audioBytes": 5667077
     },
     {
       "id": "day16",
@@ -492,7 +507,8 @@
       "description": "",
       "duration": "12:13",
       "videoUrl": "https://www.youtube.com/watch?v=IDCEtksprMU",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day16-explained-full.mp3",
+      "audioBytes": 5860465
     },
     {
       "id": "day17",
@@ -503,7 +519,8 @@
       "description": "",
       "duration": "13:45",
       "videoUrl": "https://www.youtube.com/watch?v=FgdeM3IPYfo",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day17-explained-full.mp3",
+      "audioBytes": 6597060
     },
     {
       "id": "day18",
@@ -514,7 +531,8 @@
       "description": "",
       "duration": "12:53",
       "videoUrl": "https://www.youtube.com/watch?v=y7Wg9cuW-OE",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day18-explained-full.mp3",
+      "audioBytes": 6180614
     },
     {
       "id": "day19",
@@ -525,7 +543,8 @@
       "description": "",
       "duration": "12:14",
       "videoUrl": "https://www.youtube.com/watch?v=vy2RQnsiL6I",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day19-explained-full.mp3",
+      "audioBytes": 5871416
     },
     {
       "id": "day20",
@@ -536,7 +555,8 @@
       "description": "",
       "duration": "9:43",
       "videoUrl": "https://www.youtube.com/watch?v=g8T4CfKjjHg",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day20-explained-full.mp3",
+      "audioBytes": 4660963
     },
     {
       "id": "day21",
@@ -547,7 +567,8 @@
       "description": "",
       "duration": "12:26",
       "videoUrl": "https://www.youtube.com/watch?v=7j5XzYCxi28",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day21-explained-full.mp3",
+      "audioBytes": 5966757
     },
     {
       "id": "day22",
@@ -558,7 +579,8 @@
       "description": "",
       "duration": "11:04",
       "videoUrl": "https://www.youtube.com/watch?v=VXMeBBN2FwI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day22-explained-full.mp3",
+      "audioBytes": 5307810
     },
     {
       "id": "day23",
@@ -569,7 +591,8 @@
       "description": "",
       "duration": "9:39",
       "videoUrl": "https://www.youtube.com/watch?v=wPEwGcBMyms",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day23-explained-full.mp3",
+      "audioBytes": 4626222
     },
     {
       "id": "day24",
@@ -580,7 +603,8 @@
       "description": "",
       "duration": "9:29",
       "videoUrl": "https://www.youtube.com/watch?v=7MyflLdGGbY",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day24-explained-full.mp3",
+      "audioBytes": 4550409
     },
     {
       "id": "day25",
@@ -591,7 +615,8 @@
       "description": "",
       "duration": "10:07",
       "videoUrl": "https://www.youtube.com/watch?v=qaJzKnV3qhI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day25-explained-full.mp3",
+      "audioBytes": 4851390
     },
     {
       "id": "day26",
@@ -602,7 +627,8 @@
       "description": "",
       "duration": "10:10",
       "videoUrl": "https://www.youtube.com/watch?v=O4EcQMjaILc",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day26-explained-full.mp3",
+      "audioBytes": 4874646
     },
     {
       "id": "day27",
@@ -613,7 +639,8 @@
       "description": "",
       "duration": "11:21",
       "videoUrl": "https://www.youtube.com/watch?v=j9glbefv3uQ",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day27-explained-full.mp3",
+      "audioBytes": 5445990
     },
     {
       "id": "day28",
@@ -624,7 +651,8 @@
       "description": "",
       "duration": "9:49",
       "videoUrl": "https://www.youtube.com/watch?v=Mx1fcsw3Ti4",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day28-explained-full.mp3",
+      "audioBytes": 4709652
     },
     {
       "id": "day29",
@@ -635,7 +663,8 @@
       "description": "",
       "duration": "11:31",
       "videoUrl": "https://www.youtube.com/watch?v=1gKWTR5dBtA",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day29-explained-full.mp3",
+      "audioBytes": 5527506
     },
     {
       "id": "day30",
@@ -646,7 +675,8 @@
       "description": "",
       "duration": "10:28",
       "videoUrl": "https://www.youtube.com/watch?v=aXd1WFUdzI4",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day30-explained-full.mp3",
+      "audioBytes": 5019601
     },
     {
       "id": "day31",
@@ -657,7 +687,8 @@
       "description": "",
       "duration": "11:37",
       "videoUrl": "https://www.youtube.com/watch?v=vHuAzi6LeXQ",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day31-explained-full.mp3",
+      "audioBytes": 5575122
     },
     {
       "id": "day32",
@@ -668,7 +699,8 @@
       "description": "",
       "duration": "10:52",
       "videoUrl": "https://www.youtube.com/watch?v=x_M_0WFVTrY",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day32-explained-full.mp3",
+      "audioBytes": 5216207
     },
     {
       "id": "day33",
@@ -679,7 +711,8 @@
       "description": "",
       "duration": "10:22",
       "videoUrl": "https://www.youtube.com/watch?v=txrmXkgnJgY",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day33-explained-full.mp3",
+      "audioBytes": 4971759
     },
     {
       "id": "day34",
@@ -690,7 +723,8 @@
       "description": "",
       "duration": "10:24",
       "videoUrl": "https://www.youtube.com/watch?v=oj0ec8Xxctc",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day34-explained-full.mp3",
+      "audioBytes": 4989189
     },
     {
       "id": "day35",
@@ -701,7 +735,8 @@
       "description": "",
       "duration": "8:50",
       "videoUrl": "https://www.youtube.com/watch?v=MImeZf036-Q",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day35-explained-full.mp3",
+      "audioBytes": 4237005
     },
     {
       "id": "day36",
@@ -712,7 +747,8 @@
       "description": "",
       "duration": "10:45",
       "videoUrl": "https://www.youtube.com/watch?v=53VIBU_ZEzU",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day36-explained-full.mp3",
+      "audioBytes": 5160620
     },
     {
       "id": "day37",
@@ -723,7 +759,8 @@
       "description": "",
       "duration": "10:02",
       "videoUrl": "https://www.youtube.com/watch?v=XRIix1xFNFI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day37-explained-full.mp3",
+      "audioBytes": 4813190
     },
     {
       "id": "day38",
@@ -734,7 +771,8 @@
       "description": "",
       "duration": "10:49",
       "videoUrl": "https://www.youtube.com/watch?v=q41YBljq9po",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day38-explained-full.mp3",
+      "audioBytes": 5185877
     },
     {
       "id": "day39",
@@ -745,7 +783,8 @@
       "description": "",
       "duration": "10:18",
       "videoUrl": "https://www.youtube.com/watch?v=gzZCBxRnwgk",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day39-explained-full.mp3",
+      "audioBytes": 4940684
     },
     {
       "id": "day40",
@@ -756,7 +795,8 @@
       "description": "",
       "duration": "7:54",
       "videoUrl": "https://www.youtube.com/watch?v=cZ1kp3odkl0",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day40-explained-full.mp3",
+      "audioBytes": 3788148
     },
     {
       "id": "day41",
@@ -767,7 +807,8 @@
       "description": "",
       "duration": "7:36",
       "videoUrl": "https://www.youtube.com/watch?v=q-WLd-6mEYI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day41-explained-full.mp3",
+      "audioBytes": 3643615
     },
     {
       "id": "day42",
@@ -778,7 +819,8 @@
       "description": "",
       "duration": "8:09",
       "videoUrl": "https://www.youtube.com/watch?v=i6AYGTUOK5M",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day42-explained-full.mp3",
+      "audioBytes": 3909861
     },
     {
       "id": "day43",
@@ -789,7 +831,8 @@
       "description": "",
       "duration": "9:50",
       "videoUrl": "https://www.youtube.com/watch?v=iZLItZaERTs",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day43-explained-full.mp3",
+      "audioBytes": 4716154
     },
     {
       "id": "day44",
@@ -800,7 +843,8 @@
       "description": "",
       "duration": "7:32",
       "videoUrl": "https://www.youtube.com/watch?v=lBqINk9xKxU",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day44-explained-full.mp3",
+      "audioBytes": 3610065
     },
     {
       "id": "day45",
@@ -811,7 +855,8 @@
       "description": "",
       "duration": "7:20",
       "videoUrl": "https://www.youtube.com/watch?v=4M0Z2RQvPVw",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day45-explained-full.mp3",
+      "audioBytes": 3518788
     },
     {
       "id": "day46",
@@ -822,7 +867,8 @@
       "description": "",
       "duration": "9:01",
       "videoUrl": "https://www.youtube.com/watch?v=Vm-Tolmrvt0",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day46-explained-full.mp3",
+      "audioBytes": 4323137
     },
     {
       "id": "day47",
@@ -833,7 +879,8 @@
       "description": "",
       "duration": "8:45",
       "videoUrl": "https://www.youtube.com/watch?v=Z7iAJjnRnUs",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day47-explained-full.mp3",
+      "audioBytes": 4197386
     },
     {
       "id": "day48",
@@ -844,7 +891,8 @@
       "description": "",
       "duration": "8:13",
       "videoUrl": "https://www.youtube.com/watch?v=SsdmABedHyc",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day48-explained-full.mp3",
+      "audioBytes": 3941186
     },
     {
       "id": "day49",
@@ -855,7 +903,8 @@
       "description": "",
       "duration": "8:26",
       "videoUrl": "https://www.youtube.com/watch?v=39Q0h9Es7es",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day49-explained-full.mp3",
+      "audioBytes": 4045883
     },
     {
       "id": "day50",
@@ -866,7 +915,8 @@
       "description": "",
       "duration": "8:55",
       "videoUrl": "https://www.youtube.com/watch?v=AvmJktk4JWA",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day50-explained-full.mp3",
+      "audioBytes": 4276279
     },
     {
       "id": "day51",
@@ -877,7 +927,8 @@
       "description": "",
       "duration": "10:49",
       "videoUrl": "https://www.youtube.com/watch?v=gkKeGFP-Jfs",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day51-explained-full.mp3",
+      "audioBytes": 5187854
     },
     {
       "id": "day52",
@@ -888,7 +939,8 @@
       "description": "",
       "duration": "6:27",
       "videoUrl": "https://www.youtube.com/watch?v=BPDjEDmq1_4",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day52-explained-full.mp3",
+      "audioBytes": 3094638
     },
     {
       "id": "day53",
@@ -899,7 +951,8 @@
       "description": "",
       "duration": "6:26",
       "videoUrl": "https://www.youtube.com/watch?v=bQmJaXBmz_w",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day53-explained-full.mp3",
+      "audioBytes": 3088474
     },
     {
       "id": "day54",
@@ -910,7 +963,8 @@
       "description": "",
       "duration": "9:46",
       "videoUrl": "https://www.youtube.com/watch?v=QFOs8trfyco",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day54-explained-full.mp3",
+      "audioBytes": 4685671
     },
     {
       "id": "day55",
@@ -921,7 +975,8 @@
       "description": "",
       "duration": "8:52",
       "videoUrl": "https://www.youtube.com/watch?v=UtCCjjo5zPw",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day55-explained-full.mp3",
+      "audioBytes": 4255768
     },
     {
       "id": "day57",
@@ -932,7 +987,8 @@
       "description": "",
       "duration": "8:45",
       "videoUrl": "https://www.youtube.com/watch?v=v0EQ-J5gEks",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day57-explained-full.mp3",
+      "audioBytes": 4200787
     },
     {
       "id": "day58",
@@ -943,7 +999,8 @@
       "description": "",
       "duration": "9:12",
       "videoUrl": "https://www.youtube.com/watch?v=aAPY5q30sYc",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/day58-explained-full.mp3",
+      "audioBytes": 4411089
     },
     {
       "id": "interview-part1",
@@ -954,7 +1011,8 @@
       "description": "",
       "duration": "10:23",
       "videoUrl": "https://www.youtube.com/watch?v=jDxudn-rRrI",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/interview-part1-explained-full.mp3",
+      "audioBytes": 4978846
     },
     {
       "id": "interview-part2",
@@ -965,7 +1023,8 @@
       "description": "",
       "duration": "10:02",
       "videoUrl": "https://www.youtube.com/watch?v=NACi23kd7pc",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/interview-part2-explained-full.mp3",
+      "audioBytes": 4810602
     },
     {
       "id": "interview-part3",
@@ -976,7 +1035,8 @@
       "description": "",
       "duration": "9:58",
       "videoUrl": "https://www.youtube.com/watch?v=ox_pmGPIZUY",
-      "audioUrl": ""
+      "audioUrl": "https://github.com/developerashok99/mule-learning-web/releases/download/podcast-audio-v1/interview-part3-explained-full.mp3",
+      "audioBytes": 4779173
     }
   ]
 }

@@ -4,7 +4,7 @@ import Icon from "../../../components/Icon.astro";
 import { getLessons, knownIds, readSlides, type Lesson } from "../../../lib/content";
 import { renderMarkdown } from "../../../lib/markdown";
 import { rewriteLink } from "../../../lib/links";
-import { withBase } from "../../../lib/routes";
+import { APP_BUILD, WEBSITE, withBase } from "../../../lib/routes";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -18,6 +18,8 @@ const base = import.meta.env.BASE_URL;
 const data = readSlides(lesson.id)!;
 const intro = data.intro ? await renderMarkdown(data.intro, { kind: "slides", sid: lesson.id, base, known: knownIds() }) : null;
 const src = (file: string) => rewriteLink(file, "slides", lesson.id, base).href;
+// the full-size image: in the app it comes from the website (not bundled), with the thumbnail as the offline fallback
+const full = (file: string) => (APP_BUILD ? `${WEBSITE}notes-assets/slides/${lesson.id}/${encodeURIComponent(file)}` : src(file));
 // 560px WebP thumbnails made by the sync script; fall back to the original if one is missing
 const thumbFile = (file: string) => path.join(process.cwd(), "public/notes-assets/thumbs", lesson.id, file.replace(/\.[^.]+$/, ".webp"));
 const thumb = (file: string) => (fs.existsSync(thumbFile(file)) ? withBase(base, `notes-assets/thumbs/${lesson.id}/${encodeURIComponent(file.replace(/\.[^.]+$/, ".webp"))}`) : src(file));
@@ -32,7 +34,7 @@ const thumb = (file: string) => (fs.existsSync(thumbFile(file)) ? withBase(base,
       {data.slides.map((s, i) => (
         <li>
           <figure class="slide-card">
-            <button type="button" data-slide={i} data-full={src(s.file)} data-alt={s.alt} data-caption={`${s.n} — ${s.caption}`} aria-label={`Enlarge slide ${s.n}: ${s.caption}`}>
+            <button type="button" data-slide={i} data-full={full(s.file)} data-thumb={thumb(s.file)} data-alt={s.alt} data-caption={`${s.n} — ${s.caption}`} aria-label={`Enlarge slide ${s.n}: ${s.caption}`}>
               <img src={thumb(s.file)} alt={s.alt} loading={i < 2 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : undefined} decoding="async" width="560" height="315" />
             </button>
             <figcaption><b>{s.n}</b>{s.caption}{s.time && <time>at {s.time} in the class video</time>}</figcaption>

@@ -3,7 +3,7 @@
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
-import { formatLength } from "../lib/duration";
+import { formatBytes, formatLength } from "../lib/duration";
 import { lessonPath, withBase } from "../lib/routes";
 
 interface Props {
@@ -69,7 +69,8 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
               <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
             </div>
           </div>
-          <a class="btn btn--sm audio-card__download" href={withBase(base, ep.audioUrl)} download><Icon name="download" /> Download audio</a>
+          {!ep.test && <div class="dl-slot app-only" data-download={ep.id}></div>}
+          <a class="btn btn--sm audio-card__download web-only" href={withBase(base, ep.audioUrl)} download><Icon name="download" /> Download MP3{ep.audioBytes && <> ({formatBytes(ep.audioBytes)})</>}</a>
         </>
       ) : (
         <p class="audio-card__empty"><strong>Audio podcast not added yet</strong> Once the MP3 link is added to config/media.json, a play button and download appear here.</p>

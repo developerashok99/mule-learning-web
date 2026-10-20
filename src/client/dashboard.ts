@@ -1,6 +1,7 @@
 /** Home page panels, built only from what this browser has stored (nothing is invented). */
 import { getEpisode } from "./player";
-import { allMediaProgress, bookmarkIds, completedIds, readingProgress, recent, startedIds, timeAgo } from "./store";
+import { allMediaProgress, bookmarkIds, completedIds, newPerDay, newStartedToday, readingProgress, recent, srsStates, startedIds, timeAgo } from "./store";
+import { describeWait, queue } from "../lib/srs";
 import { formatClock } from "../lib/duration";
 import { recommend } from "../lib/progress";
 
@@ -158,4 +159,27 @@ export function setupDashboard() {
   const secs = index.filter((l) => done.has(l.id)).reduce((n, l) => n + (l.secs || 0), 0);
   const hours = $("[data-hours-done]");
   if (hours) hours.textContent = !secs ? "0 h" : secs >= 3600 ? `${(secs / 3600).toFixed(1).replace(/\.0$/, "")} h` : `${Math.round(secs / 60)} min`;
+
+  // ---- flashcard review ----
+  const rv = $("[data-review]");
+  if (rv) {
+    let ids: string[] = [];
+    try {
+      ids = JSON.parse(rv.querySelector("[data-review-ids]")?.textContent || "[]");
+    } catch {
+      ids = [];
+    }
+    const qi = queue(ids, srsStates());
+    const left = Math.min(qi.fresh.length, Math.max(0, newPerDay() - newStartedToday()));
+    set("[data-rv-due]", qi.due.length);
+    set("[data-rv-new]", left);
+    set("[data-rv-learned]", qi.learned);
+    const go = $<HTMLAnchorElement>("[data-rv-go]")!;
+    const next = $("[data-rv-next]")!;
+    if (!qi.due.length && !left) {
+      go.textContent = "Browse all cards";
+      go.href = go.href.replace(/#.*$/, "#browse");
+      next.textContent = qi.nextDue ? `Nothing due. Next review in ${describeWait(qi.nextDue - Date.now())}.` : "Nothing due.";
+    } else next.textContent = qi.due.length ? `${qi.due.length + left} cards in today's review` : `${left} new cards to start today`;
+  }
 }

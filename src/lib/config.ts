@@ -34,6 +34,8 @@ export interface Episode {
   youtubeId: string | null;
   watchUrl: string | null;
   audioUrl: string | null;
+  /** size of the audio file in bytes, when known (shown before downloading) */
+  audioBytes: number | null;
   test: boolean;
   demo: boolean;
 }
@@ -176,6 +178,7 @@ export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisod
       youtubeId,
       watchUrl: youtubeId ? watchUrl(youtubeId, parseYouTubeStart(video), podcastPlaylist) : null,
       audioUrl: str(p.audioUrl) || null,
+      audioBytes: typeof p.audioBytes === "number" && p.audioBytes > 0 ? p.audioBytes : null,
       test: p.test === true,
       demo: p.demo === true,
     });

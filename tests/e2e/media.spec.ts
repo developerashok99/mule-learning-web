@@ -109,9 +109,22 @@ test.describe("audio podcast player", () => {
   });
 
   test("episodes without an audio file cannot be played", async ({ page }) => {
+    const ep = (media.podcasts as { title: string; audioUrl?: string; test?: boolean }[]).find((p) => !p.test && !p.audioUrl?.trim());
+    test.skip(!ep, "every episode has an audio file");
     await page.goto("podcasts/");
-    const disabled = page.getByRole("button", { name: "Audio not available yet: Day 4 summary" });
-    await expect(disabled).toBeDisabled();
+    await expect(page.getByRole("button", { name: `Audio not available yet: ${ep!.title}` })).toBeDisabled();
+  });
+
+  test("real episodes play their hosted audio file", async ({ page }) => {
+    const ep = (media.podcasts as { id: string; title: string; audioUrl?: string; test?: boolean }[]).find((p) => !p.test && p.audioUrl?.trim());
+    test.skip(!ep, "no hosted audio yet");
+    // the real file is ~5 MB on GitHub; serve the bundled fixture instead so the test is fast and offline-safe
+    await page.route(ep!.audioUrl!, (r) => r.fulfill({ path: "public/test-media/fixture-audio.mp3", contentType: "audio/mpeg" }));
+    await page.goto(`podcasts/${ep!.id}/`);
+    await expect(page.getByRole("link", { name: /Download MP3/ })).toHaveAttribute("href", ep!.audioUrl!);
+    await page.getByRole("button", { name: `Play audio: ${ep!.title}` }).first().click();
+    await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.3);
+    expect((await audioState(page)).src).toBe(ep!.audioUrl);
   });
 
   test("shows an error when the audio file can't be loaded", async ({ page }) => {

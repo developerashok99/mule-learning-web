@@ -1,0 +1,66 @@
+---
+/**
+ * Offline audio. In the Android app: what is downloaded or downloading (filled in by src/client/native.ts), storage
+ * used, and every episode with its own Download button, so you choose what to keep on the phone.
+ * On the website: explains that offline downloads are an app feature (browsers can stream the audio, not keep it).
+ */
+import Base from "../layouts/Base.astro";
+import Icon from "../components/Icon.astro";
+import PageHead from "../components/PageHead.astro";
+import { getCourses, getPodcasts } from "../lib/content";
+import { formatBytes, formatLength } from "../lib/duration";
+import { podcastPath, withBase } from "../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const episodes = getPodcasts().filter((e) => !e.test && e.audioUrl);
+const sections = getCourses().flatMap((c) => c.sections);
+const total = episodes.reduce((n, e) => n + (e.audioBytes ?? 0), 0);
+---
+<Base title="Downloads" nav="downloads" description="Podcast audio downloaded for offline listening">
+  <div class="page page--read" data-downloads-page>
+    <PageHead eyebrow="Listen anywhere" title="Offline audio" sub="Download the podcast episodes you want onto this phone. Downloaded episodes play with no internet connection, keep their position, and can be deleted at any time." />
+
+    <div class="notice web-only" style="margin-bottom:1.5rem">
+      <Icon name="info" />
+      <div>
+        <strong>Offline downloads are a feature of the Android app</strong>
+        <p>On the website every episode streams in the audio player. To keep episodes on your phone for listening without internet, use the Mule Learning Hub app. Its downloads are stored in the app, not in the browser.</p>
+      </div>
+    </div>
+
+    <section class="card app-only" aria-labelledby="dl-h" style="margin-bottom:1.5rem">
+      <div class="section-head" style="margin-top:0">
+        <div><h2 id="dl-h">On this phone</h2><p data-dl-usage>Loading…</p></div>
+      </div>
+      <ul class="dl-list" data-dl-list hidden></ul>
+      <p class="empty" data-dl-empty>No episodes downloaded yet. Choose episodes below.</p>
+    </section>
+
+    <section aria-labelledby="pick-h" class="app-only">
+      <div class="section-head">
+        <div><h2 id="pick-h">Choose episodes</h2><p>{episodes.length} episodes · {formatBytes(total)} in total. Nothing downloads until you choose it.</p></div>
+      </div>
+      {sections.map((s) => {
+        const eps = episodes.filter((e) => e.lessons.some((l) => s.lessons.includes(l)));
+        return eps.length > 0 && (
+          <details class="card" style="margin-bottom:.6rem;padding:0">
+            <summary class="dl-summary">{s.title} <span class="pill">{eps.length} episodes · {formatBytes(eps.reduce((n, e) => n + (e.audioBytes ?? 0), 0))}</span></summary>
+            <ul class="dl-pick" style="padding:0 1.1rem .4rem">
+              {eps.map((e) => (
+                <li>
+                  <a class="dl-pick__title" href={withBase(base, podcastPath(e.id))}>{e.title}{e.duration != null && <span class="small muted"> · {formatLength(e.duration)}</span>}</a>
+                  <div class="dl-slot" data-download={e.id}></div>
+                </li>
+              ))}
+            </ul>
+          </details>
+        );
+      })}
+    </section>
+
+    <section class="web-only">
+      <div class="section-head"><div><h2>Stream on the website</h2><p>Every episode plays in the audio player and keeps playing while you move around the site.</p></div></div>
+      <a class="btn btn--primary" href={withBase(base, "podcasts/")}><Icon name="podcast" /> Open the podcasts</a>
+    </section>
+  </div>
+</Base>

@@ -39,7 +39,7 @@ const PAGES = [
   "", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "revise/", "my-study/",
   "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/",
   "lessons/day15/revise/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/",
-  "videos/", "preferences/",
+  "videos/", "preferences/", "downloads/",
 ];
 
 test.describe("pages", () => {
@@ -361,8 +361,8 @@ test.describe("revision", () => {
 
 test.describe("revision studio and preferences", () => {
   test("flashcards come from the notes' interview questions", async ({ page }) => {
-    await page.goto("revise/");
-    const card = page.locator(".flashcard");
+    await page.goto("revise/#browse");
+    const card = page.locator(".flashcard:not(.flashcard--done)");
     await expect(page.locator("[data-fc-count]")).toContainText(/^Card 1 of \d+$/);
     await expect(card.locator("[data-fc-a]")).toBeHidden();
     await page.getByRole("button", { name: "Reveal answer" }).click();
@@ -375,6 +375,45 @@ test.describe("revision studio and preferences", () => {
     await page.getByRole("group", { name: "Flashcard topics" }).getByRole("button", { name: /API Design/ }).click();
     await expect(page.locator("[data-fc-topic]")).toContainText("API Design");
     await expect(page.locator("[data-fc-count]")).toContainText("Card 1 of");
+  });
+
+  test("review schedules flashcards and Home shows what is due", async ({ page }) => {
+    await page.goto("revise/");
+    await expect(page.locator("[data-fc-summary]")).toContainText(/0 due now · 15 new cards left today · 0 of \d+ learned/);
+    await expect(page.locator("[data-fc-count]")).toContainText("New card");
+    await page.getByRole("button", { name: "Reveal answer" }).click();
+    const grades = page.getByRole("group", { name: "How well did you remember it?" });
+    await expect(grades).toBeVisible();
+    await expect(grades.locator('[data-wait="again"]')).toHaveText("10 min");
+    await expect(grades.locator('[data-wait="good"]')).toHaveText("1 day");
+    await grades.getByRole("button", { name: /^Again/ }).click();
+    await page.getByRole("button", { name: "Reveal answer" }).click();
+    await grades.getByRole("button", { name: /^Good/ }).click();
+    await expect(page.locator("[data-fc-summary]")).toContainText(/13 new cards left today · 2 of \d+ learned/);
+    // the schedule persists: one card comes back in 10 minutes, so pretend 11 minutes passed
+    const states = await page.evaluate(() => JSON.parse(localStorage.getItem("mls.srs") || "{}"));
+    expect(Object.keys(states)).toHaveLength(2);
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem("mls.srs")!);
+      for (const k of Object.keys(s)) if (s[k].ivl === 0) s[k].due = Date.now() - 1000;
+      localStorage.setItem("mls.srs", JSON.stringify(s));
+    });
+    await page.goto("");
+    await expect(page.locator("[data-rv-due]")).toHaveText("1");
+    await expect(page.locator("[data-rv-learned]")).toHaveText("2");
+    // Browse mode shows every card
+    await page.goto("revise/#browse");
+    await expect(page.locator("[data-fc-count]")).toContainText(/^Card 1 of \d+$/);
+  });
+
+  test("lesson overview has objectives and a short self-check", async ({ page }) => {
+    await page.goto("lessons/day15/");
+    await expect(page.getByRole("heading", { name: "After this lesson you should be able to explain" })).toBeVisible();
+    const check = page.locator("section", { has: page.getByRole("heading", { name: "Check yourself" }) });
+    await expect(check.locator("details.qa")).toHaveCount(3);
+    await expect(check.locator(".qa__a").first()).toBeHidden();
+    await check.locator("summary").first().click();
+    await expect(check.locator(".qa__a").first()).toBeVisible();
   });
 
   test("preferences change the theme, text size and autoplay", async ({ page }) => {
@@ -404,6 +443,14 @@ test.describe("revision studio and preferences", () => {
     await expect(page.getByRole("link", { name: "Playlist on YouTube" })).toHaveAttribute("href", `https://www.youtube.com/playlist?list=${media.podcastPlaylist}`);
     await page.goto("podcasts/day40/");
     await expect(page.getByRole("link", { name: /Open on YouTube/ })).toHaveAttribute("href", new RegExp(`list=${media.podcastPlaylist}`));
+  });
+
+  test("the website explains that offline downloads are in the app", async ({ page }) => {
+    await page.goto("downloads/");
+    await expect(page.getByText("Offline downloads are a feature of the Android app")).toBeVisible();
+    // the app's download controls are not shown on the website
+    await expect(page.locator("[data-download]:visible")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Open the podcasts" })).toBeVisible();
   });
 
   test("podcasts can be filtered by format", async ({ page }) => {

@@ -2,6 +2,8 @@
  * Everything the site remembers lives in this browser's localStorage (no account, no sync between devices).
  * Every read/write is guarded: private browsing or blocked storage just means nothing is remembered.
  */
+import type { CardState } from "../lib/srs";
+
 export const KEYS = {
   completed: "mls.completed", // string[] lesson ids
   bookmarks: "mls.bookmarks", // string[] lesson ids
@@ -12,6 +14,8 @@ export const KEYS = {
   reading: "mls.reading", // Record<"<lesson>/<level>", number 0..1>
   player: "mls.player", // { id, rate } the last episode in the audio player
   searches: "mls.searches", // string[] recent search queries, newest first
+  srs: "mls.srs", // Record<cardId, CardState> flashcard review schedule (src/lib/srs.ts)
+  srsNew: "mls.srsNew", // { day: "YYYY-MM-DD", n } new flashcards started today
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
 
@@ -162,6 +166,8 @@ export interface Prefs {
   videoAutoplay?: boolean;
   /** Videos tab: the last video opened, for "continue watching" */
   lastVideo?: string;
+  /** Revision: new flashcards to introduce per day (default 15) */
+  newPerDay?: number;
 }
 /** Recent searches (search page), newest first; a longer query replaces the shorter one it extends. */
 export const recentSearches = () => read<string[]>(KEYS.searches, []).filter((x) => typeof x === "string");
@@ -186,3 +192,22 @@ export function timeAgo(at: number): string {
   const d = Math.floor(s / 86400);
   return d === 1 ? "yesterday" : `${d} days ago`;
 }
+
+// ---- flashcard review schedule ----
+export const srsStates = () => read<Record<string, CardState>>(KEYS.srs, {});
+export function saveCardState(id: string, state: CardState) {
+  write(KEYS.srs, { ...srsStates(), [id]: state });
+}
+const today = () => new Date().toLocaleDateString("en-CA");
+/** New flashcards started today (resets each day). */
+export function newStartedToday(): number {
+  const v = read<{ day?: string; n?: number }>(KEYS.srsNew, {});
+  return v.day === today() && typeof v.n === "number" ? v.n : 0;
+}
+export function noteNewStarted() {
+  write(KEYS.srsNew, { day: today(), n: newStartedToday() + 1 });
+}
+export const newPerDay = () => {
+  const n = prefs().newPerDay;
+  return typeof n === "number" && n >= 0 && n <= 100 ? n : 15;
+};

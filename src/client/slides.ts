@@ -12,6 +12,12 @@ export function setupSlides() {
   const show = (n: number) => {
     i = (n + thumbs.length) % thumbs.length;
     const t = thumbs[i];
+    img.onerror = null;
+    // offline in the app the full-size image is not bundled: fall back to the thumbnail
+    if (t.dataset.thumb && t.dataset.thumb !== t.dataset.full) img.onerror = () => {
+      img.onerror = null;
+      img.src = t.dataset.thumb!;
+    };
     img.src = t.dataset.full!;
     img.alt = t.dataset.alt || "";
     caption.textContent = t.dataset.caption || "";

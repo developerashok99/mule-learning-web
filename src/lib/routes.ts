@@ -53,3 +53,8 @@ export function withBase(base: string, path: string): string {
   const b = base.endsWith("/") ? base : `${base}/`;
   return b + path.replace(/^\/+/, "");
 }
+
+/** True while building the Android app's copy of the site (npm run build:app). */
+export const APP_BUILD = typeof process !== "undefined" && process.env?.APP_BUILD === "1";
+/** The published website, for resources the app does not bundle (full-size slide images). */
+export const WEBSITE = "https://developerashok99.github.io/mule-learning-web/";
