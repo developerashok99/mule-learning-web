@@ -1,6 +1,6 @@
 {
-  "$comment": "THE ONE FILE FOR MEDIA URLS. See README → 'Adding media'. lectures: one entry per lesson id (YouTube URL or 11-character video id). podcasts: summary episodes; one episode can cover several lessons. Empty strings mean 'not added yet' and the site shows a friendly placeholder. URLs that are not absolute (http/https) are relative to the site root, e.g. test-media/…",
-  "showTestEpisodes": true,
+  "$comment": "THE ONE FILE FOR MEDIA URLS. See README → 'Adding media'. lectures: one entry per lesson id (YouTube URL or 11-character video id). podcasts: summary episodes; one episode can cover several lessons. Empty strings mean 'not added yet' and the site shows a friendly placeholder. URLs that are not absolute (http/https) are relative to the site root, e.g. test-media/… The \"Player test\" episode (test: true) is only built for the browser tests (npm run build:test); showTestEpisodes stays false for the published site.",
+  "showTestEpisodes": false,
   "podcastPlaylist": "PLdYfFuuCJATo",
   "lectures": {
     "day01": {

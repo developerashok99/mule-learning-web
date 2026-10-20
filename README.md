@@ -55,7 +55,8 @@ Each episode under `podcasts` has both formats, because they are the same summar
 - `id` must be unique: lowercase letters, digits and dashes. It becomes the page URL (`/podcasts/<id>/`) and the key for saved listening positions, so don't rename it later.
 - URLs must be `https://`. A path without `https://` (like `test-media/x.mp3`) is served from this site's `public/` folder.
 - **Where to host the files:** anywhere that serves them over HTTPS with range requests, so seeking works. Good free options: a **GitHub Release** of this repo (upload the MP3/MP4 as release assets and copy their download links), Cloudflare R2, or Internet Archive. Don't commit large media into this repository, because GitHub Pages has a 1 GB site limit.
-- The episode called **"Player test (fixture media)"** uses tiny synthetic files in `public/test-media/` (a 30-second tone and test pattern). Set `"showTestEpisodes": false` at the top of `media.json` to hide it once real episodes exist.
+- The episode called **"Player test (fixture media)"** (`"test": true`) uses tiny synthetic files in `public/test-media/` (a 30-second tone and test pattern). It exists only for the browser tests: `npm run build:test` builds the site with it (`SHOW_TEST_EPISODES=true`), while `npm run build` and the published site leave the episode and `test-media/` out (`"showTestEpisodes": false`).
+- **Video podcasts** are the Unlisted YouTube videos in the "gc podcast video" playlist (`"podcastPlaylist"`). "Open on YouTube" opens each one inside that playlist.
 
 ### Check your edit
 
@@ -151,11 +152,12 @@ npm run check        # TypeScript / Astro type check
 npm test             # unit tests + validation of config/*.json against the synced notes
 npm run build
 npm run test:links   # every internal href/src/#anchor in dist/ must resolve, with the base path
+npm run build:test   # the site plus the test episode the browser tests play
 npm run test:e2e     # Playwright in Google Chrome at 360×800, 390×844, 768×1024, 1024×768 and 1440×900, incl. axe accessibility checks
 npm run verify       # all of the above
 ```
 
-The e2e tests run against the built site under the real `/mule-learning-web/` base path. `BASE_URL=https://developerashok99.github.io/mule-learning-web/ npm run test:e2e` runs the same suite against the live site.
+The e2e tests run against the built site under the real `/mule-learning-web/` base path. `BASE_URL=https://developerashok99.github.io/mule-learning-web/ npm run test:e2e` runs the same suite against the live site (the audio-player tests need the test episode, which the live site leaves out, so they fail there by design).
 
 ## Deployment
 

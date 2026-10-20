@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:links": "node scripts/check-links.mjs",
     "test:e2e": "playwright test",
-    "verify": "npm run check && npm test && npm run build && npm run test:links && npm run test:e2e"
+    "verify": "npm run check && npm test && npm run sync && npm run build:test && npm run test:links && npm run test:e2e && npm run build:site",
+    "build:test": "SHOW_TEST_EPISODES=true npm run build:site"
   },
   "repository": {
     "type": "git",

@@ -109,7 +109,11 @@ export function parseCourses(raw: unknown, known: string[]): Course[] {
   return courses;
 }
 
-export function parseMedia(raw: unknown, known: string[]): MediaConfig {
+/**
+ * `showTestEpisodes` overrides media.json's own switch: test builds (SHOW_TEST_EPISODES=true) include the
+ * "Player test" episode that the browser tests play; the published site never does.
+ */
+export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisodes?: boolean } = {}): MediaConfig {
   const problems: string[] = [];
   if (!isObj(raw)) throw new ConfigError(["media.json: expected an object"]);
   const lectures: Record<string, Lecture> = {};
@@ -141,7 +145,7 @@ export function parseMedia(raw: unknown, known: string[]): MediaConfig {
   // the YouTube playlist that holds the video podcasts ("Open on YouTube" plays inside it)
   const podcastPlaylist = parseYouTubePlaylist(str(raw.podcastPlaylist));
   if (str(raw.podcastPlaylist) && !podcastPlaylist) problems.push(`media.json podcastPlaylist "${raw.podcastPlaylist}" is not a YouTube playlist id or link`);
-  const showTest = raw.showTestEpisodes !== false;
+  const showTest = opts.showTestEpisodes ?? raw.showTestEpisodes !== false;
   (Array.isArray(raw.podcasts) ? raw.podcasts : []).forEach((p: unknown, i: number) => {
     const where = `media.json podcasts[${i}]`;
     if (!isObj(p)) return problems.push(`${where}: must be an object`);

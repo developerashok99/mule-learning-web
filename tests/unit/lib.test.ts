@@ -131,6 +131,12 @@ describe("config validation", () => {
     expect(m.podcasts.map((p) => p.id)).toEqual(["ep1", "t"]);
     expect(m.podcasts[0]).toMatchObject({ duration: 750, videoUrl: null, lessons: ["day01", "day02"] });
   });
+  it("test builds can include test episodes even when media.json hides them", () => {
+    const raw = { showTestEpisodes: false, podcasts: [{ id: "t", title: "T", lessons: [], test: true }] };
+    expect(parseMedia(raw, known, { showTestEpisodes: true }).podcasts.map((p) => p.id)).toEqual(["t"]);
+    expect(parseMedia(raw, known).podcasts).toEqual([]);
+  });
+
   it("hides test episodes when showTestEpisodes is false", () => {
     const m = parseMedia({ showTestEpisodes: false, podcasts: [{ id: "t", title: "T", lessons: [], test: true }] }, known);
     expect(m.podcasts).toEqual([]);

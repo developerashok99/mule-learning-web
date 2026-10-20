@@ -57,7 +57,8 @@ function load() {
   const manifest = readJson<Manifest>(mf);
   const known = Object.keys(manifest.sessions);
   const courses = parseCourses(readJson(path.join(ROOT, "config/course.json")), known);
-  const media = parseMedia(readJson(path.join(ROOT, "config/media.json")), known);
+  // SHOW_TEST_EPISODES=true (npm run build:test) adds the synthetic "Player test" episode for the browser tests
+  const media = parseMedia(readJson(path.join(ROOT, "config/media.json")), known, process.env.SHOW_TEST_EPISODES === "true" ? { showTestEpisodes: true } : {});
 
   const lessons: Lesson[] = [];
   for (const course of courses) {

@@ -57,8 +57,8 @@ jobs:
       - name: Unit tests and content/config validation
         run: npm test
 
-      - name: Build site and search index
-        run: npm run build:site
+      - name: Build the test site (with the synthetic "Player test" episode)
+        run: npm run build:test
 
       - name: Check internal links and assets
         run: npm run test:links
@@ -81,6 +81,13 @@ jobs:
           path: playwright-report
           retention-days: 7
 
+      - name: Build the published site (no test episode or test media)
+        run: |
+          npm run build:site
+          npm run test:links
+          if [ -e dist/test-media ]; then echo "test media in the published build"; exit 1; fi
+          if grep -rl "test-fixture" dist --include=*.html; then echo "test episode in the published build"; exit 1; fi
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
@@ -99,7 +106,7 @@ jobs:
         run: |
           set -e
           url="${{ steps.deployment.outputs.page_url }}"
-          for path in "" "lessons/day04/detailed/" "search/" "pagefind/pagefind.js" "manifest.webmanifest" "test-media/fixture-audio.mp3"; do
+          for path in "" "lessons/day04/detailed/" "search/" "pagefind/pagefind.js" "manifest.webmanifest" "podcasts/day01/"; do
             for i in 1 2 3 4 5 6; do
               code=$(curl -s -o /dev/null -w "%{http_code}" "${url}${path}") && [ "$code" = "200" ] && break
               sleep 10
