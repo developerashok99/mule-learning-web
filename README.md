@@ -1,4 +1,6 @@
-# Mule Study — personal MuleSoft learning platform
+# Mule Learning Hub — personal MuleSoft learning platform
+
+Website: <https://developerashok99.github.io/mule-learning-web/> · Android app: see [MOBILE.md](MOBILE.md)
 
 **Live site:** https://developerashok99.github.io/mule-learning-web/
 
@@ -73,9 +75,10 @@ The build validates `media.json` and prints every problem it finds: bad YouTube 
 | **Lesson pages** | Tabs: Overview (lecture video, topics, resources) · Podcast · Simple · Detailed · Super-detailed · Slides · Revise. Tabs without content are shown disabled with the reason. A lesson **sidebar** (≥ 1400 px, can be hidden) or **drawer** (smaller screens) lists every lesson by section with its status. Previous/next and the sidebar keep you on the same resource |
 | **Notes** | Comfortable measure (or *Wide*), A−/A+, table of contents with the current section highlighted (sidebar or collapsible), reading-progress bar plus "jump back to where you stopped", heading links that copy a link to the section, highlighted code with language labels and copy buttons, tables that scroll sideways, Mermaid diagrams (light and dark), external links marked ↗ |
 | **Revise** (per lesson) | Outline plus **Must Remember**, **Quick Recap**, **Key terms**, a **self-test** built from the interview questions (answers hidden until you open them), and every code example with its section. All of it is **cut verbatim from the notes**, with links back to the source |
-| **Revision hub** (`/revise/`) | Every lesson's Revise page, and a filterable A–Z **glossary** (599 terms) merged from the notes' terminology tables, with each definition linked to its lesson |
+| **Revision studio** (`/revise/`) | **Spaced-repetition flashcards** from the notes' 465 interview questions (answers copied unchanged): Review shows the due cards, then up to N new cards a day (Preferences), and you grade each Again / Hard / Good / Easy. The schedule is a small SM-2-style algorithm, explained on the page (`src/lib/srs.ts`). Browse shows every card; topic decks per section. Also every lesson's Revise page and a filterable A–Z **glossary** (599 terms) |
+| **Lesson overview** | Learning objectives (the lesson's main topics), lecture, **Check yourself** (the first three interview questions with hidden answers), summary podcast and study resources |
 | **My study** (`/my-study/`) | Bookmarks (remove), in progress (mark complete), completed (undo), recently studied, listening history, and **backup / restore / reset** of everything stored |
-| **Podcasts** | Episodes grouped by section with filters and per-episode progress; episode page with the video podcast and the same summary as audio |
+| **Podcasts** | 60 episodes: the **video podcast** (Unlisted YouTube videos in the "gc podcast video" playlist) and the same summary as **audio** (MP3s hosted as assets of the [`podcast-audio-v1`](https://github.com/developerashok99/mule-learning-web/releases/tag/podcast-audio-v1) release). Filters by text, section and format; per-episode progress. In the Android app, each episode can be **downloaded for offline listening** (`/downloads/`) |
 | **Audio player** | One player for the whole site that keeps playing while you browse (including Back/Forward). It has play/pause, −10 s / +30 s, seek, time, speed 0.75×–2× (remembered), previous/next, resume, loading/buffering/finished/error states and lock-screen controls. It never starts by itself |
 | **Search** | Pagefind full-text search over notes, headings, code and slide captions. Results are **grouped by lesson** (the best page plus "also found in" links), re-ranked so lessons whose title matches come first, with loose single-letter matches filtered out, type filters, and ↓/↑ keyboard navigation. `/` focuses search |
 | **Other** | Dark mode, installable PWA with an offline notice, slide thumbnails (WebP), 404 page, WCAG 2.1 AA checks (axe) in the test suite |
@@ -168,6 +171,6 @@ The e2e tests run against the built site under the real `/mule-learning-web/` ba
 - **Progress is per browser** (localStorage). There are no accounts and no cross-device sync.
 - **Background audio on phones:** the audio keeps playing while you move between pages of this site. With the screen locked or the browser in the background, Android Chrome and iOS Safari normally continue (lock-screen controls are provided). Some browsers, in-app browsers (Instagram, Gmail and similar) and battery-saver modes pause it. Your position is always saved. This was tested in desktop Chrome and phone/tablet emulation, not on physical iPhone/Android devices.
 - The YouTube player uses youtube-nocookie.com and is loaded only after you press play. YouTube itself may still set storage once a video plays.
-- Offline: pages and slide images you've visited are cached (pages are always fetched fresh when online; slide images refresh in the background). Audio, video and search need the network.
+- Offline (website): pages and slide images you've visited are cached (pages are always fetched fresh when online; slide images refresh in the background). Audio, video and search need the network on the website. The Android app bundles every page and the search index, and can download audio; see [MOBILE.md](MOBILE.md).
 - `astro dev` has no search index; use `npm run build && npm run preview` to try search locally.
 - Quizzes, flashcards and mind maps remain on the [original notes site](https://developerashok99.github.io/green-c-mule-notes/) and are linked from the About page.

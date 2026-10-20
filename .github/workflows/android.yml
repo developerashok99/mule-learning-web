@@ -1,0 +1,68 @@
+# Builds the Android app (debug APK) from the same notes and config as the website, and keeps it as a run artifact.
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "src/**"
+      - "config/**"
+      - "capacitor.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check out the notes (read-only source of truth)
+        uses: actions/checkout@v7
+        with:
+          repository: developerashok99/green-c-mule-notes
+          path: notes-src
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            detailed-notes
+            super-detailed-notes
+            slides
+            transcripts
+            transcripts-cleaned
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Sync notes
+        run: npm run sync
+        env:
+          NOTES_SRC: notes-src
+
+      - name: Unit tests (download manager, review scheduler, content)
+        run: npm test
+
+      - name: Build the app's copy of the site and the APK
+        run: npm run app:apk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mule-learning-hub-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

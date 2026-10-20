@@ -1,6 +1,20 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", ".notes", ".notes-cache", "public/notes-assets", "playwright-report", "test-results"],
-  "compilerOptions": { "resolveJsonModule": true }
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist",
+    ".notes",
+    ".notes-cache",
+    "public/notes-assets",
+    "playwright-report",
+    "test-results",
+    "dist-app",
+    "android"
+  ],
+  "compilerOptions": {
+    "resolveJsonModule": true
+  }
 }
