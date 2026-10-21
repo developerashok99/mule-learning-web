@@ -132,7 +132,7 @@ test.describe("course and home", () => {
     await page.goto("search/");
     await expect(page.getByRole("group", { name: "Popular topics" })).toBeVisible();
     await page.locator("[data-search-input]").fill("watermark");
-    await expect(page.locator("[data-search-results] > li").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("[data-search-results] .result-title").first()).toBeVisible({ timeout: 15_000 });
     await page.goto("search/");
     await expect(page.locator("[data-recent-searches]")).toContainText("watermark");
     await page.getByRole("button", { name: "Clear" }).click();
@@ -183,7 +183,7 @@ test.describe("accessibility (axe, WCAG 2.1 AA)", () => {
         test.skip(width(page) !== 390 && width(page) !== 1440, "checked at one phone and one desktop size");
         await page.emulateMedia({ colorScheme: scheme });
         await page.goto(path);
-        if (path.startsWith("search")) await page.locator("[data-search-results] > li").first().waitFor();
+        if (path.startsWith("search")) await page.locator("[data-search-results] .result-title").first().waitFor();
         const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
         const serious = results.violations
           .filter((v) => v.impact === "serious" || v.impact === "critical")
@@ -346,6 +346,14 @@ test.describe("revision", () => {
     await page.getByRole("button", { name: "Show all answers" }).click();
     await expect(page.locator("details.qa:not([open])")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Hide all answers" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("glossary is collapsed by letter; a letter link opens its group", async ({ page }) => {
+    await page.goto("revise/");
+    await expect(page.locator("details.glossary-group[open]")).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Glossary letters" }).getByRole("link", { name: "D", exact: true }).click();
+    await expect(page.locator("details#gl-d")).toHaveAttribute("open", "");
+    await expect(page.locator("#gl-d .glossary__item").first()).toBeVisible();
   });
 
   test("glossary filters terms and links back to lessons", async ({ page }) => {
@@ -587,7 +595,7 @@ test.describe("search", () => {
 
   test("type filter, keyboard navigation and result links", async ({ page }) => {
     await page.goto("search/?q=watermark");
-    await expect(page.locator("[data-search-results] > li").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("[data-search-results] .result-title").first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Simple notes", exact: true }).click();
     await expect(page).toHaveURL(/type=Simple/);
     await expect(page.locator("[data-search-results] > li").first()).toContainText("Best match: Simple notes");
@@ -622,7 +630,7 @@ test.describe("search", () => {
     await page.keyboard.type("watermark");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/search\/\?q=watermark$/);
-    await expect(page.locator("[data-search-results] > li").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("[data-search-results] .result-title").first()).toBeVisible({ timeout: 15_000 });
     await page.keyboard.press("/");
     await expect(page.locator("[data-search-input]")).toBeFocused();
   });

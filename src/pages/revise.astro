@@ -174,8 +174,8 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
         {letters.map((L) => <a class="chip" href={`#gl-${L === "#" ? "other" : L.toLowerCase()}`}>{L}</a>)}
       </nav>
       {letters.map((L) => (
-        <div class="glossary-group" data-filter-group>
-          <h3 id={`gl-${L === "#" ? "other" : L.toLowerCase()}`}>{L === "#" ? "Other" : L}</h3>
+        <details class="glossary-group" data-filter-group id={`gl-${L === "#" ? "other" : L.toLowerCase()}`}>
+          <summary><h3>{L === "#" ? "Other" : L}</h3><span class="small muted">{sorted.filter((e) => letterOf(e.key) === L).length} terms</span></summary>
           <dl class="glossary">
             {sorted.filter((e) => letterOf(e.key) === L).map((e) => (
               <div class="glossary__item" data-filter-item={`${e.key} ${e.meanings.map((m) => m.html.replace(/<[^>]+>/g, "")).join(" ")}`}>
@@ -191,7 +191,7 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
               </div>
             ))}
           </dl>
-        </div>
+        </details>
       ))}
       <p class="empty" data-filter-empty hidden>No terms match.</p>
       </div>

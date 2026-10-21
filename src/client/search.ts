@@ -146,6 +146,15 @@ export function setupSearch() {
       return;
     }
     status.textContent = "Searching…";
+    // placeholder rows while the index loads (the first search of a visit can take a few seconds)
+    if (!list.querySelector("[data-result]")) {
+      list.replaceChildren(...[0, 1, 2].map(() => {
+        const li = el("li", "result-skeleton");
+        li.setAttribute("aria-hidden", "true");
+        li.append(el("span", "sk sk--icon"), Object.assign(el("span", "sk-lines"), { innerHTML: '<span class="sk sk--short"></span><span class="sk"></span><span class="sk sk--long"></span>' }));
+        return li;
+      }));
+    }
     const pagefind = await loadPagefind();
     if (mine !== token || signal.aborted) return;
     if (!pagefind) {

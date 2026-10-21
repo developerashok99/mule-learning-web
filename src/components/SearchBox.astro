@@ -14,7 +14,7 @@ const types = scope === "notes"
 const id = `q-${scope}`;
 ---
 <div data-search={scope} data-sync-url={String(syncUrl)} data-autofocus={String(autofocus)}>
-  <form role="search" class="searchlarge" style="margin-top:0">
+  <form role="search" class="searchlarge" style="margin-top:0" aria-label={scope === "notes" ? "Search the notes" : "Search notes and lessons"}>
     <label class="visually-hidden" for={id}>{scope === "notes" ? "Search the notes" : "Search notes and lessons"}</label>
     <input id={id} class="input" type="search" name="q" placeholder={placeholder} autocomplete="off" data-search-input />
     <button class="btn btn--primary" type="submit"><Icon name="search" /> Search</button>

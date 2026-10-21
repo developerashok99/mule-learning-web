@@ -336,6 +336,21 @@ function setupPodcastSwitch() {
   });
 }
 
+/** Glossary: letter links open their (collapsed) letter. */
+function setupGlossaryLetters() {
+  const open = () => {
+    const el = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+    if (el instanceof HTMLDetailsElement && el.classList.contains("glossary-group")) {
+      el.open = true;
+      el.scrollIntoView();
+    }
+  };
+  document.querySelectorAll<HTMLAnchorElement>(".glossary-letters a").forEach((a) =>
+    a.addEventListener("click", () => setTimeout(open), { signal: pageSignal() }));
+  window.addEventListener("hashchange", open, { signal: pageSignal() });
+  open();
+}
+
 function setupRevise() {
   const btn = document.querySelector<HTMLButtonElement>("[data-reveal-all]");
   if (!btn) return;
@@ -357,6 +372,7 @@ document.addEventListener("astro:page-load", () => {
   renderOnline();
   setupRevise();
   setupPodcastSwitch();
+  setupGlossaryLetters();
   setupLesson();
   setupCourse();
   markDone();

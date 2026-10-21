@@ -149,6 +149,8 @@ test.describe("episode layout", () => {
   test("cards offer Watch video and Play audio; the episode shows one format at a time", async ({ page }) => {
     await page.goto("podcasts/");
     const card = page.locator(".episode", { hasText: "Player test (fixture media)" });
+    // the whole card opens the episode, so it holds no small links of its own (only its two buttons)
+    await expect(card.locator(".episode__meta a")).toHaveCount(0);
     await expect(card.getByRole("link", { name: "Watch video" })).toBeVisible();
     await expect(card.getByRole("button", { name: "Play audio: Player test (fixture media)" })).toBeVisible();
     await card.getByRole("link", { name: "Watch video" }).click();
@@ -162,6 +164,22 @@ test.describe("episode layout", () => {
     await expect(page.locator("video[data-episode-video]")).toBeHidden();
     await expect(page.locator(".pod-quick")).toBeHidden();
     await expect(page.locator(".audio-card")).toBeVisible();
+  });
+});
+
+test.describe("offline", () => {
+  test("a video started offline explains that it needs a connection, and Try again restores the player", async ({ page, context }) => {
+    await page.goto("videos/day05/");
+    await context.setOffline(true);
+    await page.getByRole("button", { name: /Play video:/ }).click();
+    const frame = page.locator(".video-frame");
+    await expect(frame.getByText("This video needs an internet connection")).toBeVisible();
+    await expect(frame.getByRole("link", { name: /Open on YouTube/ })).toBeVisible();
+    await context.setOffline(false);
+    await frame.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("button", { name: /Play video:/ })).toBeVisible();
+    // no YouTube request until play is pressed again
+    await expect(frame.locator("iframe")).toHaveCount(0);
   });
 });
 

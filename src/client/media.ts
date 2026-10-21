@@ -27,6 +27,10 @@ function loadYouTubeApi(): Promise<boolean> {
     document.head.append(s);
     setTimeout(() => resolve(!!window.YT?.Player), 8000);
   });
+  // a failed attempt (e.g. offline) is not remembered, so the next play can try again
+  void ytApi.then((ok) => {
+    if (!ok) ytApi = null;
+  });
   return ytApi;
 }
 
@@ -69,6 +73,9 @@ function showState(frame: HTMLElement, title: string, text: string, link?: strin
   frame.replaceChildren(box);
 }
 
+/** read fresh each time: the connection can drop while a player loads */
+const isOffline = () => navigator.onLine === false;
+
 async function startYouTube(btn: HTMLButtonElement) {
   const frame = btn.closest<HTMLElement>(".media-frame")!;
   const id = btn.dataset.yt!;
@@ -81,12 +88,17 @@ async function startYouTube(btn: HTMLButtonElement) {
     facade.addEventListener("click", () => void startYouTube(facade), { once: true });
     facade.focus();
   };
+  const offline = () =>
+    showState(frame, "This video needs an internet connection", "You're offline. Connect to the internet, then press Try again. Notes, flashcards and downloaded audio work without a connection.", link, retry);
+  if (isOffline()) return offline();
   btn.disabled = true;
   btn.setAttribute("aria-busy", "true");
   frame.dataset.state = "loading";
   btn.querySelector("small")!.textContent = "Loading player…";
   const ok = await loadYouTubeApi();
   if (!frame.isConnected) return;
+  // the connection dropped while loading, or YouTube can't be reached at all: say so instead of an empty frame
+  if (!ok && isOffline()) return offline();
   delete frame.dataset.state;
   const host = document.createElement("div");
   frame.replaceChildren(host);
@@ -150,6 +162,7 @@ function setupVideo(video: HTMLVideoElement) {
     if (reported || video.readyState > HTMLMediaElement.HAVE_NOTHING) return;
     if (!video.error && video.networkState !== HTMLMediaElement.NETWORK_NO_SOURCE) return;
     reported = true;
+    if (isOffline()) return showState(frame, "This video needs an internet connection", "You're offline. Connect to the internet and reload the page. The audio version can be downloaded in the app for listening offline.");
     const code = video.error?.code;
     showState(frame, "This video podcast can't be played", !video.error || code === 4 ? "The file was not found or its format isn't supported by this browser." : "A network or decoding error occurred. Try again later.");
   }, 600);

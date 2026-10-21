@@ -7,7 +7,7 @@ import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
 import { formatLength } from "../lib/duration";
-import { lessonPath, podcastPath, withBase } from "../lib/routes";
+import { podcastPath, withBase } from "../lib/routes";
 
 interface Props {
   episode: Episode;
@@ -30,7 +30,8 @@ const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w
     <h3 class="episode__title">{compact ? ep.title : <a href={href}>{ep.title}</a>}</h3>
     <div class="episode__meta">
       {ep.duration != null && <span><Icon name="clock" /> {formatLength(ep.duration)}</span>}
-      {lessons.length > 0 && <span>Covers {lessons.map((l, i) => <>{i > 0 && ", "}<a href={withBase(base, lessonPath(l.id))}>{l.label}</a></>)}</span>}
+      {/* plain text: the whole card opens the episode, whose page links to each lesson */}
+      {lessons.length > 0 && <span>Covers {lessons.map((l) => l.label).join(", ")}</span>}
       {ep.test && <span class="pill pill--amber">Test media</span>}
       {ep.demo && <span class="pill pill--amber">Demo</span>}
     </div>

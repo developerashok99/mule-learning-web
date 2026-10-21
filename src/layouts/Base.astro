@@ -114,7 +114,7 @@ const crumb = nav ? CRUMB[nav] : title;
       <header class="topbar">
         <a class="topbar__mark brand__mark" href={base} aria-label="Mule Learning Hub home">M</a>
         <p class="topbar__crumb"><span>Workspace /</span> <b>{crumb}</b></p>
-        <form class="topbar__search" role="search" action={`${base}search/`} method="get">
+        <form class="topbar__search" role="search" aria-label="Search the site" action={`${base}search/`} method="get">
           <label class="visually-hidden" for="global-search">Search lessons, topics and notes</label>
           <Icon name="search" />
           <input id="global-search" type="search" name="q" placeholder="Search lessons, topics, notes…" autocomplete="off" data-global-search />
