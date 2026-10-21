@@ -18,8 +18,11 @@ const H = `h${headingLevel}` as "h2";
 const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
 const EMPTY = !ep.videoUrl;
 const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
+// both formats: show one at a time with a switch (video first); otherwise just the one that exists
+const both = !!ep.videoUrl && !!ep.audioUrl;
+const first = ep.videoUrl || !ep.audioUrl ? "video" : "audio";
 ---
-<section class="card" aria-label={`Summary podcast: ${ep.title}`}>
+<section class="card pod" aria-label={`Summary podcast: ${ep.title}`} data-pod data-pod-active={first}>
   <div class="btn-row" style="justify-content: space-between; margin-bottom:.6rem">
     <div>
       <span class="kind-label kind-label--summary"><Icon name="podcast" /> Summary podcast — not the full lecture</span>
@@ -28,11 +31,19 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
     <div class="btn-row small muted">
       {ep.test && <span class="badge badge--warn">Test media — not lesson content</span>}
       {ep.duration != null && <span><Icon name="clock" /> {formatLength(ep.duration)}</span>}
+      {ep.audioUrl && <button class="btn btn--sm audio-btn pod-quick" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /><span class="play">Play audio</span><span class="pause">Pause</span></button>}
     </div>
   </div>
   {ep.description && <p class="muted" style="margin:0 0 .8rem">{ep.description}</p>}
+  {ep.audioUrl && <div class="progress progress--thin pod-progress" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>}
+  {both && (
+    <div class="segmented pod-switch" role="group" aria-label="Format">
+      <button type="button" data-pod-view="video" aria-pressed="true"><Icon name="video" /> Video</button>
+      <button type="button" data-pod-view="audio" aria-pressed="false"><Icon name="podcast" /> Audio</button>
+    </div>
+  )}
 
-  <h4 class="small" style="margin:.4rem 0"><Icon name="video" /> Video podcast</h4>
+  <div class="pod-panel" id={standalone ? "video" : undefined} data-pod-panel="video" hidden={first !== "video"}>
   <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {ep.youtubeId ? (
       <button class="yt-facade" type="button" data-yt={ep.youtubeId} data-start="0" data-watch={ep.watchUrl} data-title={`Video podcast: ${ep.title}`} aria-label={`Play video podcast: ${ep.title}`}>
@@ -55,7 +66,9 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
   </div>
   {ep.watchUrl && <p class="small" style="margin:.4rem 0 0"><a href={ep.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a></p>}
   <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>
+  </div>
 
+  <div class="pod-panel" id={standalone ? "audio" : undefined} data-pod-panel="audio" hidden={both || first !== "audio"}>
   <div class:list={["audio-card", { "audio-card--empty": !ep.audioUrl }]}>
     <div class="audio-card__art" aria-hidden="true"><Icon name="podcast" /></div>
     <div class="audio-card__body">
@@ -66,7 +79,6 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
             <button class="play-btn play-btn--lg" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>
             <div class="audio-card__info">
               <span class="small muted">Plays in the player at the bottom of the screen and keeps playing while you open notes. Your position is remembered.</span>
-              <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
             </div>
           </div>
           {!ep.test && <div class="dl-slot app-only" data-download={ep.id}></div>}
@@ -76,6 +88,7 @@ const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : 
         <p class="audio-card__empty"><strong>Audio podcast not added yet</strong> Once the MP3 link is added to config/media.json, a play button and download appear here.</p>
       )}
     </div>
+  </div>
   </div>
 
   {lessons.length > 0 && (

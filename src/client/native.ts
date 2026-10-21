@@ -7,7 +7,7 @@
  * app is uninstalled); download records and the progress backup go to native Preferences (SharedPreferences).
  * Nothing large is kept in localStorage.
  */
-import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { Capacitor, SystemBars, SystemBarsStyle, type PluginListenerHandle } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Preferences } from "@capacitor/preferences";
 import { App } from "@capacitor/app";
@@ -17,6 +17,7 @@ import { DownloadManager, type Backend, type DownloadRecord } from "../lib/downl
 import { formatBytes } from "../lib/duration";
 import { allEpisodes, controls, currentId, getEpisode, isPlaying, refreshSource, setSourceResolver } from "./player";
 import { exportAll, importAll } from "./store";
+import { confirmSheet, noticeSheet } from "./sheet";
 
 const RECORDS_KEY = "downloads.v1";
 const BACKUP_KEY = "study.backup.v1";
@@ -198,9 +199,15 @@ async function onAction(act: string, id: string) {
   else if (act === "cancel") await manager.cancel(id);
   else if (act === "remove") {
     const r = manager.get(id);
-    if (!confirm(`Delete the downloaded audio for “${ep?.title ?? id}”${r ? ` (${formatBytes(r.bytes)})` : ""}? You can download it again later.`)) return;
+    const ok = await confirmSheet({
+      title: "Delete this download?",
+      message: `“${ep?.title ?? id}”${r ? ` · ${formatBytes(r.bytes)}` : ""} will be removed from this phone. You can download it again later.`,
+      confirm: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     const refused = await manager.remove(id);
-    if (refused) alert(refused);
+    if (refused) await noticeSheet("Can't delete it now", refused);
     else refreshSource();
   }
 }
@@ -249,6 +256,24 @@ function setupMediaSession() {
   on("previoustrack", () => controls.step(-1));
   on("nexttrack", () => controls.step(1));
   on("seekto", (d) => d.seekTime != null && controls.seekTo(d.seekTime));
+}
+
+// ---- status bar: icons that stay readable on the app's own colours ----
+function setupStatusBar() {
+  const apply = () => {
+    // Where the page draws behind the status bar (current WebViews), the bar shows the app's top bar, so the icons
+    // follow the app theme. Otherwise Android shows the app window's dark background there: light icons.
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top)";
+    document.body.append(probe);
+    const edgeToEdge = parseFloat(getComputedStyle(probe).paddingTop) > 0;
+    probe.remove();
+    const dark = document.documentElement.dataset.theme === "dark";
+    void SystemBars.setStyle({ style: edgeToEdge && !dark ? SystemBarsStyle.Light : SystemBarsStyle.Dark }).catch(() => {});
+  };
+  apply();
+  new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  document.addEventListener("astro:after-swap", apply);
 }
 
 // ---- study progress: mirrored to native storage, restored if the WebView's storage is ever cleared ----
@@ -308,6 +333,7 @@ export async function setupNative() {
   document.addEventListener("astro:page-load", renderDownloads);
 
   setupMediaSession();
+  setupStatusBar();
 
   // Android back: close an open dialog, else go back, else leave the app running in the background
   void App.addListener("backButton", ({ canGoBack }) => {

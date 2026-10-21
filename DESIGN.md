@@ -27,6 +27,18 @@ The design follows the "complete app design" prototype (`mule-learning-web-compl
 - **800px and narrower:** no sidebar. The top bar shows the logo, search and actions. Fixed bottom tabs (Home, Courses, Videos, Audio, My Study) sit above the safe area.
 - **Audio mini-player:** fixed at the bottom, beside the sidebar on desktop and directly above the bottom tabs on phones. Page padding grows while it is open, so nothing is ever hidden behind it.
 
+## Interaction patterns
+
+- **Next action first:** Home opens with Continue learning, then Review; the course banner follows (trimmed on phones).
+- **Podcasts:** each card has Watch video and Play audio side by side, and the whole card opens the episode. An episode shows one format at a time with a Video / Audio switch (video first). A Play audio button stays in the header while the video is shown, and switching away pauses the video.
+- **Phones:**
+  - The mini-player is one slim row: title, play / pause and ⌃ to open every control. A thin progress line runs along its top edge.
+  - Lesson actions are icons (All lessons, Bookmark) plus a full-width Mark complete.
+  - Flashcard grades stay fixed above the tab bar while you read long answers.
+  - Small chips are at least 2.6rem tall.
+- **Confirmations** use the site's own sheet (`src/client/sheet.ts`), never `confirm()` / `alert()`: a bottom sheet on phones and a card elsewhere. Destructive actions start with Cancel focused.
+- **Edge-to-edge screens:** the top bar, the full-screen lesson list and the slide viewer reserve `env(safe-area-inset-top)`; the bottom tabs and the player reserve `env(safe-area-inset-bottom)`. In the app the status bar icons follow the theme.
+
 ## Screens
 
 | Screen | Route | Contents (all from real data) |

@@ -47,58 +47,7 @@ const TOOLS = [
       <a slot="actions" class="btn" href={courseHref}>Explore course <Icon name="external" /></a>
     </PageHead>
 
-    <section class="hero" aria-labelledby="cur-h" data-section-progress={allIds}>
-      <div>
-        <span class="pill pill--blue">● Current course</span>
-        <h2 id="cur-h">Build real integrations with MuleSoft.</h2>
-        <p class="sub">{course.description}</p>
-        <div class="btn-row" style="margin-top:1.25rem">
-          <a class="btn btn--primary" href={withBase(base, lessonPath(first.id, "simple"))} data-hero-start><Icon name="play" /><span data-text>Start learning</span></a>
-          <a class="btn" href={courseHref}>Course outline</a>
-        </div>
-        <div class="hero__progress">
-          <div class="progress-line"><span>Course progress</span><b data-count>0 of {lessons.length} done</b></div>
-          <ProgressBar />
-          <p class="hero__counts"><b data-n-done>0</b> completed · <b data-n-started>0</b> in progress · <b data-n-new>{lessons.length}</b> not started</p>
-        </div>
-      </div>
-      <a class="hero-art" href={courseHref}>
-        <small>{course.title}</small>
-        <strong>From first flow to production-ready APIs.</strong>
-        <span>{lessons.length} lessons · learning path →</span>
-      </a>
-    </section>
-
-    {cardIds.length > 0 && (
-      <>
-        <div class="section-head"><div><h2>Review</h2><p>Flashcards from the interview questions, scheduled for when you are about to forget them</p></div></div>
-        <section class="card review-panel" aria-label="Flashcard review" data-review>
-          <script is:inline type="application/json" data-review-ids set:html={JSON.stringify(cardIds)} />
-          <div class="review-panel__nums">
-            <div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="clock" /></span><div><strong data-rv-due>0</strong><small>Due now</small></div></div>
-            <div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong data-rv-new>0</strong><small>New cards left today</small></div></div>
-            <div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="check" /></span><div><strong data-rv-learned>0</strong><small>of {cardIds.length} cards learned</small></div></div>
-          </div>
-          <div>
-            <a class="btn btn--primary" href={withBase(base, "revise/#fc-h")} data-rv-go>Start review <Icon name="right" /></a>
-            <p class="small muted" data-rv-next style="margin:.5rem 0 0"></p>
-          </div>
-        </section>
-      </>
-    )}
-
-    <div class="section-head">
-      <div><h2>Learning at a glance</h2><p>Your study activity, saved in this browser</p></div>
-      <a class="btn btn--sm" href={withBase(base, "my-study/")}>My Study <Icon name="right" /></a>
-    </div>
-    <ul class="grid g4" style="list-style:none;margin:0;padding:0" aria-label="Study summary">
-      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong data-total-done>0</strong><small>Lessons completed</small></div></div></li>
-      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="clock" /></span><div><strong data-hours-done>0 h</strong><small>Lecture hours completed</small></div></div></li>
-      <li class="card"><div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="bookmark" /></span><div><strong data-n-bookmarks>0</strong><small>Bookmarked lessons</small></div></div></li>
-      <li class="card"><div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="lessons" /></span><div><strong data-n-progress>0</strong><small>Lessons in progress</small></div></div></li>
-    </ul>
-
-    <div class="section-head">
+    <div class="section-head section-head--first">
       <div><h2 data-c-heading>Start learning</h2><p>Jump straight back into your course</p></div>
       <a class="btn btn--sm" href={withBase(base, "lessons/")}>All lessons <Icon name="right" /></a>
     </div>
@@ -132,6 +81,58 @@ const TOOLS = [
       <span data-next-up><b>Recommended next:</b> <a class="dash-next" href={withBase(base, lessonPath(first.id))} data-next-link><b>{first.label}</b> {first.title}</a> <span data-next-why>The first lesson of the course.</span></span>
       <span data-next-done hidden>Every lesson is marked complete — use <a href={withBase(base, "revise/")}>Revision</a> to keep it fresh.</span>
     </p>
+
+
+    {cardIds.length > 0 && (
+      <>
+        <div class="section-head"><div><h2>Review</h2><p>Flashcards from the interview questions, scheduled for when you are about to forget them</p></div></div>
+        <section class="card review-panel" aria-label="Flashcard review" data-review>
+          <script is:inline type="application/json" data-review-ids set:html={JSON.stringify(cardIds)} />
+          <div class="review-panel__nums">
+            <div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="clock" /></span><div><strong data-rv-due>0</strong><small>Due now</small></div></div>
+            <div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong data-rv-new>0</strong><small>New cards left today</small></div></div>
+            <div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="check" /></span><div><strong data-rv-learned>0</strong><small>of {cardIds.length} cards learned</small></div></div>
+          </div>
+          <div>
+            <a class="btn btn--primary" href={withBase(base, "revise/#fc-h")} data-rv-go>Start review <Icon name="right" /></a>
+            <p class="small muted" data-rv-next style="margin:.5rem 0 0"></p>
+          </div>
+        </section>
+      </>
+    )}
+
+    <section class="hero hero--course" aria-labelledby="cur-h" data-section-progress={allIds}>
+      <div>
+        <span class="pill pill--blue">● Current course</span>
+        <h2 id="cur-h">Build real integrations with MuleSoft.</h2>
+        <p class="sub">{course.description}</p>
+        <div class="btn-row" style="margin-top:1.25rem">
+          <a class="btn btn--primary" href={withBase(base, lessonPath(first.id, "simple"))} data-hero-start><Icon name="play" /><span data-text>Start learning</span></a>
+          <a class="btn" href={courseHref}>Course outline</a>
+        </div>
+        <div class="hero__progress">
+          <div class="progress-line"><span>Course progress</span><b data-count>0 of {lessons.length} done</b></div>
+          <ProgressBar />
+          <p class="hero__counts"><b data-n-done>0</b> completed · <b data-n-started>0</b> in progress · <b data-n-new>{lessons.length}</b> not started</p>
+        </div>
+      </div>
+      <a class="hero-art" href={courseHref}>
+        <small>{course.title}</small>
+        <strong>From first flow to production-ready APIs.</strong>
+        <span>{lessons.length} lessons · learning path →</span>
+      </a>
+    </section>
+
+    <div class="section-head">
+      <div><h2>Learning at a glance</h2><p>Your study activity, saved in this browser</p></div>
+      <a class="btn btn--sm" href={withBase(base, "my-study/")}>My Study <Icon name="right" /></a>
+    </div>
+    <ul class="grid g4" style="list-style:none;margin:0;padding:0" aria-label="Study summary">
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong data-total-done>0</strong><small>Lessons completed</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="clock" /></span><div><strong data-hours-done>0 h</strong><small>Lecture hours completed</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon stat-icon--amber" aria-hidden="true"><Icon name="bookmark" /></span><div><strong data-n-bookmarks>0</strong><small>Bookmarked lessons</small></div></div></li>
+      <li class="card"><div class="stat"><span class="stat-icon stat-icon--green" aria-hidden="true"><Icon name="lessons" /></span><div><strong data-n-progress>0</strong><small>Lessons in progress</small></div></div></li>
+    </ul>
 
     <div class="section-head"><div><h2>Your study tools</h2><p>Everything you need, without losing your place</p></div></div>
     <nav class="grid g3 study-tools" aria-label="Quick links">

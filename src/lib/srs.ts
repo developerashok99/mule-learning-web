@@ -3,7 +3,7 @@
  *
  * Each card has an interval (days) and an ease factor (starts at 2.5). After you reveal the answer you grade it:
  * - Again: forgotten. Shown again in 10 minutes; the interval restarts at 1 day; ease −0.2.
- * - Hard:  remembered with effort. Interval × 1.2 (at least 1 day); ease −0.15.
+ * - Hard:  remembered with effort. A new card comes back in 12 hours; otherwise interval × 1.2 (at least 1 day); ease −0.15.
  * - Good:  remembered. 1 day, then 3 days, then interval × ease.
  * - Easy:  remembered easily. 3 days, then 4 days, then interval × ease × 1.3; ease +0.15.
  * Ease never drops below 1.3, and no interval grows past 365 days. Nothing else is involved.
@@ -49,7 +49,8 @@ export function schedule(prev: CardState | undefined, grade: Grade, now = Date.n
       break;
     case "hard":
       ease = ease0 - 0.15;
-      ivl = Math.max(1, Math.round(ivl0 * 1.2));
+      // a new card graded Hard returns the same day, so Hard is always sooner than Good
+      ivl = reps0 === 0 ? 0.5 : Math.max(1, Math.round(ivl0 * 1.2));
       break;
     case "good":
       ivl = reps0 === 0 ? 1 : reps0 === 1 ? 3 : Math.max(ivl0 + 1, Math.round(ivl0 * ease0));
@@ -68,8 +69,8 @@ export function schedule(prev: CardState | undefined, grade: Grade, now = Date.n
 /** "10 min", "1 day", "3 days", "2 mo" — the wait a grade would give, shown on its button. */
 export function describeWait(ms: number): string {
   if (ms < 60 * MIN) return `${Math.max(1, Math.round(ms / MIN))} min`;
+  if (ms < 23.5 * 60 * MIN) return `${Math.round(ms / (60 * MIN))} h`;
   const d = Math.round(ms / DAY);
-  if (d < 1) return `${Math.round(ms / (60 * MIN))} h`;
   if (d < 31) return `${d} day${d === 1 ? "" : "s"}`;
   if (d < 365) return `${Math.round(d / 30)} mo`;
   return `${Math.round(d / 365)} yr`;

@@ -41,6 +41,7 @@ const episodes = getPodcasts()
       <button class="icon-btn" type="button" data-act="fwd" aria-label="Forward 30 seconds"><Icon name="fwd30" /></button>
       <button class="icon-btn hide-xs" type="button" data-act="next" aria-label="Next episode"><Icon name="next" /></button>
     </div>
+    <button class="icon-btn player__expand" type="button" data-act="expand" aria-expanded="false" aria-label="Show all player controls"><Icon name="chevronDown" /></button>
     <div class="player__seek">
       <span data-elapsed>0:00</span>
       <input type="range" min="0" max="0" step="1" value="0" data-seek aria-label="Seek" aria-valuetext="0:00 of 0:00" />

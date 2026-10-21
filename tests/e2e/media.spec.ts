@@ -6,6 +6,11 @@ const media = JSON.parse(readFileSync(new URL("../../config/media.json", import.
 const day01Id = String(media.lectures.day01.youtube).match(/[A-Za-z0-9_-]{11}$/)?.[0] ?? "";
 
 const player = (page: Page) => page.getByRole("region", { name: "Audio podcast player" });
+/** On phones the player is slim (title, play / pause); open it to reach every control. */
+async function openControls(page: Page) {
+  const more = player(page).getByRole("button", { name: "Show all player controls" });
+  if (await more.isVisible()) await more.click();
+}
 const audioState = (page: Page) =>
   page.locator("[data-audio]").evaluate((a: HTMLAudioElement) => ({ t: a.currentTime, paused: a.paused, rate: a.playbackRate, src: a.currentSrc }));
 
@@ -14,6 +19,7 @@ test.describe("audio podcast player", () => {
     await page.goto("podcasts/");
     await expect(player(page)).toBeHidden();
     await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).first().click();
+    await openControls(page);
     await expect(player(page)).toBeVisible();
     await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.5);
     expect((await audioState(page)).src).toContain("test-media/fixture-audio.mp3");
@@ -53,6 +59,7 @@ test.describe("audio podcast player", () => {
   test("keeps playing while navigating the site", async ({ page }) => {
     await page.goto("podcasts/test-fixture/");
     await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).click();
+    await openControls(page);
     await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.3);
     const nav = page.getByRole("navigation", { name: "Main" }).filter({ visible: true });
     await nav.getByRole("link", { name: "Courses", exact: true }).click();
@@ -121,6 +128,9 @@ test.describe("audio podcast player", () => {
     // the real file is ~5 MB on GitHub; serve the bundled fixture instead so the test is fast and offline-safe
     await page.route(ep!.audioUrl!, (r) => r.fulfill({ path: "public/test-media/fixture-audio.mp3", contentType: "audio/mpeg" }));
     await page.goto(`podcasts/${ep!.id}/`);
+    // the episode opens on its video; the download link is in the Audio view
+    await expect(page.getByRole("link", { name: /Download MP3/ })).toBeHidden();
+    await page.getByRole("group", { name: "Format" }).getByRole("button", { name: "Audio" }).click();
     await expect(page.getByRole("link", { name: /Download MP3/ })).toHaveAttribute("href", ep!.audioUrl!);
     await page.getByRole("button", { name: `Play audio: ${ep!.title}` }).first().click();
     await expect.poll(async () => (await audioState(page)).t, { timeout: 15_000 }).toBeGreaterThan(0.3);
@@ -132,6 +142,26 @@ test.describe("audio podcast player", () => {
     await page.goto("podcasts/");
     await page.getByRole("button", { name: "Play audio: Player test (fixture media)" }).first().click();
     await expect(player(page).locator("[data-status]")).toContainText("Can't play", { timeout: 15_000 });
+  });
+});
+
+test.describe("episode layout", () => {
+  test("cards offer Watch video and Play audio; the episode shows one format at a time", async ({ page }) => {
+    await page.goto("podcasts/");
+    const card = page.locator(".episode", { hasText: "Player test (fixture media)" });
+    await expect(card.getByRole("link", { name: "Watch video" })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Play audio: Player test (fixture media)" })).toBeVisible();
+    await card.getByRole("link", { name: "Watch video" }).click();
+    await expect(page).toHaveURL(/podcasts\/test-fixture\/#video$/);
+    const format = page.getByRole("group", { name: "Format" });
+    await expect(format.getByRole("button", { name: "Video" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("video[data-episode-video]")).toBeVisible();
+    // audio can start from the header while the video is shown
+    await expect(page.locator(".pod-quick")).toBeVisible();
+    await format.getByRole("button", { name: "Audio" }).click();
+    await expect(page.locator("video[data-episode-video]")).toBeHidden();
+    await expect(page.locator(".pod-quick")).toBeHidden();
+    await expect(page.locator(".audio-card")).toBeVisible();
   });
 });
 

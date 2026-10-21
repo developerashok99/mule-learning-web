@@ -817,16 +817,30 @@ li[data-status="done"] .video-list__mark .m-new { display: none; }
 .player__seek input { flex: 1; min-width: 0; accent-color: var(--accent); height: 1.6rem; }
 .player__extra { display: flex; align-items: center; gap: 0.1rem; }
 .speed-btn { min-width: 3.2rem; font: 700 0.8rem var(--mono); }
+.player__expand { display: none; }
+.player::before { content: ""; position: absolute; top: -1px; left: 0; height: 2px; width: var(--pct, 0%); background: var(--accent); transition: width 0.3s linear; }
 @media (max-width: 800px) {
-  .player__inner { flex-wrap: wrap; gap: 0.15rem 0.6rem; padding: 0.45rem 0.75rem; min-height: 0; }
+  .player__inner { flex-wrap: wrap; gap: 0.15rem 0.5rem; padding: 0.4rem 0.6rem 0.4rem 0.75rem; min-height: 0; }
   .player__cover { width: 2.2rem; height: 2.2rem; }
   .player__info { max-width: none; flex: 1 1 0; }
-  .player__seek { order: 5; flex: 1 1 100%; }
-  .player__controls { order: 6; flex: 1 1 100%; justify-content: center; }
+  .player__expand { display: inline-grid; order: 4; }
+  .player__expand .icon { transform: rotate(180deg); transition: transform var(--ease); }
+  .player.is-open .player__expand .icon { transform: none; }
+  /* slim: title, play / pause, expand */
+  .player:not(.is-open) :is(.player__seek, .player__extra, .player__controls [data-act]:not([data-act="toggle"])) { display: none; }
+  .player:not(.is-open) .player__controls { order: 3; }
+  .player:not(.is-open) .play-main { width: 2.6rem; height: 2.6rem; }
+  /* open: every control, on two more rows */
+  .player.is-open .player__seek { order: 5; flex: 1 1 100%; }
+  .player.is-open .player__controls { order: 6; flex: 1 1 auto; justify-content: center; }
+  .player.is-open .player__extra { order: 7; }
 }
-@media (max-width: 380px) { .player__controls .hide-xs { display: none; } }
+@media (max-width: 380px) { .player.is-open .player__controls .hide-xs { display: none; } }
 body.has-player { --player-h: 4.8rem; }
-@media (max-width: 800px) { body.has-player { --player-h: 8.4rem; } }
+@media (max-width: 800px) {
+  body.has-player { --player-h: 3.6rem; }
+  body.has-player.has-player-open { --player-h: 8.4rem; }
+}
 
 .toast {
   position: fixed; z-index: 70; right: 1.2rem;
@@ -1036,3 +1050,84 @@ html:not([data-app]) .app-only, html[data-app] .web-only { display: none !import
 .dl-summary { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.9rem 1.1rem; cursor: pointer; list-style: none; font-weight: 800; border-radius: var(--radius); flex-wrap: wrap; }
 .dl-summary::-webkit-details-marker { display: none; }
 .dl-summary:hover { background: var(--bg-sunk); }
+
+/* ---------- UI / UX pass ---------- */
+.section-head--first { margin-top: 0.25rem; }
+.hero--course { margin-top: 1.8rem; }
+@media (max-width: 560px) {
+  .hero--course .sub, .hero--course .hero-art { display: none; }
+  .hero--course { padding: 1.1rem; }
+  .hero--course h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+}
+/* podcast cards: the card opens the episode; Watch video / Play audio side by side */
+.episode--link { position: relative; transition: border-color var(--ease), box-shadow var(--ease); }
+.episode--link:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.episode--link .episode__title a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.episode--link :is(.episode__meta a, .episode__actions, .dl-slot) { position: relative; z-index: 1; }
+.episode__title { margin-top: 0.1rem; }
+.episode__actions { margin-top: 0.75rem; }
+.audio-btn .pause, .audio-btn[data-playing="true"] .play { display: none; }
+.audio-btn[data-playing="true"] .pause { display: inline; }
+.audio-btn[data-playing="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hover); }
+:root[data-theme="dark"] .audio-btn[data-playing="true"] { color: var(--accent); }
+.episode-section { margin: 1.6rem 0 0.75rem; font-size: 1.05rem; }
+.pod-switch { margin: 0.2rem 0 0.9rem; }
+.pod-switch button { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 6.5rem; justify-content: center; }
+.pod-switch .icon { width: 1rem; height: 1rem; }
+.pod[data-pod-active="audio"] .pod-quick { display: none; }
+.pod-progress { margin: 0 0 0.9rem; }
+.pod .audio-card { margin-top: 0; }
+/* lesson page on phones: icon buttons for All lessons / Bookmark, Mark complete takes the rest of the row */
+@media (max-width: 800px) {
+  .lesson-head .head__actions { display: flex; flex-wrap: nowrap; gap: 0.5rem; margin-top: 0.8rem; }
+  .lesson-head .btn--icon-phone { flex: none; width: 2.9rem; padding: 0; }
+  .lesson-head .btn--primary { flex: 1; }
+  .label-collapse { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .lesson-head__title { font-size: 1.35rem; }
+  .lesson-head .sub { font-size: 0.86rem; }
+  .lesson-tabs { margin-top: 0.6rem; }
+}
+.btn--icon-phone[aria-pressed="true"] .icon { fill: currentColor; }
+/* flashcards on phones: the grade buttons stay in reach while you read a long answer */
+@media (max-width: 800px) {
+  .flashcard { padding: 1.25rem 1rem; }
+  .grade-row {
+    position: sticky; z-index: 5;
+    bottom: calc(var(--bottom-nav-h) + var(--player-h) + env(safe-area-inset-bottom, 0px) + 0.5rem);
+    padding: 0.5rem; margin-top: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+  }
+}
+/* edge-to-edge phones (the app on current Android WebViews, iOS): keep content clear of the status bar */
+.topbar { padding-top: env(safe-area-inset-top, 0px); height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px)); }
+html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) + 1rem); }
+@media (max-width: 800px) {
+  .jump-dialog header { padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); }
+}
+.lightbox__bar { padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); }
+/* confirmation sheets (src/client/sheet.ts) */
+.sheet { width: min(28rem, calc(100vw - 2rem)); padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); box-shadow: var(--shadow-lg); }
+.sheet::backdrop { background: rgba(8, 15, 25, 0.5); }
+.sheet__card { padding: 1.3rem 1.3rem 1.1rem; }
+.sheet h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+.sheet p { margin: 0 0 1.1rem; color: var(--text-muted); font-size: 0.92rem; }
+.sheet__actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+.btn--danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn--danger:hover { color: #fff; filter: brightness(0.94); }
+:root[data-theme="dark"] .btn--danger { color: #2a0f0d; }
+@media (max-width: 800px) {
+  .sheet { width: 100vw; max-width: none; margin: auto 0 0; border-radius: var(--radius) var(--radius) 0 0; border-bottom: 0; }
+  .sheet__card { padding-bottom: calc(1.1rem + env(safe-area-inset-bottom, 0px)); }
+  .sheet__actions .btn { flex: 1; }
+}
+/* comfortable touch targets on phones */
+@media (max-width: 800px) {
+  .dash-res .chip, .match-links .chip, a.pill, button.pill, .chip { min-height: 2.6rem; }
+  .curriculum .section-state { white-space: nowrap; }
+}
+/* phones: decorative tiles give way to the text */
+@media (max-width: 560px) {
+  .coursebox { grid-template-columns: minmax(0, 1fr); }
+  .coursebox > .thumb, .audio-card__art { display: none; }
+  .lecture-links .muted { display: none; }
+}

@@ -144,7 +144,11 @@ function markDone() {
     const pct = el.querySelector<HTMLElement>("[data-pct]");
     if (pct) pct.textContent = `${ids.length ? Math.round((n / ids.length) * 100) : 0}%`;
     const text = el.querySelector<HTMLElement>("[data-count]");
-    if (text) text.textContent = el.closest("summary") ? `${n}/${ids.length}` : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
+    if (text) {
+      text.textContent = text.dataset.count === "short"
+        ? `${n}/${ids.length} done` + (s ? ` · ${s} started` : "")
+        : `${n} of ${ids.length} done` + (s ? ` · ${s} in progress` : "");
+    }
     const state = el.querySelector<HTMLElement>("[data-section-state]");
     if (state) state.dataset.state = ids.length && n === ids.length ? "done" : n || s ? "active" : "new";
   });
@@ -313,6 +317,25 @@ function setupCurriculum(nextId?: string) {
   render();
 }
 
+/** Episode pages: Video / Audio switch (one format at a time). Leaving the video pauses it. */
+function setupPodcastSwitch() {
+  document.querySelectorAll<HTMLElement>("[data-pod]").forEach((pod) => {
+    const show = (view: string) => {
+      if (!pod.querySelector(`[data-pod-panel="${view}"]`)) return;
+      pod.dataset.podActive = view;
+      pod.querySelectorAll<HTMLElement>("[data-pod-panel]").forEach((p) => (p.hidden = p.dataset.podPanel !== view));
+      pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.podView === view)));
+      if (view !== "video") {
+        pod.querySelectorAll("video").forEach((v) => v.pause());
+        // YouTube players are created with the iframe API, which accepts this command
+        pod.querySelectorAll<HTMLIFrameElement>("iframe").forEach((f) => f.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: [] }), "*"));
+      }
+    };
+    pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.addEventListener("click", () => show(b.dataset.podView!), { signal: pageSignal() }));
+    if (location.hash === "#audio") show("audio");
+  });
+}
+
 function setupRevise() {
   const btn = document.querySelector<HTMLButtonElement>("[data-reveal-all]");
   if (!btn) return;
@@ -333,6 +356,7 @@ function setupRevise() {
 document.addEventListener("astro:page-load", () => {
   renderOnline();
   setupRevise();
+  setupPodcastSwitch();
   setupLesson();
   setupCourse();
   markDone();

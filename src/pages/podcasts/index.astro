@@ -73,7 +73,7 @@ const playlist = getPodcastPlaylist();
     </div>
     {tests.length > 0 && (
       <section data-filter-group aria-labelledby="pt-h" style="margin-bottom:1.5rem">
-        <h3 id="pt-h" class="video-list__section" style="position:static;padding-left:0">Player test</h3>
+        <h3 id="pt-h" class="episode-section">Player test</h3>
         <ul class="episode-list">{tests.map((ep) => <EpisodeCard episode={ep} />)}</ul>
       </section>
     )}
@@ -81,14 +81,14 @@ const playlist = getPodcastPlaylist();
       const eps = real.filter((e) => e.lessons.some((l) => s.lessons.includes(l)));
       return eps.length > 0 && (
         <section data-filter-group aria-labelledby={`p-${s.id}`} style="margin-bottom:1.5rem">
-          <h3 id={`p-${s.id}`} class="video-list__section" style="position:static;padding-left:0">{s.title}</h3>
+          <h3 id={`p-${s.id}`} class="episode-section">{s.title}</h3>
           <ul class="episode-list">{eps.map((ep) => <EpisodeCard episode={ep} />)}</ul>
         </section>
       );
     })}
     {real.filter((e) => !e.lessons.length).length > 0 && (
       <section data-filter-group aria-labelledby="p-other">
-        <h3 id="p-other" class="video-list__section" style="position:static;padding-left:0">Other episodes</h3>
+        <h3 id="p-other" class="episode-section">Other episodes</h3>
         <ul class="episode-list">{real.filter((e) => !e.lessons.length).map((ep) => <EpisodeCard episode={ep} />)}</ul>
       </section>
     )}

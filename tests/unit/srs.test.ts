@@ -23,6 +23,13 @@ describe("schedule", () => {
     expect(schedule(again, "good", now).ivl).toBe(1);
   });
 
+  it("Hard on a new card is sooner than Good (12 hours), then grows normally", () => {
+    const h = schedule(undefined, "hard", now);
+    expect(h.due - now).toBe(DAY / 2);
+    expect(describeWait(h.due - now)).toBe("12 h");
+    expect(schedule(h, "hard", h.due).ivl).toBe(1);
+  });
+
   it("Again on a brand-new card is not a lapse", () => {
     expect(schedule(undefined, "again", now).lapses).toBe(0);
   });
@@ -69,6 +76,7 @@ describe("helpers", () => {
   it("describes waits", () => {
     expect(describeWait(10 * 60_000)).toBe("10 min");
     expect(describeWait(DAY)).toBe("1 day");
+    expect(describeWait(6 * 3_600_000)).toBe("6 h");
     expect(describeWait(3 * DAY)).toBe("3 days");
     expect(describeWait(90 * DAY)).toBe("3 mo");
   });

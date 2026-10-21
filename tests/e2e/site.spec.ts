@@ -469,14 +469,14 @@ test.describe("progress, bookmarks and My study (local storage)", () => {
     await page.goto("lessons/day07/");
     await page.goto("courses/mulesoft/");
     await expect(page.locator('#foundations [data-lesson-done="day07"]')).toHaveAttribute("data-status", "started");
-    await expect(page.locator("#foundations [data-count]")).toHaveText("0 of 10 done · 1 in progress");
+    await expect(page.locator("#foundations [data-count]")).toHaveText("0/10 done · 1 started");
     await page.goto("lessons/day07/");
     await page.locator("[data-toggle-done]").click();
     await expect(page.locator("[data-toggle-done]")).toHaveAttribute("aria-pressed", "true");
     await page.locator("[data-toggle-bookmark]").click();
     await page.goto("courses/mulesoft/");
     await expect(page.locator('#foundations [data-lesson-done="day07"]')).toHaveAttribute("data-status", "done");
-    await expect(page.locator("#foundations [data-count]")).toHaveText("1 of 10 done");
+    await expect(page.locator("#foundations [data-count]")).toHaveText("1/10 done");
     // dashboard reflects real stored data only
     await page.goto("");
     await expect(page.locator("[data-total-done]")).toHaveText("1");
@@ -520,8 +520,10 @@ test.describe("progress, bookmarks and My study (local storage)", () => {
     const file = await (await download).path();
     await page.locator('[data-ms="bookmarks"]').getByRole("button", { name: /Remove/ }).click();
     await expect(page.locator('[data-ms-empty="bookmarks"]')).toBeVisible();
-    page.once("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Reset all progress" }).click();
+    const sheet = page.getByRole("dialog", { name: "Reset all progress?" });
+    await expect(sheet.getByRole("button", { name: "Cancel" })).toBeFocused();
+    await sheet.getByRole("button", { name: "Reset everything" }).click();
     await expect(page.locator('[data-ms-empty="done"]')).toBeVisible();
     await page.locator("[data-ms-import]").setInputFiles(file!);
     await expect(page.locator("[data-ms-status]")).toContainText("Restored");

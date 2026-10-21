@@ -21,7 +21,7 @@ const href = (l: Lesson) => withBase(base, lessonPath(l.id, lessonHasView(l, vie
 <div class="lesson-nav">
   {sections.map((s) => (
     <details class="lesson-nav__section" open={s.id === lesson.sectionId} data-filter-group>
-      <summary id={`${idPrefix}-${s.id}`}>{s.title} <span class="small muted" data-section-progress={s.lessons.join(",")}><span data-count></span></span></summary>
+      <summary id={`${idPrefix}-${s.id}`}>{s.title} <span class="small muted" data-section-progress={s.lessons.join(",")}><span data-count="short"></span></span></summary>
       <ul aria-labelledby={`${idPrefix}-${s.id}`}>
         {s.lessons.map((id) => {
           const l = getLesson(id)!;

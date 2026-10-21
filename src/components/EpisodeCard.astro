@@ -1,5 +1,8 @@
 ---
-/** One summary podcast episode: what formats exist, what it covers, audio play button, link to the video version. */
+/**
+ * One summary podcast episode: what it covers, and its two formats side by side — Watch video (opens the episode)
+ * and Play audio (the site-wide audio player). The whole card opens the episode page.
+ */
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
@@ -8,7 +11,7 @@ import { lessonPath, podcastPath, withBase } from "../lib/routes";
 
 interface Props {
   episode: Episode;
-  /** hide the episode-page link (when already on it) */
+  /** already on this episode's page: no link to it */
   compact?: boolean;
 }
 const { episode: ep, compact = false } = Astro.props;
@@ -17,34 +20,29 @@ const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
 const sections = [...new Set(lessons.map((l) => l.sectionId))].join(" ");
 const available = !!(ep.audioUrl || ep.videoUrl);
 const kinds = [ep.audioUrl && "audio", ep.videoUrl && "video"].filter(Boolean).join(" ");
+const href = withBase(base, podcastPath(ep.id));
 // "Day 5" → "D5", "Interview Part 1" → "IP1"
 const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w) => (/^\d+$/.test(w) ? w : w[0])).join("").toUpperCase().slice(0, 4);
 ---
-<li class="episode" data-filter-item={`${ep.title} ${ep.description} ${lessons.map((l) => `${l.label} ${l.title}`).join(" ")}`} data-sections={sections} data-available={String(available)} data-kinds={kinds}>
+<li class:list={["episode", { "episode--link": !compact }]} data-filter-item={`${ep.title} ${ep.description} ${lessons.map((l) => `${l.label} ${l.title}`).join(" ")}`} data-sections={sections} data-available={String(available)} data-kinds={kinds}>
   <span class="epicon" aria-hidden="true">{abbr}</span>
   <div class="episode__body">
-    <div class="pill-row">
-      {ep.audioUrl && <span class="pill pill--green">Audio</span>}
-      {ep.videoUrl && <span class="pill pill--blue">Video podcast</span>}
-      {!available && <span class="pill">Not added yet</span>}
-      {ep.test && <span class="pill pill--amber">Test media</span>}
-      {ep.demo && <span class="pill pill--amber">Demo</span>}
-    </div>
-    <h3 class="episode__title">{compact ? ep.title : <a href={withBase(base, podcastPath(ep.id))}>{ep.title}</a>}</h3>
+    <h3 class="episode__title">{compact ? ep.title : <a href={href}>{ep.title}</a>}</h3>
     <div class="episode__meta">
       {ep.duration != null && <span><Icon name="clock" /> {formatLength(ep.duration)}</span>}
       {lessons.length > 0 && <span>Covers {lessons.map((l, i) => <>{i > 0 && ", "}<a href={withBase(base, lessonPath(l.id))}>{l.label}</a></>)}</span>}
+      {ep.test && <span class="pill pill--amber">Test media</span>}
+      {ep.demo && <span class="pill pill--amber">Demo</span>}
     </div>
     {ep.description && <p class="episode__desc">{ep.description}</p>}
     <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
-    {!compact && ep.videoUrl && (
-      <div class="episode__actions">
-        <a class="btn btn--sm" href={withBase(base, podcastPath(ep.id))}><Icon name="video" /> Watch video podcast</a>
-      </div>
-    )}
+    <div class="episode__actions">
+      {!compact && ep.videoUrl && <a class="btn btn--sm" href={`${href}#video`}><Icon name="video" /> Watch video</a>}
+      {ep.audioUrl
+        ? <button class="btn btn--sm audio-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /><span class="play">Play audio</span><span class="pause">Pause</span></button>
+        : <button class="btn btn--sm" type="button" disabled aria-label={`Audio not available yet: ${ep.title}`}><Icon name="podcast" /> No audio yet</button>}
+      {!available && <span class="small muted">Not added yet</span>}
+    </div>
     {ep.audioUrl && !ep.test && <div class="dl-slot app-only" data-download={ep.id}></div>}
   </div>
-  {ep.audioUrl
-    ? <button class="play-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /></button>
-    : <button class="play-btn" type="button" disabled aria-label={`Audio not available yet: ${ep.title}`}><Icon name="play" /></button>}
 </li>

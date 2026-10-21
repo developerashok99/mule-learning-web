@@ -143,14 +143,20 @@ function setupVideo(video: HTMLVideoElement) {
   video.addEventListener("pause", flush);
   video.addEventListener("ended", flush);
   pageSignal().addEventListener("abort", flush);
-  video.addEventListener("error", () => {
+  // An error event can also mean a request the browser aborted and retries (e.g. when client-side navigation moves
+  // the element into the new page), so only report a failure if, a moment later, nothing could be loaded.
+  let reported = false;
+  const check = () => setTimeout(() => {
+    if (reported || video.readyState > HTMLMediaElement.HAVE_NOTHING) return;
+    if (!video.error && video.networkState !== HTMLMediaElement.NETWORK_NO_SOURCE) return;
+    reported = true;
     const code = video.error?.code;
-    showState(frame, "This video podcast can't be played", code === 4 ? "The file was not found or its format isn't supported by this browser." : "A network or decoding error occurred. Try again later.");
-  }, true);
+    showState(frame, "This video podcast can't be played", !video.error || code === 4 ? "The file was not found or its format isn't supported by this browser." : "A network or decoding error occurred. Try again later.");
+  }, 600);
+  video.addEventListener("error", check, true);
   // a <source> failing fires on the source element — possibly before this script ran
-  const failed = () => showState(frame, "This video podcast can't be played", "The file was not found or its format isn't supported by this browser.");
-  video.querySelector("source")?.addEventListener("error", failed);
-  if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE || video.error) failed();
+  video.querySelector("source")?.addEventListener("error", check);
+  if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE || video.error) check();
 }
 
 export function setupMedia() {

@@ -2,6 +2,7 @@
 import { getEpisode } from "./player";
 import { allMediaProgress, bookmarkIds, clearAll, completedIds, exportAll, importAll, recent, setBookmarked, setCompleted, startedIds, timeAgo } from "./store";
 import { formatClock } from "../lib/duration";
+import { confirmSheet } from "./sheet";
 
 interface IndexItem {
   id: string;
@@ -161,8 +162,14 @@ export function setupMyStudy() {
     }
     input.value = "";
   });
-  page.querySelector("[data-ms-reset]")?.addEventListener("click", () => {
-    if (!confirm("Reset all progress, bookmarks and podcast positions in this browser? Display settings are kept. This cannot be undone (unless you have a backup).")) return;
+  page.querySelector("[data-ms-reset]")?.addEventListener("click", async () => {
+    const ok = await confirmSheet({
+      title: "Reset all progress?",
+      message: "Completed lessons, bookmarks, flashcard reviews and podcast positions in this browser are removed. Display settings are kept. This can't be undone unless you have a backup.",
+      confirm: "Reset everything",
+      danger: true,
+    });
+    if (!ok) return;
     clearAll(true);
     status.textContent = "All progress was reset.";
     render();

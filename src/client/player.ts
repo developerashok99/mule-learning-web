@@ -69,6 +69,7 @@ function renderTime() {
   totalEl.textContent = d ? formatClock(d) : "--:--";
   seek.setAttribute("aria-valuetext", `${formatClock(t)} of ${d ? formatClock(d) : "unknown"}`);
   seek.style.setProperty("--pct", d ? `${(t / d) * 100}%` : "0%");
+  root.style.setProperty("--pct", d ? `${(t / d) * 100}%` : "0%");
 }
 
 function renderRate() {
@@ -228,6 +229,15 @@ function skip(seconds: number) {
   renderTime();
 }
 
+/** Phones: the slim player (title, play / pause) opens to show every control. */
+function expand(open: boolean) {
+  root.classList.toggle("is-open", open);
+  document.body.classList.toggle("has-player-open", open);
+  const b = root.querySelector<HTMLButtonElement>('[data-act="expand"]');
+  b?.setAttribute("aria-expanded", String(open));
+  b?.setAttribute("aria-label", open ? "Show fewer player controls" : "Show all player controls");
+}
+
 function close() {
   save(true);
   audio.pause();
@@ -236,6 +246,7 @@ function close() {
   current = null;
   write(KEYS.player, { ...read(KEYS.player, {}), closed: true });
   showPlayer(false);
+  expand(false);
   renderState();
 }
 
@@ -248,6 +259,7 @@ root.addEventListener("click", (e) => {
   else if (act === "prev") step(-1);
   else if (act === "next") step(1);
   else if (act === "close") close();
+  else if (act === "expand") expand(!root.classList.contains("is-open"));
   else if (act === "speed") {
     const i = SPEEDS.indexOf(audio.playbackRate);
     audio.playbackRate = SPEEDS[(i + 1) % SPEEDS.length] ?? 1;
