@@ -14,6 +14,8 @@ import { glossary } from "../lib/glossary";
 import { cardId } from "../lib/srs";
 import { dwExercises } from "../lib/dataweave";
 const dwCount = dwExercises().length;
+import { flowExercises } from "../lib/flows";
+const flowCount = flowExercises().length;
 
 const base = import.meta.env.BASE_URL;
 const known = knownIds();
@@ -72,6 +74,18 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
         <span><b>Concept map</b><small>See how the terms connect, then rebuild a term's links from memory</small></span>
         <Icon name="right" />
       </a>
+      <a class="card card--hover dw-promo" href={withBase(base, "revise/mule-event/")}>
+        <span class="stat-icon" aria-hidden="true"><Icon name="play" /></span>
+        <span><b>Mule event visualiser</b><small>Watch payload, attributes and variables change, component by component</small></span>
+        <Icon name="right" />
+      </a>
+      {flowCount > 0 && (
+        <a class="card card--hover dw-promo" href={withBase(base, "revise/build-the-flow/")}>
+          <span class="stat-icon" aria-hidden="true"><Icon name="right" /></span>
+          <span><b>Build the flow</b><small>{flowCount} step-by-step flows from your diagrams: put them back in order</small></span>
+          <Icon name="right" />
+        </a>
+      )}
       {dwCount > 0 && (
         <a class="card card--hover dw-promo" href={withBase(base, "revise/dataweave/")}>
           <span class="stat-icon" aria-hidden="true">dw</span>

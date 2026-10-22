@@ -39,7 +39,7 @@ const PAGES = [
   "", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "revise/", "my-study/",
   "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/",
   "lessons/day15/revise/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/",
-  "videos/", "preferences/", "downloads/", "revise/dataweave/", "revise/concept-map/",
+  "videos/", "preferences/", "downloads/", "revise/dataweave/", "revise/concept-map/", "revise/build-the-flow/", "revise/mule-event/",
 ];
 
 test.describe("pages", () => {

@@ -17,6 +17,7 @@ export const KEYS = {
   srs: "mls.srs", // Record<cardId, CardState> flashcard review schedule (src/lib/srs.ts)
   srsNew: "mls.srsNew", // { day: "YYYY-MM-DD", n } new flashcards started today
   mapSrs: "mls.mapSrs", // Record<term, CardState> concept-map rebuild schedule (src/client/conceptmap.ts), kept apart from flashcards
+  flows: "mls.flows", // Record<exerciseId, "right" | "wrong"> Build the flow results (src/client/flows.ts)
   dw: "mls.dw", // Record<exerciseId, DwResult> DataWeave practice results (src/client/dataweave.ts)
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
@@ -205,6 +206,12 @@ export const dwResults = () => read<Record<string, DwResult>>(KEYS.dw, {});
 export function saveDwResult(id: string, mode: "p" | "w", result: "right" | "wrong") {
   const all = dwResults();
   write(KEYS.dw, { ...all, [id]: { ...all[id], [mode]: result } });
+}
+
+// ---- Build the flow ----
+export const flowResults = () => read<Record<string, "right" | "wrong">>(KEYS.flows, {});
+export function saveFlowResult(id: string, result: "right" | "wrong") {
+  write(KEYS.flows, { ...flowResults(), [id]: result });
 }
 
 // ---- flashcard review schedule ----

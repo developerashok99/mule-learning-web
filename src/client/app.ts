@@ -15,6 +15,8 @@ import { setupSlides } from "./slides";
 import { setupFlashcards } from "./flashcards";
 import { setupDataweave } from "./dataweave";
 import { setupConceptMap } from "./conceptmap";
+import { setupFlows } from "./flows";
+import { setupMuleEvent } from "./muleevent";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
@@ -390,6 +392,8 @@ document.addEventListener("astro:page-load", () => {
   setupFlashcards();
   setupDataweave();
   setupConceptMap();
+  setupFlows();
+  setupMuleEvent();
   setupPreferences();
 });
 window.addEventListener("mls:store", markDone);
