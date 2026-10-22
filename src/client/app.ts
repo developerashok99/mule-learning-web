@@ -18,6 +18,9 @@ import { setupConceptMap } from "./conceptmap";
 import { setupFlows } from "./flows";
 import { setupMuleEvent } from "./muleevent";
 import { setupMindMap } from "./mindmap";
+import { setupQuiz } from "./quiz";
+import { setupPractice } from "./practice";
+import { setupRecommend } from "./recommend";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
@@ -359,7 +362,7 @@ function setupGlossaryLetters() {
 function setupRevise() {
   const btn = document.querySelector<HTMLButtonElement>("[data-reveal-all]");
   if (!btn) return;
-  const all = () => [...document.querySelectorAll<HTMLDetailsElement>("details.qa")];
+  const all = () => [...document.querySelectorAll<HTMLDetailsElement>("#rv-selftest details.qa")];
   const render = () => {
     const open = all().every((d) => d.open);
     btn.setAttribute("aria-pressed", String(open));
@@ -396,6 +399,9 @@ document.addEventListener("astro:page-load", () => {
   setupFlows();
   setupMuleEvent();
   setupMindMap();
+  setupQuiz();
+  setupPractice();
+  setupRecommend();
   setupPreferences();
 });
 window.addEventListener("mls:store", markDone);

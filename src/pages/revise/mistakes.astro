@@ -1,0 +1,21 @@
+---
+/** Mistakes: every quiz question last answered wrong, from any lesson, to try again (src/components/Quiz.astro). */
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
+import Quiz from "../../components/Quiz.astro";
+import { getLessons } from "../../lib/content";
+import { lessonPath, withBase } from "../../lib/routes";
+import { studyFor } from "../../lib/study";
+
+const base = import.meta.env.BASE_URL;
+const questions = getLessons().flatMap((l) => studyFor(l.id).quiz.map((q) => ({ ...q, lesson: l.id, lessonLabel: l.label, href: withBase(base, lessonPath(l.id, "revise")) + "#rv-quiz" })));
+---
+<Base title="Mistakes" nav="revise" description="Quiz questions you answered wrong, to try again until you get them right.">
+  <div class="page page--read">
+    <PageHead eyebrow="Revision studio" title="Fix your mistakes" sub="Every quiz question you last answered wrong, from any lesson. Answer it right and it leaves the list (once you reload). The lesson link takes you back to its quiz and notes." id="mk-h">
+      <a slot="actions" class="btn btn--sm" href={withBase(base, "revise/")}><Icon name="left" /> Revision studio</a>
+    </PageHead>
+    <Quiz questions={questions} mode="mistakes" labelledby="mk-h" />
+  </div>
+</Base>

@@ -16,7 +16,8 @@
     "build:test": "SHOW_TEST_EPISODES=true npm run build:site",
     "build:app": "APP_BUILD=1 astro build && pagefind --site dist-app",
     "app:sync": "npm run build:app && npx cap sync android",
-    "app:apk": "npm run app:sync && cd android && ./gradlew assembleDebug"
+    "app:apk": "npm run app:sync && cd android && ./gradlew assembleDebug",
+    "coverage": "vitest run tests/unit/coverage-report.test.ts && echo \"wrote reports/coverage.md\""
   },
   "repository": {
     "type": "git",

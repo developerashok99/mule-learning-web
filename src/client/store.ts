@@ -17,6 +17,7 @@ export const KEYS = {
   srs: "mls.srs", // Record<cardId, CardState> flashcard review schedule (src/lib/srs.ts)
   srsNew: "mls.srsNew", // { day: "YYYY-MM-DD", n } new flashcards started today
   mapSrs: "mls.mapSrs", // Record<term, CardState> concept-map rebuild schedule (src/client/conceptmap.ts), kept apart from flashcards
+  quiz: "mls.quiz", // Record<questionId, QuizResult> lesson quiz answers (src/client/quiz.ts)
   flows: "mls.flows", // Record<exerciseId, "right" | "wrong"> Build the flow results (src/client/flows.ts)
   dw: "mls.dw", // Record<exerciseId, DwResult> DataWeave practice results (src/client/dataweave.ts)
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
@@ -127,6 +128,17 @@ export function saveReadingProgress(key: string, value: number) {
   write(KEYS.reading, all);
 }
 
+/** Backup file format. Version 1 files ({ app, exportedAt, data }) and bare data objects are still accepted. */
+export const BACKUP_VERSION = 2;
+const LIST_KEYS = new Set<string>([KEYS.completed, KEYS.bookmarks, KEYS.started, KEYS.recent, KEYS.searches]);
+/** what each key holds, in words, for the restore summary */
+export const KEY_NAMES: Record<string, string> = {
+  [KEYS.completed]: "completed lessons", [KEYS.bookmarks]: "bookmarks", [KEYS.started]: "lessons in progress", [KEYS.recent]: "recent activity",
+  [KEYS.audio]: "podcast positions", [KEYS.video]: "video positions", [KEYS.reading]: "reading positions", [KEYS.player]: "audio player",
+  [KEYS.searches]: "recent searches", [KEYS.srs]: "flashcard schedule", [KEYS.srsNew]: "new flashcards today", [KEYS.mapSrs]: "concept-map review schedule",
+  [KEYS.quiz]: "quiz answers and mistakes", [KEYS.flows]: "Build-the-flow results", [KEYS.dw]: "DataWeave results", [KEYS.prefs]: "preferences",
+};
+
 /** Everything this site stores, for backup / restore / reset on the My study page. */
 export function exportAll(): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -136,17 +148,45 @@ export function exportAll(): Record<string, unknown> {
   }
   return out;
 }
-export function importAll(data: unknown): number {
-  if (typeof data !== "object" || data === null || Array.isArray(data)) throw new Error("Not a Mule Study backup file");
+export const backupFile = () => ({ app: "mule-study", version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data: exportAll() });
+
+export interface BackupCheck {
+  /** keys that will be restored, with how many entries each holds */
+  entries: { key: string; name: string; size: number }[];
+  /** keys in the file this site doesn't know, or whose value has the wrong shape (left alone) */
+  skipped: string[];
+  exportedAt?: string;
+  version: number;
+}
+/** Validates a parsed backup without changing anything. Throws if it isn't a backup at all. */
+export function checkBackup(file: unknown): BackupCheck {
+  if (typeof file !== "object" || file === null || Array.isArray(file)) throw new Error("Not a Mule Study backup file");
+  const f = file as Record<string, unknown>;
+  const wrapped = f.app === "mule-study" && typeof f.data === "object" && f.data !== null;
+  const data = (wrapped ? f.data : f) as Record<string, unknown>;
+  const version = wrapped ? (typeof f.version === "number" ? f.version : 1) : 1;
+  if (version > BACKUP_VERSION) throw new Error("This backup comes from a newer version of the site; update the app first");
   const known = new Set<string>(Object.values(KEYS));
-  let n = 0;
+  const entries: BackupCheck["entries"] = [];
+  const skipped: string[] = [];
   for (const [k, v] of Object.entries(data)) {
-    if (!known.has(k)) continue;
-    write(k, v);
-    n++;
+    const shapeOk = LIST_KEYS.has(k) ? Array.isArray(v) : typeof v === "object" && v !== null && !Array.isArray(v);
+    if (!known.has(k) || !shapeOk) {
+      skipped.push(k);
+      continue;
+    }
+    entries.push({ key: k, name: KEY_NAMES[k] ?? k, size: Array.isArray(v) ? v.length : Object.keys(v as object).length });
   }
-  if (!n) throw new Error("The file contains no Mule Study progress");
-  return n;
+  if (!entries.length) throw new Error("The file contains no Mule Study progress");
+  return { entries, skipped, exportedAt: wrapped && typeof f.exportedAt === "string" ? f.exportedAt : undefined, version };
+}
+/** Restores a backup checked by checkBackup: each kind of progress in the file replaces this browser's; kinds not in the file are kept. */
+export function importAll(file: unknown): number {
+  const check = checkBackup(file);
+  const f = file as Record<string, unknown>;
+  const data = (f.app === "mule-study" && typeof f.data === "object" && f.data !== null ? f.data : f) as Record<string, unknown>;
+  for (const e of check.entries) write(e.key, data[e.key]);
+  return check.entries.length;
 }
 export function clearAll(keepPrefs = true) {
   for (const key of Object.values(KEYS)) {
@@ -206,6 +246,21 @@ export const dwResults = () => read<Record<string, DwResult>>(KEYS.dw, {});
 export function saveDwResult(id: string, mode: "p" | "w", result: "right" | "wrong") {
   const all = dwResults();
   write(KEYS.dw, { ...all, [id]: { ...all[id], [mode]: result } });
+}
+
+// ---- lesson quizzes ----
+/** a quiz question's history: times right / wrong, and the latest answer */
+export interface QuizResult {
+  r: number;
+  w: number;
+  last: "right" | "wrong";
+  at: number;
+}
+export const quizResults = () => read<Record<string, QuizResult>>(KEYS.quiz, {});
+export function saveQuizAnswer(id: string, right: boolean) {
+  const all = quizResults();
+  const prev = all[id] ?? { r: 0, w: 0 };
+  write(KEYS.quiz, { ...all, [id]: { r: prev.r + (right ? 1 : 0), w: prev.w + (right ? 0 : 1), last: right ? "right" : "wrong", at: Date.now() } });
 }
 
 // ---- Build the flow ----

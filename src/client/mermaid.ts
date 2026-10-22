@@ -62,6 +62,8 @@ export function setupMermaid() {
     }
   }, { rootMargin: "600px 0px" });
   blocks.forEach((b) => io.observe(b));
+  // Visual Practice links to a lesson's diagrams with #first-diagram
+  if (location.hash === "#first-diagram") blocks.find((b) => b.offsetParent)?.scrollIntoView({ block: "start" });
   pageSignal().addEventListener("abort", () => io.disconnect());
 }
 

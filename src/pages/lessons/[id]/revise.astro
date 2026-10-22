@@ -10,7 +10,10 @@ import { getLessons, knownIds, readNote, type Lesson } from "../../../lib/conten
 import { renderMarkdown, type RenderedDoc } from "../../../lib/markdown";
 import { lessonHasView, lessonPath, withBase, type NoteLevel } from "../../../lib/routes";
 import { codeExamples, findSection, parseQuestions, stripNumber } from "../../../lib/revision";
-import { dwExercises } from "../../../lib/dataweave";
+import { cardId } from "../../../lib/srs";
+import { studyFor } from "../../../lib/study";
+import Quiz from "../../../components/Quiz.astro";
+import VisualPractice from "../../../components/VisualPractice.astro";
 
 export function getStaticPaths() {
   return getLessons()
@@ -65,11 +68,16 @@ for (const level of ["detailed", "super"] as NoteLevel[]) {
     examples.push({ level, heading: ex.heading, lang: ex.lang, html: (await md(ex.markdown, level)).html });
   }
 }
-const dwCount = dwExercises().filter((e) => e.sid === lesson.id).length;
+const study = studyFor(lesson.id);
+const quiz = study.quiz.map((q) => ({ ...q, lesson: lesson.id, lessonLabel: lesson.label, href: withBase(base, lessonPath(lesson.id, "revise")) + "#rv-quiz" }));
+const flashcardIds = qSection ? parseQuestions(qSection.body).map((q) => cardId(lesson.id, q.question)) : [];
+const keyCards = await Promise.all(study.cards.map(async (c) => ({ front: (await md(c.front, "super")).html.replace(/^<p>|<\/p>\s*$/g, ""), back: (await md(c.back, "super")).html })));
 const nav = [
   { id: "rv-outline", label: "Outline", on: outline.length > 0 },
   ...blocks.map((b) => ({ id: `rv-${b.key}`, label: b.title, on: true })),
+  { id: "rv-quiz", label: `Quiz (${quiz.length})`, on: quiz.length > 0 },
   { id: "rv-selftest", label: `Self-test (${questions.length})`, on: questions.length > 0 },
+  { id: "rv-cards", label: `Key cards (${keyCards.length})`, on: keyCards.length > 0 },
   { id: "rv-code", label: `Code (${examples.length})`, on: examples.length > 0 },
 ].filter((n) => n.on);
 ---
@@ -83,13 +91,7 @@ const nav = [
         <p>Each part below is copied unchanged from the notes, with a link to where it comes from. Read the full notes for explanations and demos.</p>
       </div>
     </div>
-    {dwCount > 0 && (
-      <a class="card card--hover dw-promo" href={withBase(base, `revise/dataweave/?lesson=${lesson.id}`)}>
-        <span class="stat-icon" aria-hidden="true">dw</span>
-        <span><b>Practise DataWeave from this lesson</b><small>{dwCount} {dwCount === 1 ? "exercise" : "exercises"}: predict what each script returns</small></span>
-        <Icon name="right" />
-      </a>
-    )}
+    <VisualPractice lesson={lesson} flashcardIds={flashcardIds} />
     <nav class="chips revise__jump" aria-label="Revision sections">
       {nav.map((n) => <a class="chip" href={`#${n.id}`}>{n.label}</a>)}
     </nav>
@@ -122,6 +124,14 @@ const nav = [
       </section>
     ))}
 
+    {quiz.length > 0 && (
+      <section class="revise__block" id="rv-quiz" aria-labelledby="rv-quiz-h">
+        <h2 id="rv-quiz-h">Quiz</h2>
+        <p class="revise__src">From the study questions in the notes repository. Pick an answer to see whether it's right and why. Wrong answers are collected on the <a href={withBase(base, "revise/mistakes/")}>Mistakes</a> page until you get them right.</p>
+        <Quiz questions={quiz} labelledby="rv-quiz-h" />
+      </section>
+    )}
+
     {questions.length > 0 && (
       <section class="revise__block" id="rv-selftest" aria-labelledby="rv-selftest-h">
         <div class="section-head">
@@ -139,6 +149,20 @@ const nav = [
             </li>
           ))}
         </ol>
+      </section>
+    )}
+
+    {keyCards.length > 0 && (
+      <section class="revise__block" id="rv-cards" aria-labelledby="rv-cards-h">
+        <div class="section-head">
+          <h2 id="rv-cards-h">Key cards</h2>
+        </div>
+        <p class="revise__src">Short cards from the study data in the notes repository. Say the answer, then open the card.</p>
+        <ul class="keycards">
+          {keyCards.map((c) => (
+            <li><details class="qa keycard"><summary><span class="qa__q" set:html={c.front} /></summary><div class="prose qa__a" set:html={c.back} /></details></li>
+          ))}
+        </ul>
       </section>
     )}
 

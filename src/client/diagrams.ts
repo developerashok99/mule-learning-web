@@ -15,9 +15,13 @@ interface Step {
   text: string;
   /** label of the arrow that leads here, if any */
   via?: string;
+  /** where a branching diagram splits or joins at this box */
+  note?: string;
 }
 interface Model {
   kind: "flow" | "sequence";
+  /** the arrows split or join somewhere, so the order is breadth-first rather than one path */
+  branching?: boolean;
   steps: Step[];
   /** tappable things: boxes, or messages for sequence diagrams */
   targets: { el: Element; text: string }[];
@@ -62,7 +66,12 @@ function flowModel(svg: SVGSVGElement): Model | null {
     if (seen.has(k)) continue;
     seen.add(k);
     const e = via.get(k);
-    steps.push({ els: [nodes.get(k)!, ...(e ? [e.el] : [])], text: label(nodes.get(k)), via: e?.label || undefined });
+    const outs = edges.filter((x) => x.from === k);
+    const ins = edges.filter((x) => x.to === k);
+    const parts: string[] = [];
+    if (outs.length > 1) parts.push(`Splits into ${outs.length}: ${outs.map((x) => `${label(nodes.get(x.to))}${x.label ? ` (${x.label})` : ""}`).join("; ")}`);
+    if (ins.length > 1) parts.push(`Joins ${ins.length} arrows: from ${ins.map((x) => label(nodes.get(x.from))).join("; ")}`);
+    steps.push({ els: [nodes.get(k)!, ...(e ? [e.el] : [])], text: label(nodes.get(k)), via: e?.label || undefined, note: parts.join(". ") || undefined });
     for (const out of edges.filter((x) => x.from === k)) {
       if (!seen.has(out.to) && !via.has(out.to)) via.set(out.to, out);
       queue.push(out.to);
@@ -70,7 +79,8 @@ function flowModel(svg: SVGSVGElement): Model | null {
   }
   // anything unconnected comes last
   for (const [k, el] of nodes) if (!seen.has(k)) steps.push({ els: [el], text: label(el) });
-  return { kind: "flow", steps, targets: [...nodes.values()].map((el) => ({ el, text: label(el) })) };
+  const branching = [...nodes.keys()].some((k) => edges.filter((x) => x.from === k).length > 1 || edges.filter((x) => x.to === k).length > 1) || incoming.size === 0;
+  return { kind: "flow", branching, steps, targets: [...nodes.values()].map((el) => ({ el, text: label(el) })) };
 }
 
 function sequenceModel(svg: SVGSVGElement): Model | null {
@@ -146,6 +156,8 @@ export function enhance(block: HTMLElement) {
     head.append(el("b", "", `Step ${i + 1} of ${model.steps.length}`), document.createTextNode(` · ${s.text}`));
     const body: HTMLElement[] = [head];
     if (s.via) body.push(el("p", "mm-panel__via", `↳ ${s.via}`));
+    if (s.note) body.push(el("p", "mm-panel__via", s.note));
+    if (i === 0 && model.branching) body.push(el("p", "mm-panel__via", "This diagram branches, so it isn't one sequence: the steps follow the arrows outward from the start, level by level."));
     const prev = btn("← Previous");
     const next = btn(i === model.steps.length - 1 ? "Finish" : "Next →", "btn btn--sm btn--primary");
     const done = btn("Close", "btn btn--sm btn--ghost");

@@ -142,7 +142,7 @@ test.describe("DataWeave practice", () => {
 
   test("a lesson's revision links to its exercises", async ({ page }) => {
     await page.goto("lessons/day44/revise/");
-    await page.getByRole("link", { name: /Practise DataWeave from this lesson/ }).click();
+    await page.locator("[data-vp]").getByRole("link", { name: "DataWeave practice" }).click();
     await expect(page).toHaveURL(/revise\/dataweave\/\?lesson=day44/);
     await expect(page.getByLabel("Lesson", { exact: true })).toHaveValue("day44");
     await expect(page.locator("[data-dw]:visible")).toHaveAttribute("data-sid", "day44");

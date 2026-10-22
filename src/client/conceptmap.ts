@@ -57,7 +57,7 @@ export function setupConceptMap() {
   const found = document.querySelector<HTMLElement>("[data-cmap]");
   if (!found) return;
   const root: HTMLElement = found;
-  let data: ConceptMap;
+  let data: ConceptMap & { lessons: { id: string; label: string; title: string; s: string }[] };
   try {
     data = JSON.parse(root.querySelector("[data-cmap-data]")?.textContent || "");
   } catch {
@@ -78,8 +78,40 @@ export function setupConceptMap() {
   const degree = (i: number) => uses[i].size + usedBy[i].size;
   const byName = new Map(terms.map((t) => [t.t.toLowerCase(), t.i]));
   const sectionTitle = new Map(data.sections.map((s) => [s.id, s.title]));
-  // rebuild practice uses terms with at least 3 links, in course order
-  const practice = terms.filter((t) => degree(t.i) >= 3).map((t) => t.t);
+  // ---- filters: a lesson, a range of lessons, a section ----
+  const order = new Map(data.lessons.map((l, n) => [l.id, n]));
+  const lessonOf = new Map(data.lessons.map((l) => [l.id, l]));
+  const filter = { lesson: "", from: "", to: "", section: "" };
+  const fsel = (k: keyof typeof filter) => root.querySelector<HTMLSelectElement>(`[data-cmap-f="${k}"]`)!;
+  /** the lessons in view, or null for the whole course */
+  function scope(): Set<string> | null {
+    if (filter.lesson) return new Set([filter.lesson]);
+    if (!filter.from && !filter.to && !filter.section) return null;
+    const a = filter.from ? order.get(filter.from)! : 0;
+    const b = filter.to ? order.get(filter.to)! : data.lessons.length - 1;
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    return new Set(data.lessons.filter((l, n) => n >= lo && n <= hi && (!filter.section || l.s === filter.section)).map((l) => l.id));
+  }
+  function scopeName(): string {
+    if (filter.lesson) return lessonOf.get(filter.lesson)?.label ?? filter.lesson;
+    const parts: string[] = [];
+    if (filter.from || filter.to) parts.push(`${lessonOf.get(filter.from)?.label ?? lessonOf.get(data.lessons[0].id)!.label} to ${lessonOf.get(filter.to)?.label ?? data.lessons[data.lessons.length - 1].label}`);
+    if (filter.section) parts.push(sectionTitle.get(filter.section) ?? filter.section);
+    return parts.join(", ");
+  }
+  const inScope = (i: number, sc = scope()) => !sc || terms[i].l.some((l) => sc.has(l));
+  /** first defined in the lessons in view (rather than defined there again) */
+  const introducedIn = (i: number, sc: Set<string>) => sc.has(terms[i].l[0]);
+  /** showing the overview of the filtered lessons (not one term) */
+  let overview = false;
+
+  // rebuild practice uses terms with at least 3 links, in course order; a filter limits it to those lessons
+  const allPractice = terms.filter((t) => degree(t.i) >= 3);
+  const practiceNames = () => {
+    const sc = scope();
+    const inView = sc ? allPractice.filter((t) => inScope(t.i, sc)) : [];
+    return (inView.length ? inView : allPractice).map((t) => t.t);
+  };
 
   let mode: "explore" | "rebuild" = "explore";
   let depth = 1;
@@ -92,20 +124,22 @@ export function setupConceptMap() {
   let draw: ((els: ElementDefinition[], ring: boolean) => void) | null = null;
   const ready = import("cytoscape").then(({ default: cytoscape }) => {
     if (signal.aborted) return;
-    cy = cytoscape({ container: canvas, style: style(), minZoom: 0.3, maxZoom: 2.5, wheelSensitivity: 0.3, boxSelectionEnabled: false, autoungrabify: false });
+    cy = cytoscape({ container: canvas, style: style(), minZoom: 0.08, maxZoom: 2.5, wheelSensitivity: 0.3, boxSelectionEnabled: false, autoungrabify: false });
     cy.on("tap", "node", (e) => {
       const i = Number(e.target.data("i"));
       if (mode === "explore" && !Number.isNaN(i)) setFocus(i);
     });
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     draw = (els, ring) => {
+      cy!.resize();
       cy!.elements().remove();
       cy!.add(els);
-      cy!
-        .layout(ring
+      const layout = cy!.layout(ring
           ? { name: "concentric", concentric: (n) => n.data("level"), levelWidth: () => 1, minNodeSpacing: 34, animate: !reduced, animationDuration: 250, padding: 48 }
-          : { name: "cose", animate: false, padding: 24, nodeRepulsion: () => 9000, idealEdgeLength: () => 70 })
-        .run();
+          : { name: "cose", animate: false, fit: true, padding: 40, nodeRepulsion: () => 60000, idealEdgeLength: () => 60, nodeOverlap: 30, componentSpacing: 40, gravity: 1.2, numIter: 1500, randomize: false });
+      // fit once the layout has placed everything (cose finishes after run() returns)
+      if (!ring) layout.one("layoutstop", () => cy?.fit(undefined, 40));
+      layout.run();
     };
     $("[data-cmap-loading]").hidden = true;
     // the colours follow the theme
@@ -141,20 +175,35 @@ export function setupConceptMap() {
     return [...nodes, ...edges];
   }
 
-  function termList(title: string, ids: Set<number>) {
+  function termList(title: string, ids: Set<number>, note = "") {
     const box = el("div", "cmap-links");
     box.append(el("h3", "", `${title} (${ids.size})`));
+    if (note && ids.size) box.append(el("p", "cmap-note", note));
     if (!ids.size) {
       box.append(el("p", "small muted", "None"));
       return box;
     }
     const list = el("div", "chips");
-    for (const i of [...ids].sort((a, b) => terms[a].t.localeCompare(terms[b].t))) {
-      const b = btn(terms[i].t, "chip");
-      b.addEventListener("click", () => setFocus(i, true));
-      list.append(b);
-    }
+    // long lists show the most connected terms first, and the rest on request
+    const sorted = [...ids].sort((a, b) => degree(b) - degree(a) || terms[a].t.localeCompare(terms[b].t));
+    const LIMIT = 24;
+    const add = (from: number, to: number) => {
+      for (const i of sorted.slice(from, to)) {
+        const b = btn(terms[i].t, "chip");
+        b.addEventListener("click", () => setFocus(i, true));
+        list.append(b);
+      }
+    };
+    add(0, LIMIT);
     box.append(list);
+    if (sorted.length > LIMIT) {
+      const more = btn(`Show all ${sorted.length}`, "btn btn--sm btn--ghost");
+      more.addEventListener("click", () => {
+        add(LIMIT, sorted.length);
+        more.remove();
+      });
+      box.append(more);
+    }
     return box;
   }
 
@@ -183,26 +232,100 @@ export function setupConceptMap() {
     rebuild.disabled = degree(focus) < 3;
     rebuild.title = degree(focus) < 3 ? "Needs at least 3 links" : "";
     rebuild.addEventListener("click", () => setMode("rebuild", focus));
-    panel.replaceChildren(head, definition(t), termList("Uses", uses[focus]), termList("Used by", usedBy[focus]), rebuild);
+    const sc = scope();
+    const back = sc ? btn(`← Back to the map of ${scopeName()}`, "btn btn--sm btn--ghost") : null;
+    back?.addEventListener("click", () => renderOverview());
+    panel.replaceChildren(
+      ...(back ? [back] : []),
+      head,
+      definition(t),
+      termList("Uses", uses[focus], "Its definition names these terms."),
+      termList("Used by", usedBy[focus], "Their definitions name this term."),
+      rebuild,
+    );
     void ready.then(() => draw?.(exploreElements(), true));
     history.replaceState(history.state, "", `${location.pathname}${location.search}#term=${encodeURIComponent(t.t)}`);
   }
 
   function setFocus(i: number, fromPanel = false) {
     focus = i;
+    overview = false;
     renderExplore();
     if (fromPanel) panel.querySelector("h2")?.setAttribute("tabindex", "-1");
     if (fromPanel) panel.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   }
 
+  // ---- the filtered lessons as one map ----
+  function renderOverview() {
+    const sc = scope();
+    if (!sc) return setFocus(focus);
+    overview = true;
+    const local = terms.filter((t) => inScope(t.i, sc) && degree(t.i) > 0).map((t) => t.i).sort((a, b) => degree(b) - degree(a));
+    const shown = new Map<number, "local" | "intro" | "far">();
+    for (const i of local.slice(0, MAX_NODES)) shown.set(i, introducedIn(i, sc) ? "intro" : "local");
+    // terms from other lessons that the local ones connect to, while there is room
+    const outside = new Map<number, number>();
+    for (const i of local) for (const j of neighbours(i)) if (!inScope(j, sc)) outside.set(j, (outside.get(j) ?? 0) + 1);
+    for (const [j] of [...outside].sort((a, b) => b[1] - a[1])) {
+      if (shown.size >= MAX_NODES + 10) break;
+      shown.set(j, "far");
+    }
+    const els: ElementDefinition[] = [
+      ...[...shown].map(([i, k]) => ({ data: { id: `t${i}`, i, label: terms[i].t, level: k === "far" ? 1 : 2 }, classes: k === "intro" ? "uses" : k === "local" ? "used" : "far" })),
+      ...data.links.filter(([a, b]) => shown.has(a) && shown.has(b)).map(([a, b]) => ({ data: { id: `e${a}-${b}`, source: `t${a}`, target: `t${b}` }, classes: shown.get(a) !== "far" && shown.get(b) !== "far" ? "near" : "" })),
+    ];
+    void ready.then(() => draw?.(els, false));
+    const inView = terms.filter((t) => inScope(t.i, sc)).map((t) => t.i);
+    const head = el("div", "cmap-head");
+    head.append(el("span", "pill pill--blue", "Filtered map"), el("h2", "", scopeName()));
+    if (filter.lesson) head.append(el("p", "small muted", lessonOf.get(filter.lesson)?.title ?? ""));
+    const summary = el("p", "small muted", `${inView.length} terms defined here, ${local.length} of them linked${local.length > MAX_NODES ? ` (the ${MAX_NODES} most connected are drawn)` : ""}. Tap any term to see its definition and links.`);
+    const legend = el("p", "cmap-legend small muted");
+    legend.innerHTML = '<span class="cmap-key cmap-key--uses"></span> first defined here <span class="cmap-key cmap-key--used"></span> also defined here <span class="cmap-key cmap-key--elsewhere"></span> from other lessons';
+    const intro = new Set(inView.filter((i) => introducedIn(i, sc)));
+    const again = new Set(inView.filter((i) => !introducedIn(i, sc)));
+    const far = new Set([...outside.keys()]);
+    const rebuild = btn("Rebuild these from memory", "btn btn--sm btn--soft");
+    rebuild.disabled = !allPractice.some((t) => inScope(t.i, sc));
+    rebuild.addEventListener("click", () => setMode("rebuild"));
+    panel.replaceChildren(
+      head,
+      summary,
+      legend,
+      termList("First defined here", intro),
+      termList("Also defined here", again, "Defined in an earlier lesson too."),
+      termList("Connected from other lessons", far, "Terms outside these lessons that a definition here names, or whose definition names a term here."),
+      rebuild,
+    );
+    history.replaceState(history.state, "", `${location.pathname}${location.search}`);
+  }
+
+  function applyFilter() {
+    (Object.keys(filter) as (keyof typeof filter)[]).forEach((k) => (filter[k] = fsel(k).value));
+    // one lesson replaces a range
+    ["from", "to"].forEach((k) => (fsel(k as "from").disabled = !!filter.lesson));
+    const label = $("[data-cmap-filter-label]");
+    const sc = scope();
+    label.hidden = !sc;
+    label.textContent = sc ? scopeName() : "";
+    const url = new URL(location.href);
+    url.search = "";
+    if (filter.lesson) url.searchParams.set("lesson", filter.lesson);
+    history.replaceState(history.state, "", url.pathname + url.search);
+    renderDue();
+    if (mode === "explore") (sc ? renderOverview() : setFocus(focus));
+    else renderRebuild(nextPractice());
+  }
+
   // ---- rebuild from memory ----
   function renderDue() {
-    const q = queue(practice, mapStates());
+    const q = queue(practiceNames(), mapStates());
     const badge = $("[data-cmap-due]");
     badge.textContent = q.due.length ? `(${q.due.length} due)` : "";
   }
 
   function nextPractice(): number {
+    const practice = practiceNames();
     const q = queue(practice, mapStates());
     const pick = q.due[0] ?? q.fresh[Math.floor(Math.random() * Math.min(q.fresh.length, 30))] ?? practice[Math.floor(Math.random() * practice.length)];
     return byName.get(pick.toLowerCase()) ?? focus;
@@ -292,7 +415,7 @@ export function setupConceptMap() {
     mode = m;
     root.querySelectorAll<HTMLElement>("[data-cmap-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cmapMode === m)));
     $("[data-cmap-depth-group]").hidden = m === "rebuild";
-    if (m === "explore") setFocus(term ?? focus);
+    if (m === "explore") (term == null && scope() ? renderOverview() : setFocus(term ?? focus));
     else renderRebuild(term ?? nextPractice());
   }
 
@@ -322,7 +445,26 @@ export function setupConceptMap() {
     setMode("explore", i);
   });
   search.querySelector("input")!.addEventListener("input", (e) => (e.target as HTMLInputElement).setCustomValidity(""));
+  (Object.keys(filter) as (keyof typeof filter)[]).forEach((k) => fsel(k).addEventListener("change", applyFilter));
+  $("[data-cmap-reset]").addEventListener("click", () => {
+    (Object.keys(filter) as (keyof typeof filter)[]).forEach((k) => (fsel(k).value = ""));
+    applyFilter();
+  });
   window.addEventListener("mls:store", renderDue, { signal });
+  const params = new URLSearchParams(location.search);
+  const wanted = params.get("lesson") ?? "";
+  if (order.has(wanted)) {
+    // a lesson's Visual Practice links here: open on that lesson's map
+    fsel("lesson").value = wanted;
+    $<HTMLDetailsElement>("[data-cmap-filters]").open = true;
+    filter.lesson = wanted;
+    overview = true;
+    ["from", "to"].forEach((k) => (fsel(k as "from").disabled = true));
+    const label = $("[data-cmap-filter-label]");
+    label.hidden = false;
+    label.textContent = scopeName();
+  }
   renderDue();
-  setMode(new URLSearchParams(location.search).get("mode") === "rebuild" ? "rebuild" : "explore", byName.has(fromHash) ? focus : undefined);
+  if (byName.has(fromHash)) overview = false;
+  setMode(params.get("mode") === "rebuild" ? "rebuild" : "explore", byName.has(fromHash) ? focus : undefined);
 }

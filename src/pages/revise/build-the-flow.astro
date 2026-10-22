@@ -14,6 +14,7 @@ const base = import.meta.env.BASE_URL;
 const all = flowExercises();
 const levelLabel = (l: string) => NOTE_LEVELS.find((x) => x.level === l)?.label ?? l;
 const lessons = [...new Set(all.map((e) => e.sid))].map((id) => getLesson(id)).filter((l) => l != null);
+const sections = [...new Map(lessons.map((l) => [l.sectionId, l.sectionTitle])).entries()];
 ---
 <Base title="Build the flow" nav="revise" description="Put the steps of the course's diagrams back in order.">
   <div class="page page--read" data-flows>
@@ -29,13 +30,24 @@ const lessons = [...new Set(all.map((e) => e.sid))].map((id) => getLesson(id)).f
               {lessons.map((l) => <option value={l.id}>{l.label}: {l.title}</option>)}
             </select>
           </label>
+          <label class="dw-bar__lesson"><span class="visually-hidden">Section</span>
+            <select class="input" data-flow-section aria-label="Section">
+              <option value="">All sections</option>
+              {sections.map(([id, title]) => <option value={id}>{title}</option>)}
+            </select>
+          </label>
+          <div class="segmented" role="group" aria-label="Which flows">
+            <button type="button" data-flow-status-filter="" aria-pressed="true">All</button>
+            <button type="button" data-flow-status-filter="unsolved" aria-pressed="false">Unsolved</button>
+            <button type="button" data-flow-status-filter="missed" aria-pressed="false">Missed</button>
+          </div>
           <p class="small muted dw-bar__score" data-flow-score aria-live="polite"></p>
         </div>
         <div class="dw-list">
           {all.map((e, n) => {
             const lesson = getLesson(e.sid);
             return (
-              <article class="card dw flow" id={e.id} data-flow={e.id} data-sid={e.sid} data-steps={JSON.stringify(e.steps)} aria-labelledby={`${e.id}-h`}>
+              <article class="card dw flow" id={e.id} data-flow={e.id} data-sid={e.sid} data-section={lesson?.sectionId} data-steps={JSON.stringify(e.steps)} aria-labelledby={`${e.id}-h`}>
                 <div class="pill-row">
                   {lesson && <span class="pill pill--blue">{lesson.label}</span>}
                   <span class="pill" data-flow-pos>Flow {n + 1} of {all.length}</span>
@@ -64,7 +76,7 @@ const lessons = [...new Set(all.map((e) => e.sid))].map((id) => getLesson(id)).f
             );
           })}
         </div>
-        <p class="empty" data-flow-empty hidden>No flows for this lesson.</p>
+        <p class="empty" data-flow-empty hidden>No flows match. Choose another lesson, section or filter.</p>
         <nav class="btn-row dw-nav" aria-label="Flows" data-flow-nav>
           <button class="btn" type="button" data-flow-prev><Icon name="left" /> Previous</button>
           <button class="btn" type="button" data-flow-next>Next <Icon name="right" /></button>

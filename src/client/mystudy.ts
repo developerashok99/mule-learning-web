@@ -1,6 +1,6 @@
 /** "My study" page: lists from stored progress, plus backup / restore / reset. */
 import { getEpisode } from "./player";
-import { allMediaProgress, bookmarkIds, clearAll, completedIds, exportAll, importAll, recent, setBookmarked, setCompleted, startedIds, timeAgo } from "./store";
+import { allMediaProgress, backupFile, bookmarkIds, checkBackup, clearAll, completedIds, exportAll, importAll, recent, setBookmarked, setCompleted, startedIds, timeAgo } from "./store";
 import { formatClock } from "../lib/duration";
 import { confirmSheet } from "./sheet";
 
@@ -142,7 +142,7 @@ export function setupMyStudy() {
   render();
 
   page.querySelector("[data-ms-export]")?.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify({ app: "mule-study", exportedAt: new Date().toISOString(), data: exportAll() }, null, 1)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(backupFile(), null, 1)], { type: "application/json" });
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `mule-study-backup-${new Date().toISOString().slice(0, 10)}.json` });
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -154,8 +154,22 @@ export function setupMyStudy() {
     if (!file) return;
     try {
       const parsed = JSON.parse(await file.text());
-      const n = importAll(parsed?.data ?? parsed);
-      status.textContent = `Restored ${n} saved item${n === 1 ? "" : "s"} from ${file.name}.`;
+      // check everything first, then say what will be replaced before changing anything
+      const check = checkBackup(parsed);
+      const current = exportAll();
+      const lines = check.entries.map((e) => `${e.name} (${e.size}${current[e.key] != null ? ", replaces what is here now" : ", new here"})`);
+      const ok = await confirmSheet({
+        title: "Restore this backup?",
+        message: `${check.exportedAt ? `Made ${new Date(check.exportedAt).toLocaleString()}. ` : ""}It will restore: ${lines.join("; ")}. Anything not listed stays as it is.${check.skipped.length ? ` ${check.skipped.length} unrecognised item${check.skipped.length === 1 ? " is" : "s are"} ignored.` : ""} Back up first if you might want today's progress back.`,
+        confirm: "Restore",
+      });
+      if (!ok) {
+        status.textContent = "Restore cancelled. Nothing was changed.";
+        input.value = "";
+        return;
+      }
+      const n = importAll(parsed);
+      status.textContent = `Restored ${n} kind${n === 1 ? "" : "s"} of progress from ${file.name}.`;
       render();
     } catch (err) {
       status.textContent = `Could not restore: ${(err as Error).message || "the file is not valid JSON"}.`;

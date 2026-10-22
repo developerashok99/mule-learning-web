@@ -105,4 +105,42 @@ export function setupNotes() {
     renderWidth();
   });
   renderWidth();
+
+  setupFocus();
+}
+
+/**
+ * Focus mode: only the notes and their reading tools; navigation, tabs, the table of contents and the footer are
+ * hidden. Esc or the Focus button leaves it; it also ends on navigation. Full screen is offered while focusing.
+ */
+function setupFocus() {
+  const btn = document.querySelector<HTMLButtonElement>("[data-focus-toggle]");
+  const full = document.querySelector<HTMLButtonElement>("[data-fullscreen]");
+  if (!btn) return;
+  const html = document.documentElement;
+  const signal = pageSignal();
+  const set = (on: boolean) => {
+    if (on) html.dataset.focus = "on";
+    else delete html.dataset.focus;
+    btn.setAttribute("aria-pressed", String(on));
+    btn.firstChild!.textContent = on ? "Leave focus" : "Focus";
+    if (full) full.hidden = !on || !document.fullscreenEnabled;
+    if (!on && document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+  };
+  btn.addEventListener("click", () => {
+    set(html.dataset.focus !== "on");
+    btn.focus();
+  });
+  full?.addEventListener("click", () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    else void html.requestFullscreen?.().catch(() => {});
+  });
+  const renderFull = () => full && (full.textContent = document.fullscreenElement ? "Exit full screen" : "Full screen");
+  document.addEventListener("fullscreenchange", renderFull, { signal });
+  document.addEventListener("keydown", (e) => {
+    // Esc leaves full screen first (the browser does that), then focus mode
+    if (e.key === "Escape" && html.dataset.focus === "on" && !document.fullscreenElement && !document.querySelector("dialog[open]")) set(false);
+  }, { signal });
+  signal.addEventListener("abort", () => set(false));
+  set(false);
 }

@@ -595,6 +595,8 @@ a.lesson-row__title:hover { color: var(--accent-hover); }
 /* ---------- notes prose ---------- */
 .prose { font-size: calc(1.0625rem * var(--read-scale)); line-height: 1.8; max-width: var(--measure); overflow-wrap: break-word; }
 :root[data-width="wide"] .prose { max-width: none; }
+/* paragraphs keep a comfortable line length; code, tables and diagrams use the full column */
+:root:not([data-width="wide"]) .prose > :is(p, ul, ol, blockquote) { max-width: 72ch; }
 .prose > :first-child { margin-top: 0; }
 .prose h1 { font-size: clamp(1.45rem, 1.1rem + 1.4vw, 1.95rem); margin: 0 0 1rem; letter-spacing: -0.035em; }
 .prose h2 { font-size: 1.35em; margin: 2em 0 0.65em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
@@ -1319,3 +1321,73 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .mm-outline summary { cursor: pointer; font-weight: 800; }
 .mm-outline ul { margin: 0.25rem 0; padding-left: 1.2rem; }
 .mm-outline li { margin: 0.15rem 0; }
+.mev-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.mev-filter select { flex: 1 1 14rem; max-width: 28rem; }
+.mev-scenarios .chip[hidden] { display: none; }
+.linkish { padding: 0; border: 0; background: none; color: var(--accent-hover); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+:root[data-theme="dark"] .linkish { color: var(--accent); }
+
+/* Visual Practice (src/components/VisualPractice.astro) */
+.vp { margin: 0 0 1.25rem; display: grid; gap: 0.6rem; }
+.vp__head h2 { margin: 0; font-size: 1.15rem; }
+.vp__head p { margin: 0.15rem 0 0; }
+.vp__list { list-style: none; margin: 0; padding: 0; }
+.vp__item { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.vp__text { flex: 1 1 18rem; min-width: 0; display: grid; gap: 0.1rem; }
+.vp__name { font-weight: 800; color: var(--accent-hover); text-decoration: none; }
+:root[data-theme="dark"] .vp__name { color: var(--accent); }
+.vp__name:hover { text-decoration: underline; }
+.vp__what { font-size: 0.86rem; color: var(--text-muted); }
+.vp__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.vp__progress { color: var(--text-muted); }
+.vp__item[data-done="true"] .vp__progress { color: var(--success); font-weight: 800; }
+.vp__next { margin: 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: var(--accent-soft); }
+.vp__next[hidden] { display: none; }
+
+/* Quiz (src/components/Quiz.astro) */
+.quiz__bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.quiz__bar p { margin: 0; }
+.quiz__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+.quiz__q[hidden] { display: none; }
+.quiz__q fieldset { margin: 0; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); min-width: 0; }
+.quiz__q legend { float: left; width: 100%; padding: 0; margin-bottom: 0.6rem; font-weight: 700; line-height: 1.5; }
+.quiz__q legend .pill { margin-right: 0.3rem; }
+.quiz__options { clear: both; display: grid; gap: 0.45rem; }
+.quiz__opt { display: flex; align-items: flex-start; gap: 0.6rem; width: 100%; min-height: 2.75rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-sunk); color: var(--text); font: inherit; font-size: 0.95rem; text-align: left; cursor: pointer; }
+.quiz__opt:hover:not([disabled]) { border-color: var(--accent); }
+.quiz__opt[disabled] { cursor: default; }
+.quiz__opt[data-state="right"] { border-color: var(--success); background: var(--success-soft); color: var(--success); }
+.quiz__opt[data-state="wrong"] { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+.quiz__letter { flex: none; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--bg-soft); font-size: 0.78rem; font-weight: 800; }
+.quiz__feedback { margin-top: 0.6rem; display: grid; gap: 0.3rem; }
+.quiz__feedback[hidden] { display: none; }
+.quiz__feedback p { margin: 0; }
+.quiz__verdict { font-weight: 800; }
+.quiz__verdict[data-ok="true"] { color: var(--success); }
+.quiz__verdict[data-ok="false"] { color: var(--danger); }
+.keycards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.keycard .qa__a { padding-left: 1rem; }
+.cmap-filters { flex-basis: 100%; }
+.cmap-filters summary { cursor: pointer; font-weight: 800; font-size: 0.9rem; min-height: 2.4rem; display: flex; align-items: center; gap: 0.5rem; }
+.cmap-filters__body { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.6rem; align-items: end; margin-top: 0.5rem; }
+.cmap-filters__body label { display: grid; gap: 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); min-width: 0; }
+.cmap-filters__body select { width: 100%; min-width: 0; }
+.cmap-note { font-size: 0.82rem; color: var(--text-muted); margin: -0.2rem 0 0.4rem; }
+.cmap-key--elsewhere { background: var(--border-strong); }
+
+/* Focus mode (src/client/notes.ts): the notes alone */
+:root[data-focus="on"] :is(.sidebar, .topbar, .bottom-nav, .site-footer, .lesson-tabs, .lesson-head, .breadcrumb, .lesson-pager, .doc-toc, .toc-mobile, .offline-banner) { display: none !important; }
+:root[data-focus="on"] .app-main { margin-left: 0; }
+:root[data-focus="on"] .doc-tools { position: sticky; top: 0; z-index: 5; padding: 0.5rem 0; background: var(--bg); }
+:root[data-focus="on"] .reading { display: block; }
+:root[data-focus="on"] .article { max-width: calc(var(--measure) + 4rem); margin-inline: auto; }
+:root[data-focus="on"] body { padding-bottom: 0; }
+
+/* Fix and practise next (src/components/PractiseNext.astro) */
+.practise-next { margin: 1rem 0 1.25rem; display: grid; gap: 0.4rem; }
+.practise-next h2 { margin: 0; font-size: 1.05rem; }
+.practise-next p { margin: 0; }
+.pn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.pn-list li { display: grid; gap: 0.1rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.pn-list a { font-weight: 800; }
+.pn-list li .small { display: block; }

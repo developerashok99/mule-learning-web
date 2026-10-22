@@ -1,0 +1,16 @@
+---
+/**
+ * "Fix and practise next": recommendations from what this browser has recorded (wrong quiz answers, missed flows
+ * and DataWeave exercises, concept-map terms due), each with the reason. Filled in by src/client/recommend.ts.
+ */
+import { getLessons } from "../lib/content";
+
+const base = import.meta.env.BASE_URL;
+const lessons = Object.fromEntries(getLessons().map((l) => [l.id, l.label]));
+---
+<section class="card practise-next" aria-labelledby="pn-h" data-recommend data-base={base}>
+  <script is:inline type="application/json" data-lesson-labels set:html={JSON.stringify(lessons)} />
+  <h2 id="pn-h">Fix and practise next</h2>
+  <ul class="pn-list" data-pn-list></ul>
+  <p class="small muted" data-pn-empty>Nothing to fix yet. Quiz answers, flows and DataWeave exercises you get wrong will show up here, with the reason, so you know what to practise.</p>
+</section>

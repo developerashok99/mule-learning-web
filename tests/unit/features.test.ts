@@ -171,3 +171,38 @@ describe("notes sync refuses an incomplete source", () => {
     fs.rmSync(fake, { recursive: true, force: true });
   });
 });
+
+describe("versioned backups", () => {
+  beforeEach(() => {
+    const mem = new Map<string, string>();
+    const ls = { getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null), setItem: (k: string, v: string) => void mem.set(k, String(v)), removeItem: (k: string) => void mem.delete(k) };
+    Object.assign(globalThis, { localStorage: ls, window: { dispatchEvent: () => true }, CustomEvent: class { constructor(public type: string) {} } });
+  });
+  it("checks a backup before restoring, names every kind of progress, and rejects newer versions", async () => {
+    const s = await import("../../src/client/store");
+    for (const k of Object.values(s.KEYS)) expect(s.KEY_NAMES[k], k).toBeTruthy();
+    s.setCompleted("day02", true);
+    s.saveQuizAnswer("quiz-day12:abc", false);
+    const file = JSON.parse(JSON.stringify(s.backupFile()));
+    expect(file.version).toBe(s.BACKUP_VERSION);
+    const check = s.checkBackup(file);
+    expect(check.entries.map((e) => e.key)).toEqual(expect.arrayContaining([s.KEYS.completed, s.KEYS.quiz]));
+    // a value of the wrong shape, or an unknown key, is skipped, not written
+    const bad = { ...file, data: { ...file.data, [s.KEYS.completed]: "oops", "mls.unknown": {} } };
+    expect(s.checkBackup(bad).skipped).toEqual(expect.arrayContaining([s.KEYS.completed, "mls.unknown"]));
+    expect(() => s.checkBackup({ ...file, version: s.BACKUP_VERSION + 1 })).toThrow(/newer/);
+    // version 1 files and bare data objects still restore
+    s.clearAll();
+    expect(s.importAll({ app: "mule-study", exportedAt: "2026-01-01", data: file.data })).toBeGreaterThan(0);
+    expect(s.completedIds()).toEqual(["day02"]);
+    expect(s.quizResults()["quiz-day12:abc"]).toMatchObject({ w: 1, last: "wrong" });
+    expect(s.importAll(file.data)).toBeGreaterThan(0);
+  });
+  it("records quiz history", async () => {
+    const s = await import("../../src/client/store");
+    s.clearAll();
+    s.saveQuizAnswer("q1", false);
+    s.saveQuizAnswer("q1", true);
+    expect(s.quizResults().q1).toMatchObject({ r: 1, w: 1, last: "right" });
+  });
+});

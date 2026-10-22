@@ -8,12 +8,14 @@ import Base from "../../layouts/Base.astro";
 import Icon from "../../components/Icon.astro";
 import PageHead from "../../components/PageHead.astro";
 import { conceptMap } from "../../lib/concept-map";
+import { getLessons } from "../../lib/content";
 import { withBase } from "../../lib/routes";
 
 const base = import.meta.env.BASE_URL;
 const map = conceptMap();
 const linked = new Set(map.links.flat());
-const json = JSON.stringify(map).replace(/</g, "\\u003c");
+const lessons = getLessons().map((l) => ({ id: l.id, label: l.label, title: l.title, s: l.sectionId }));
+const json = JSON.stringify({ ...map, lessons }).replace(/</g, "\\u003c");
 ---
 <Base title="Concept map" nav="revise" description="Explore how the course's terms connect, and rebuild the connections from memory.">
   <div class="page" data-cmap>
@@ -33,6 +35,24 @@ const json = JSON.stringify(map).replace(/</g, "\\u003c");
         <datalist id="cmap-terms">{map.terms.filter((t) => linked.has(t.i)).map((t) => <option value={t.t} />)}</datalist>
         <button class="btn" type="submit">Show</button>
       </form>
+      <details class="cmap-filters" data-cmap-filters>
+        <summary>Filter by lesson or section <span class="pill pill--blue" data-cmap-filter-label hidden></span></summary>
+        <div class="cmap-filters__body">
+          <label>Lesson
+            <select class="input" data-cmap-f="lesson"><option value="">Any lesson</option>{lessons.map((l) => <option value={l.id}>{l.label}: {l.title}</option>)}</select>
+          </label>
+          <label>From
+            <select class="input" data-cmap-f="from"><option value="">First lesson</option>{lessons.map((l) => <option value={l.id}>{l.label}</option>)}</select>
+          </label>
+          <label>To
+            <select class="input" data-cmap-f="to"><option value="">Last lesson</option>{lessons.map((l) => <option value={l.id}>{l.label}</option>)}</select>
+          </label>
+          <label>Section
+            <select class="input" data-cmap-f="section"><option value="">Any section</option>{map.sections.map((x) => <option value={x.id}>{x.title}</option>)}</select>
+          </label>
+          <button class="btn btn--sm btn--ghost" type="button" data-cmap-reset>Show the whole course</button>
+        </div>
+      </details>
       <div class="segmented" role="group" aria-label="How far to look" data-cmap-depth-group>
         <button type="button" data-cmap-depth="1" aria-pressed="true">Direct links</button>
         <button type="button" data-cmap-depth="2" aria-pressed="false">Two steps</button>

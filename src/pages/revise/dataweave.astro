@@ -58,6 +58,11 @@ const lessons = [...new Set(exercises.map((e) => e.sid))].map((id) => getLesson(
               {lessons.map((l) => <option value={l.id}>{l.label}: {l.title}</option>)}
             </select>
           </label>
+          <div class="segmented" role="group" aria-label="Which exercises">
+            <button type="button" data-dw-status-filter="" aria-pressed="true">All</button>
+            <button type="button" data-dw-status-filter="unsolved" aria-pressed="false">Unsolved</button>
+            <button type="button" data-dw-status-filter="missed" aria-pressed="false">Missed</button>
+          </div>
           <p class="small muted dw-bar__score" data-dw-score aria-live="polite"></p>
         </div>
 

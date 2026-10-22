@@ -61,7 +61,8 @@ function remarkBlocks(hl: Highlighter, counter: { mermaid: number }) {
           type: "mermaidBlock",
           data: {
             hName: "div",
-            hProperties: { className: ["mermaid-block"], "data-mermaid": "" },
+            // the first diagram of a page is the target of the lessons' "Interactive diagrams" link
+            hProperties: { className: ["mermaid-block"], "data-mermaid": "", ...(counter.mermaid === 1 ? { id: "first-diagram" } : {}) },
             hChildren: [{ type: "element", tagName: "pre", properties: { className: ["mermaid-src"] }, children: [{ type: "text", value: code.value }] }],
           },
         } as never;

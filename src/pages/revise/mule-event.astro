@@ -8,11 +8,30 @@ import Base from "../../layouts/Base.astro";
 import Icon from "../../components/Icon.astro";
 import PageHead from "../../components/PageHead.astro";
 import { SCENARIOS } from "../../data/mule-event";
-import { getLesson } from "../../lib/content";
-import { withBase } from "../../lib/routes";
+import { getLesson, knownIds, readNote } from "../../lib/content";
+import { renderMarkdown } from "../../lib/markdown";
+import { lessonPath, withBase } from "../../lib/routes";
 
 const base = import.meta.env.BASE_URL;
-const data = SCENARIOS.map((s) => ({ ...s, steps: s.steps.map((st) => ({ ...st, label: getLesson(st.src)?.label ?? st.src })) }));
+const known = knownIds();
+// each step links to the section of the notes it comes from (or the notes page, if the heading isn't found)
+const tocs = new Map<string, { text: string; id: string }[]>();
+const tocOf = async (id: string) => {
+  if (!tocs.has(id)) {
+    const src = readNote(id, "super");
+    tocs.set(id, src ? (await renderMarkdown(src, { kind: "super", sid: id, base, known })).toc : []);
+  }
+  return tocs.get(id)!;
+};
+const plainHeading = (h: string) => h.replace(/[`*_]/g, "").trim();
+const data = await Promise.all(SCENARIOS.map(async (s) => ({
+  ...s,
+  steps: await Promise.all(s.steps.map(async (st) => {
+    const hit = st.section ? (await tocOf(st.src)).find((t) => plainHeading(t.text) === plainHeading(st.section!)) : undefined;
+    return { ...st, label: getLesson(st.src)?.label ?? st.src, href: withBase(base, lessonPath(st.src, "super")) + (hit ? `#${hit.id}` : ""), sectionFound: !!hit };
+  })),
+})));
+const lessonsWith = [...new Set(SCENARIOS.flatMap((s) => s.lessons))].map((id) => getLesson(id)).filter((l) => l != null).sort((a, b) => a.index - b.index);
 const json = JSON.stringify(data).replace(/</g, "\\u003c");
 ---
 <Base title="Mule event visualiser" nav="revise" description="Watch the payload, attributes and variables change as a Mule event moves through a flow.">
@@ -21,12 +40,19 @@ const json = JSON.stringify(data).replace(/</g, "\\u003c");
     <PageHead eyebrow="Revision studio" title="Mule event visualiser" sub="Step through a flow and watch what each component does to the Mule event. With “Guess first” on, say what will change before you see it.">
       <a slot="actions" class="btn btn--sm" href={withBase(base, "revise/")}><Icon name="left" /> Revision studio</a>
     </PageHead>
+    <div class="mev-filter">
+      <label for="mev-lesson" class="small muted">Lesson</label>
+      <select id="mev-lesson" class="input" data-mev-lesson>
+        <option value="">All lessons ({SCENARIOS.length} walkthroughs)</option>
+        {lessonsWith.map((l) => <option value={l.id}>{l.label}: {l.title}</option>)}
+      </select>
+    </div>
     <div class="chips mev-scenarios" role="group" aria-label="Walkthroughs">
-      {data.map((s, i) => <button class="chip" type="button" data-mev-scenario={s.id} aria-pressed={i === 0 ? "true" : "false"}>{s.title}</button>)}
+      {data.map((s, i) => <button class="chip" type="button" data-mev-scenario={s.id} data-lessons={s.lessons.join(" ")} aria-pressed={i === 0 ? "true" : "false"}>{s.title}</button>)}
     </div>
     <section class="card mev" aria-labelledby="mev-title">
       <div class="mev-head">
-        <div><h2 id="mev-title" data-mev-title>{data[0].title}</h2><p class="muted" data-mev-sub>{data[0].sub}</p></div>
+        <div><h2 id="mev-title" data-mev-title>{data[0].title}</h2><p class="muted" data-mev-sub>{data[0].sub}</p><p class="small" data-mev-compare hidden></p></div>
         <label class="mev-guess"><input type="checkbox" data-mev-guess checked /> Guess first</label>
       </div>
       <ol class="mev-pipe" data-mev-pipe aria-label="Components in this flow"></ol>
@@ -48,6 +74,6 @@ const json = JSON.stringify(data).replace(/</g, "\\u003c");
         <button class="btn btn--ghost" type="button" data-mev-restart>Start again</button>
       </div>
     </section>
-    <p class="small muted">Written from the notes: each step names the lesson it comes from. Example values follow the lessons' demos and are shortened with “…”.</p>
+    <p class="small muted">Written from the notes: each step names the lesson it comes from. Example values follow the lessons' demos and are shortened with “…”; values marked illustrative, and anything shown as “not covered in the lesson”, are not stated in the notes.</p>
   </div>
 </Base>

@@ -1,0 +1,72 @@
+---
+/**
+ * A lesson's Visual Practice: every activity this lesson actually has (src/lib/coverage.ts, the same data as the
+ * course-wide tools), with how many items, a link that opens it filtered to this lesson, and progress from this
+ * browser (filled in by src/client/practice.ts). Activities the lesson doesn't have are left out.
+ */
+import { conceptMap } from "../lib/concept-map";
+import { lessonCoverage } from "../lib/coverage";
+import { dwExercises } from "../lib/dataweave";
+import { flowExercises } from "../lib/flows";
+import type { Lesson } from "../lib/content";
+import { lessonPath, withBase, type NoteLevel } from "../lib/routes";
+import { studyFor } from "../lib/study";
+
+interface Props {
+  lesson: Lesson;
+  /** flashcard ids of this lesson's interview questions */
+  flashcardIds: string[];
+}
+const { lesson, flashcardIds } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const cov = lessonCoverage(lesson.id)!;
+const map = conceptMap();
+const degree = new Map<number, number>();
+for (const [a, b] of map.links) for (const x of [a, b]) degree.set(x, (degree.get(x) ?? 0) + 1);
+// the terms a rebuild can be practised on (3+ links), as stored by the concept map
+const mapTerms = map.terms.filter((t) => t.l.includes(lesson.id) && (degree.get(t.i) ?? 0) >= 3).map((t) => t.t);
+const diagramsReadable = cov.diagrams.filter((d) => d.kind !== "other" && d.parsed);
+// the notes level with the most interactive diagrams
+const levels: NoteLevel[] = ["detailed", "super", "simple"];
+const diagramLevel = levels.map((lv) => [lv, diagramsReadable.filter((d) => d.level === lv).length] as const).sort((a, b) => b[1] - a[1])[0];
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+interface Activity {
+  key: string;
+  name: string;
+  what: string;
+  count: string;
+  href: string;
+  /** progress ids for src/client/practice.ts, by kind */
+  track?: { kind: "quiz" | "flows" | "dw" | "map" | "srs"; ids: string[] };
+}
+const acts: Activity[] = [];
+if (cov.quiz) acts.push({ key: "quiz", name: "Quiz", what: "Multiple-choice questions on this lesson, with the reason for each answer.", count: plural(cov.quiz, "question"), href: "#rv-quiz", track: { kind: "quiz", ids: studyFor(lesson.id).quiz.map((q) => q.id) } });
+if (cov.terms) acts.push({ key: "map", name: "Concept explorer", what: `The ${plural(cov.terms, "term")} this lesson defines and how they connect to other lessons.`, count: plural(cov.links, "link"), href: withBase(base, `revise/concept-map/?lesson=${lesson.id}`), track: mapTerms.length ? { kind: "map", ids: mapTerms } : undefined });
+if (diagramsReadable.length) acts.push({ key: "diagrams", name: "Interactive diagrams", what: "Step through the diagrams in the notes, hide the labels to test yourself, tap a box for its definition.", count: plural(diagramsReadable.length, "diagram"), href: withBase(base, lessonPath(lesson.id, diagramLevel[0])) + "#first-diagram" });
+if (cov.flows) acts.push({ key: "flows", name: "Build the flow", what: "Put the steps of this lesson's flows back in order.", count: plural(cov.flows, "flow"), href: withBase(base, `revise/build-the-flow/?lesson=${lesson.id}`), track: { kind: "flows", ids: flowExercises().filter((f) => f.sid === lesson.id).map((f) => f.id) } });
+if (cov.mule.length) acts.push({ key: "mule", name: "Mule event walkthrough", what: `Predict how the event changes: ${cov.mule.map((m) => m.title).join(", ")}.`, count: plural(cov.mule.length, "walkthrough"), href: withBase(base, `revise/mule-event/?lesson=${lesson.id}`) });
+if (cov.dataweave) acts.push({ key: "dw", name: "DataWeave practice", what: "Predict what each script returns, or write the script.", count: plural(cov.dataweave, "exercise"), href: withBase(base, `revise/dataweave/?lesson=${lesson.id}`), track: { kind: "dw", ids: dwExercises().filter((e) => e.sid === lesson.id).map((e) => e.id) } });
+if (flashcardIds.length) acts.push({ key: "cards", name: "Interview flashcards", what: "This lesson's interview questions: answer first, then check. They are also in your review schedule.", count: plural(flashcardIds.length, "question"), href: "#rv-selftest", track: { kind: "srs", ids: flashcardIds } });
+if (cov.cards) acts.push({ key: "keycards", name: "Key cards", what: "Short question-and-answer cards on the main points.", count: plural(cov.cards, "card"), href: "#rv-cards" });
+---
+{acts.length > 0 && (
+  <section class="card vp" aria-labelledby="vp-h" data-vp>
+    <div class="vp__head">
+      <h2 id="vp-h">{lesson.label} · Visual practice</h2>
+      <p class="small muted">Everything this lesson has to practise. Progress is saved in this browser.</p>
+    </div>
+    <ul class="vp__list">
+      {acts.map((a) => (
+        <li class="vp__item" data-vp-item={a.key} data-track={a.track?.kind} data-ids={a.track ? JSON.stringify(a.track.ids) : undefined}>
+          <div class="vp__text">
+            <a class="vp__name" href={a.href}>{a.name}</a>
+            <span class="vp__what">{a.what}</span>
+          </div>
+          <span class="vp__meta"><span class="pill">{a.count}</span><span class="vp__progress small" data-vp-progress></span></span>
+        </li>
+      ))}
+    </ul>
+    <p class="vp__next small" data-vp-next hidden></p>
+  </section>
+)}

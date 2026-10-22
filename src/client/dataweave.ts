@@ -31,7 +31,15 @@ export function setupDataweave() {
   // a link to one exercise shows it among all of them
   if (current) lessonSel.value = lesson = "";
 
-  const visible = () => items.filter((x) => (!level || x.dataset.level === level) && (!lesson || x.dataset.sid === lesson));
+  let status = "";
+  const visible = () => {
+    const all = dwResults();
+    return items.filter((x) =>
+      (!level || x.dataset.level === level) &&
+      (!lesson || x.dataset.sid === lesson) &&
+      // in the current mode; the open exercise stays while you work on it
+      (!status || x === current || (status === "missed" ? all[x.id]?.[mode] === "wrong" : all[x.id]?.[mode] !== "right")));
+  };
   const resultOf = (id: string, all = dwResults()): DwResult[Mode] => all[id]?.[mode];
 
   function renderScore() {
@@ -167,6 +175,15 @@ export function setupDataweave() {
       show(current);
     }),
   );
+  root.querySelectorAll<HTMLElement>("[data-dw-status-filter]").forEach((b) =>
+    b.addEventListener("click", () => {
+      status = b.dataset.dwStatusFilter ?? "";
+      pressed("[data-dw-status-filter]", (c) => c === b);
+      const prev = current;
+      current = null;
+      show(prev && visible().includes(prev) ? prev : null);
+    }),
+  );
   lessonSel.addEventListener("change", () => {
     lesson = lessonSel.value;
     show(current);
@@ -179,6 +196,9 @@ export function setupDataweave() {
       if (x) $<HTMLTextAreaElement>("[data-dw-answer]", x).focus({ preventScroll: true });
     }),
   );
+  // links from recommendations open a filter: ?status=missed or ?status=unsolved
+  const wantStatus = params.get("status");
+  if (wantStatus === "missed" || wantStatus === "unsolved") root.querySelector<HTMLElement>(`[data-dw-status-filter="${wantStatus}"]`)?.click();
   window.addEventListener("mls:store", renderScore, { signal });
   renderMode();
   show(current);

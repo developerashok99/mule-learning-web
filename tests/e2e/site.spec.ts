@@ -39,7 +39,7 @@ const PAGES = [
   "", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "revise/", "my-study/",
   "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/",
   "lessons/day15/revise/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/",
-  "videos/", "preferences/", "downloads/", "revise/dataweave/", "revise/concept-map/", "revise/build-the-flow/", "revise/mule-event/", "revise/mind-map/",
+  "videos/", "preferences/", "downloads/", "revise/dataweave/", "revise/concept-map/", "revise/build-the-flow/", "revise/mule-event/", "revise/mind-map/", "revise/mistakes/",
 ];
 
 test.describe("pages", () => {
@@ -339,12 +339,14 @@ test.describe("revision", () => {
     // copied verbatim from the super-detailed notes
     await expect(page.locator("#rv-must")).toContainText("ANY = catch-all, always last.");
     await expect(page.locator("#rv-must .revise__src a")).toHaveAttribute("href", /day15\/super-detailed\/#12-must-remember$/);
-    const firstQ = page.locator("details.qa").first();
+    const firstQ = page.locator("#rv-selftest details.qa").first();
     await expect(firstQ.locator(".qa__a")).toBeHidden();
     await firstQ.locator("summary").click();
     await expect(firstQ.locator(".qa__a")).toBeVisible();
     await page.getByRole("button", { name: "Show all answers" }).click();
-    await expect(page.locator("details.qa:not([open])")).toHaveCount(0);
+    await expect(page.locator("#rv-selftest details.qa:not([open])")).toHaveCount(0);
+    // the key cards are separate: Show all answers leaves them closed
+    await expect(page.locator("#rv-cards details.qa[open]")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Hide all answers" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -534,6 +536,10 @@ test.describe("progress, bookmarks and My study (local storage)", () => {
     await sheet.getByRole("button", { name: "Reset everything" }).click();
     await expect(page.locator('[data-ms-empty="done"]')).toBeVisible();
     await page.locator("[data-ms-import]").setInputFiles(file!);
+    // a restore first says what it will replace
+    const restore = page.getByRole("dialog", { name: "Restore this backup?" });
+    await expect(restore).toContainText("completed lessons");
+    await restore.getByRole("button", { name: "Restore" }).click();
     await expect(page.locator("[data-ms-status]")).toContainText("Restored");
     await expect(page.locator('[data-ms="done"]')).toContainText("Day 20");
     await expect(page.locator('[data-ms="bookmarks"]')).toContainText("Day 20");

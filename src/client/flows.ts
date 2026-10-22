@@ -34,7 +34,17 @@ export function setupFlows() {
   let current = items.find((x) => `#${x.id}` === location.hash) ?? null;
   if (current) lesson = "";
   lessonSel.value = lesson;
-  const visible = () => items.filter((x) => !lesson || x.dataset.sid === lesson);
+  const sectionSel = $<HTMLSelectElement>("[data-flow-section]");
+  let section = "";
+  let status = "";
+  const visible = () => {
+    const all = flowResults();
+    return items.filter((x) =>
+      (!lesson || x.dataset.sid === lesson) &&
+      (!section || x.dataset.section === section) &&
+      // the open flow stays while you work on it, even once it no longer matches
+      (!status || x === current || (status === "missed" ? all[x.id] === "wrong" : all[x.id] !== "right")));
+  };
 
   function renderScore() {
     const all = flowResults();
@@ -170,6 +180,22 @@ export function setupFlows() {
     lesson = lessonSel.value;
     show(current);
   });
+  sectionSel.addEventListener("change", () => {
+    section = sectionSel.value;
+    show(current);
+  });
+  root.querySelectorAll<HTMLElement>("[data-flow-status-filter]").forEach((b) =>
+    b.addEventListener("click", () => {
+      status = b.dataset.flowStatusFilter ?? "";
+      root.querySelectorAll<HTMLElement>("[data-flow-status-filter]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      const prev = current;
+      current = null;
+      show(prev && visible().includes(prev) ? prev : null);
+    }),
+  );
+  // links from recommendations open a filter: ?status=missed or ?status=unsolved
+  const wantStatus = params.get("status");
+  if (wantStatus === "missed" || wantStatus === "unsolved") root.querySelector<HTMLElement>(`[data-flow-status-filter="${wantStatus}"]`)?.click();
   window.addEventListener("mls:store", renderScore, { signal });
   show(current);
 }

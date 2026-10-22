@@ -3,9 +3,8 @@
  * parts that component changed marked. With "Guess first", Next first asks which parts will change, then checks.
  */
 import { changedParts, type Part, type Scenario } from "../data/mule-event";
-import { base } from "./page";
 
-type Data = (Omit<Scenario, "steps"> & { steps: (Scenario["steps"][number] & { label: string })[] })[];
+type Data = (Omit<Scenario, "steps"> & { steps: (Scenario["steps"][number] & { label: string; href: string })[] })[];
 const NAMES: Record<Part, string> = { payload: "Payload", attributes: "Attributes", vars: "Variables", error: "Error" };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text?: string) {
@@ -52,8 +51,8 @@ export function setupMuleEvent() {
       return b;
     };
     const code = (t: string) => el("pre", "mev-val", t);
-    const vars = Object.entries(st.after.vars);
-    const varList = vars.length ? el("dl", "mev-vars") : el("p", "mev-val mev-val--none", "none");
+    const vars = Object.entries(st.after.vars ?? {});
+    const varList = vars.length ? el("dl", "mev-vars") : el("p", "mev-val mev-val--none", st.after.vars ? "none" : "not covered in the lesson");
     for (const [k, v] of vars) varList.append(el("dt", "", k), el("dd", "", v));
     const message = el("div", "mev-message");
     message.append(el("p", "mev-label", "Message"), box("payload", code(st.after.payload)), box("attributes", code(st.after.attributes)));
@@ -70,8 +69,9 @@ export function setupMuleEvent() {
     const p = el("p", "", st.note);
     const src = el("p", "small muted");
     const a = el("a", "", st.label);
-    a.href = `${base()}lessons/${st.src}/super-detailed/`;
+    a.href = st.href;
     src.append("From ", a);
+    if (st.section) src.append(` › ${st.section.replace(/[`*_]/g, "")}`);
     stepBox.replaceChildren(h, p, src);
     pipe.querySelectorAll("li").forEach((li, n) => {
       li.dataset.state = n < i ? "done" : n === i ? "current" : "todo";
@@ -93,6 +93,14 @@ export function setupMuleEvent() {
     i = 0;
     $("[data-mev-title]").textContent = s.title;
     $("[data-mev-sub]").textContent = s.sub;
+    const cmp = $("[data-mev-compare]");
+    const other = s.compare && data.find((x) => x.id === s.compare!.id);
+    cmp.hidden = !other;
+    if (other) {
+      const b = Object.assign(el("button", "linkish", `Compare: ${other.title}`), { type: "button" });
+      b.addEventListener("click", () => load(other));
+      cmp.replaceChildren(b, ` (${s.compare!.why})`);
+    }
     root.querySelectorAll<HTMLElement>("[data-mev-scenario]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mevScenario === s.id)));
     pipe.replaceChildren(
       ...s.steps.map((st, n) => {
@@ -157,5 +165,20 @@ export function setupMuleEvent() {
   root.querySelectorAll<HTMLElement>("[data-mev-scenario]").forEach((b) =>
     b.addEventListener("click", () => load(data.find((s) => s.id === b.dataset.mevScenario) ?? data[0])),
   );
+  // a lesson's Visual Practice links here with ?lesson=: show only that lesson's walkthroughs
+  const lessonSel = $<HTMLSelectElement>("[data-mev-lesson]");
+  const applyLesson = () => {
+    const id = lessonSel.value;
+    const chips = [...root.querySelectorAll<HTMLElement>("[data-mev-scenario]")];
+    chips.forEach((c) => (c.hidden = !!id && !(c.dataset.lessons ?? "").split(" ").includes(id)));
+    if (id && !(root.querySelector<HTMLElement>(`[data-mev-scenario="${sc.id}"]`)?.hidden === false)) {
+      const first = chips.find((c) => !c.hidden);
+      if (first) load(data.find((x) => x.id === first.dataset.mevScenario)!);
+    }
+  };
+  const wanted = new URLSearchParams(location.search).get("lesson") ?? "";
+  if ([...lessonSel.options].some((o) => o.value === wanted)) lessonSel.value = wanted;
+  lessonSel.addEventListener("change", applyLesson);
   load(sc);
+  applyLesson();
 }

@@ -1,0 +1,53 @@
+---
+/**
+ * Multiple-choice questions from the notes repository (src/lib/study.ts); src/client/quiz.ts runs them.
+ * mode "mistakes": only the questions last answered wrong are shown (the Mistakes page).
+ */
+import type { QuizQuestion } from "../lib/study";
+import { renderMarkdown } from "../lib/markdown";
+import { knownIds } from "../lib/content";
+
+interface Props {
+  questions: (QuizQuestion & { lesson: string; lessonLabel: string; href: string })[];
+  mode?: "lesson" | "mistakes";
+  /** heading id the quiz is labelled by */
+  labelledby: string;
+}
+const { questions, mode = "lesson", labelledby } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const known = knownIds();
+// questions and options use Markdown code marks (`vars.A`)
+const inline = async (t: string, sid: string) => (await renderMarkdown(t, { kind: "super", sid, base, known })).html.replace(/^<p>|<\/p>\s*$/g, "");
+const rendered = await Promise.all(questions.map(async (q) => ({
+  ...q,
+  qHtml: await inline(q.q, q.lesson),
+  optionsHtml: await Promise.all(q.options.map((o) => inline(o, q.lesson))),
+  explainHtml: q.explain ? await inline(q.explain, q.lesson) : "",
+})));
+---
+<div class="quiz" data-quiz data-quiz-mode={mode} aria-labelledby={labelledby}>
+  <div class="quiz__bar">
+    <p class="small muted" data-quiz-score aria-live="polite"></p>
+    <div class="btn-row">
+      <button class="btn btn--sm" type="button" data-quiz-retry hidden>Retry the ones I got wrong</button>
+      <button class="btn btn--sm btn--ghost" type="button" data-quiz-reset>Start again</button>
+    </div>
+  </div>
+  <ol class="quiz__list">
+    {rendered.map((q, n) => (
+      <li class="quiz__q" data-quiz-q={q.id} data-answer={q.answer} data-lesson={q.lesson}>
+        <fieldset>
+          <legend><span class="qa__n">Q{n + 1}</span>{mode === "mistakes" && <a class="pill" href={q.href}>{q.lessonLabel}</a>} <span set:html={q.qHtml} /></legend>
+          <div class="quiz__options">
+            {q.optionsHtml.map((o, i) => <button class="quiz__opt" type="button" data-opt={i}><span class="quiz__letter" aria-hidden="true">{"ABCDEFGH"[i]}</span><span set:html={o} /></button>)}
+          </div>
+          <div class="quiz__feedback" data-quiz-feedback hidden>
+            <p class="quiz__verdict" data-quiz-verdict></p>
+            {q.explainHtml && <p class="quiz__explain"><b>Why:</b> <span set:html={q.explainHtml} /></p>}
+          </div>
+        </fieldset>
+      </li>
+    ))}
+  </ol>
+  <p class="empty" data-quiz-empty hidden>{mode === "mistakes" ? "No mistakes to fix. Questions you answer wrong in any lesson quiz appear here until you get them right." : "No questions."}</p>
+</div>

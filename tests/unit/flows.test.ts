@@ -60,14 +60,15 @@ describe.skipIf(!synced)("the notes' flows", async () => {
 
 describe("Mule event walkthroughs", () => {
   const lessons = synced ? new Set(Object.keys(JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../../.notes/manifest.json"), "utf8")).sessions)) : null;
-  it("every step changes something, cites a real lesson, and ids are unique", () => {
+  it("every step cites a real lesson, each walkthrough changes the event, and ids are unique", () => {
     expect(new Set(SCENARIOS.map((s) => s.id)).size).toBe(SCENARIOS.length);
     for (const s of SCENARIOS) {
       expect(s.steps.length).toBeGreaterThanOrEqual(3);
       s.steps.forEach((st, i) => {
         if (lessons) expect(lessons.has(st.src), `${s.id} step ${i + 1}: ${st.src}`).toBe(true);
-        if (i > 0) expect(changedParts(s.steps[i - 1].after, st.after).length, `${s.id} step ${i + 1}`).toBeGreaterThan(0);
       });
+      // a step may change nothing (that can be the lesson: Publish keeps the payload), but a walkthrough must change something
+      expect(s.steps.some((st, i) => i > 0 && changedParts(s.steps[i - 1].after, st.after).length > 0), s.id).toBe(true);
     }
   });
   it("matches what the notes say about key components", () => {
