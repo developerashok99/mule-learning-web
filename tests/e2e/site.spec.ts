@@ -39,7 +39,7 @@ const PAGES = [
   "", "courses/", "courses/mulesoft/", "lessons/", "notes/", "podcasts/", "search/", "about/", "revise/", "my-study/",
   "lessons/day04/", "lessons/day04/simple/", "lessons/day04/detailed/", "lessons/day04/super-detailed/", "lessons/day04/slides/",
   "lessons/day15/revise/", "lessons/day01/podcast/", "podcasts/test-fixture/", "lessons/interview-part3/super-detailed/",
-  "videos/", "preferences/", "downloads/",
+  "videos/", "preferences/", "downloads/", "revise/dataweave/",
 ];
 
 test.describe("pages", () => {
@@ -178,7 +178,7 @@ test.describe("accessibility (axe, WCAG 2.1 AA)", () => {
   // full-page scans of long pages (the Revision page has 599 glossary terms) take up to ~40 s
   test.describe.configure({ timeout: 120_000 });
   for (const scheme of ["light", "dark"] as const) {
-    for (const path of ["", "courses/", "courses/mulesoft/", "lessons/", "lessons/day05/", "lessons/day45/super-detailed/", "lessons/day15/revise/", "search/?q=dataweave", "podcasts/", "podcasts/test-fixture/", "revise/", "my-study/", "preferences/", "videos/day05/"]) {
+    for (const path of ["", "courses/", "courses/mulesoft/", "lessons/", "lessons/day05/", "lessons/day45/super-detailed/", "lessons/day15/revise/", "search/?q=dataweave", "podcasts/", "podcasts/test-fixture/", "revise/", "revise/dataweave/", "my-study/", "preferences/", "videos/day05/"]) {
       test(`/${path} ${scheme}`, async ({ page }) => {
         test.skip(width(page) !== 390 && width(page) !== 1440, "checked at one phone and one desktop size");
         await page.emulateMedia({ colorScheme: scheme });

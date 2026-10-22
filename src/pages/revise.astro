@@ -9,20 +9,17 @@ import PageHead from "../components/PageHead.astro";
 import { getCourses, getLesson, getLessons, knownIds, readNote } from "../lib/content";
 import { renderMarkdown } from "../lib/markdown";
 import { lessonHasView, lessonPath, withBase } from "../lib/routes";
-import { findSection, parseQuestions, parseTermTable } from "../lib/revision";
+import { findSection, parseQuestions } from "../lib/revision";
+import { glossary } from "../lib/glossary";
 import { cardId } from "../lib/srs";
+import { dwExercises } from "../lib/dataweave";
+const dwCount = dwExercises().length;
 
 const base = import.meta.env.BASE_URL;
 const known = knownIds();
 const inline = async (text: string, sid: string) =>
   (await renderMarkdown(text, { kind: "super", sid, base, known })).html.replace(/^<p>|<\/p>\s*$/g, "");
 
-interface Entry {
-  key: string;
-  term: string;
-  meanings: { html: string; lessons: string[] }[];
-}
-const entries = new Map<string, Entry>();
 const qCount = new Map<string, number>();
 // flashcards: every interview question of the super-detailed notes, with its answer copied unchanged
 const cards: { id: string; s: string; d: string; l: string; href: string; q: string; a: string }[] = [];
@@ -42,21 +39,14 @@ for (const l of getLessons()) {
       a: (await renderMarkdown(x.answer, { kind: "super", sid: l.id, base, known })).html,
     });
   }
-  const t = findSection(src, /terminolog/i);
-  if (!t) continue;
-  for (const row of parseTermTable(t.body)) {
-    const key = row.term.replace(/[`*_]/g, "").trim().toLowerCase();
-    if (!key) continue;
-    const e = entries.get(key) ?? { key, term: await inline(row.term, l.id), meanings: [] };
-    entries.set(key, e);
-    const html = await inline(row.meaning, l.id);
-    const same = e.meanings.find((m) => m.html === html);
-    if (same) same.lessons.push(l.id);
-    else e.meanings.push({ html, lessons: [l.id] });
-  }
 }
+// the glossary, rendered (meanings word for word, each with its lessons)
 const sortKey = (k: string) => k.replace(/^[^a-z0-9]+/, "") || k;
-const sorted = [...entries.values()].sort((a, b) => sortKey(a.key).localeCompare(sortKey(b.key)));
+const sorted = await Promise.all(glossary().map(async (e) => ({
+  key: e.key,
+  term: await inline(e.term, e.meanings[0].lessons[0]),
+  meanings: await Promise.all(e.meanings.map(async (m) => ({ html: await inline(m.md, m.lessons[0]), lessons: m.lessons }))),
+})));
 const letterOf = (k: string) => {
   const c = sortKey(k)[0]?.toUpperCase() ?? "#";
   return /[A-Z]/.test(c) ? c : "#";
@@ -76,6 +66,13 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
       <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong>{cards.length}</strong><small>Flashcards</small></div></div><p class="small muted" style="margin:.75rem 0 0">The interview questions, with their answers hidden until you reveal them.</p></li>
       <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong>{withTests}</strong><small>Lesson self-tests</small></div></div><p class="small muted" style="margin:.75rem 0 0">Outline, must-remember points and a self-test for each lesson.</p></li>
     </ul>
+    {dwCount > 0 && (
+      <a class="card card--hover dw-promo" href={withBase(base, "revise/dataweave/")}>
+        <span class="stat-icon" aria-hidden="true">dw</span>
+        <span><b>DataWeave practice</b><small>{dwCount} exercises: predict what a script returns, or write the script for an output</small></span>
+        <Icon name="right" />
+      </a>
+    )}
 
     {cards.length > 0 && (
       <section aria-labelledby="fc-h" data-flashcards>

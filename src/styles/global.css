@@ -636,6 +636,32 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 .mermaid-block svg { max-width: 100%; height: auto; }
 .mermaid-block .mermaid-src { text-align: left; font: 0.82rem/1.5 var(--mono); color: var(--text-muted); margin: 0; white-space: pre-wrap; }
 .mermaid-block[data-state="error"]::before { content: "Diagram could not be drawn — showing its source"; display: block; font-size: 0.8rem; color: var(--warn); margin-bottom: 0.5rem; text-align: left; }
+/* interactive diagrams (src/client/diagrams.ts); Mermaid's own styles use id selectors, hence !important */
+/* the diagram scrolls sideways on narrow screens; its controls stay put */
+.mm-tools, .mm-panel { position: sticky; left: 0; }
+.mm-tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: -0.25rem 0 0.75rem; text-align: left; }
+.mm-hint { font-size: 0.78rem; color: var(--text-muted); margin-left: 0.25rem; }
+.mermaid-block [role="button"] { cursor: pointer; }
+.mermaid-block [role="button"]:focus { outline: none; }
+.mermaid-block [role="button"]:focus-visible :is(rect, polygon, circle, ellipse, path) { stroke: var(--focus) !important; stroke-width: 3px !important; }
+.mermaid-block .messageText[role="button"]:focus-visible { text-decoration: underline; }
+.mermaid-block svg :is(g.node, .flowchart-link, .messageText, [class*="messageLine"]) { transition: opacity var(--ease); }
+.mm-stepping :is(g.node, .flowchart-link, .messageText, [class*="messageLine"]):not(.mm-seen) { opacity: 0.18; }
+.mm-stepping .edgeLabel { opacity: 0.35; }
+.mermaid-block .mm-current :is(rect, polygon, circle, ellipse, path) { stroke: var(--accent) !important; stroke-width: 3px !important; }
+.mermaid-block path.mm-current, .mermaid-block [class*="messageLine"].mm-current { stroke: var(--accent) !important; stroke-width: 3px !important; }
+.mermaid-block .messageText.mm-current { fill: var(--accent) !important; font-weight: 800; }
+.mm-quiz g.node:not(.mm-revealed) .label { opacity: 0; }
+.mm-quiz g.node:not(.mm-revealed) :is(rect, polygon, circle, ellipse, path) { stroke-dasharray: 5 4; }
+.mm-quiz .messageText:not(.mm-revealed) { opacity: 0; }
+.mm-panel { margin-top: 0.75rem; padding: 0.85rem 1rem; border-radius: var(--radius-sm); background: var(--bg-soft); text-align: left; display: grid; gap: 0.6rem; }
+.mm-panel[hidden] { display: none; }
+.mm-panel p { margin: 0; }
+.mm-panel__via { color: var(--text-muted); font-size: 0.86rem; }
+.mm-defs { display: grid; gap: 0.6rem; }
+.mm-defs:empty { display: none; }
+.mm-def { padding: 0.65rem 0.8rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); display: grid; gap: 0.25rem; font-size: 0.9rem; }
+@media (prefers-reduced-motion: reduce) { .mermaid-block svg * { transition: none !important; } }
 
 /* ---------- slides ---------- */
 .slides-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); margin: 0; padding: 0; list-style: none; }
@@ -1149,3 +1175,40 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .sk--short { width: 30%; } .sk--long { width: 85%; }
 @media (prefers-reduced-motion: no-preference) { .sk { animation: shimmer 1.2s linear infinite; } }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* DataWeave practice (src/pages/revise/dataweave.astro) */
+.dw-promo { display: flex; align-items: center; gap: 0.9rem; margin: 1rem 0 1.25rem; text-decoration: none; color: var(--text); }
+.dw-promo > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 0.15rem; }
+.dw-promo small { color: var(--text-muted); font-size: 0.82rem; }
+.dw-promo .stat-icon { font-family: var(--mono); font-weight: 800; }
+.dw-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-bottom: 1rem; }
+.dw-bar__lesson { flex: 1 1 14rem; min-width: 0; }
+.dw-bar__lesson select { width: 100%; }
+.dw-bar__score { margin: 0; flex-basis: 100%; }
+.dw { display: grid; gap: 0.85rem; }
+.dw[hidden] { display: none; }
+.dw .pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.dw .pill:first-child { text-transform: capitalize; }
+.dw__title { margin: 0; font-size: 1.3rem; }
+.dw__task { margin: 0; font-size: 1rem; }
+.dw__grid { display: grid; gap: 0.85rem; }
+@media (min-width: 900px) { .dw__grid { grid-template-columns: 1fr 1fr; } }
+.dw__part { min-width: 0; }
+.dw__part h3 { margin: 0 0 0.35rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.dw__part h3 small { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.dw__part figure.code { margin: 0; }
+.dw__label { font-weight: 800; font-size: 0.9rem; }
+.dw__label small { color: var(--text-muted); font-weight: 600; }
+.dw__answer { width: 100%; min-height: 8rem; font: 0.9rem/1.5 var(--mono); resize: vertical; tab-size: 2; }
+.dw__result { display: grid; gap: 0.75rem; padding: 1rem; border-radius: var(--radius-sm); background: var(--bg-soft); outline: none; }
+.dw__result[hidden] { display: none; }
+.dw__verdict { margin: 0; font-weight: 800; }
+.dw__verdict[data-ok="true"] { color: var(--success); }
+.dw__verdict[data-ok="false"] { color: var(--warn); }
+.dw__explain { margin: 0; }
+.dw-nav { margin: 1rem 0; }
+.dw-nav[hidden] { display: none; }
+.dw-index { margin-top: 1rem; }
+.dw-index summary { cursor: pointer; font-weight: 800; }
+.dw-index .study-list { margin-top: 0.5rem; }
+.dw-index .study-list small { color: var(--text-muted); text-transform: capitalize; }

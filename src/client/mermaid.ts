@@ -3,6 +3,7 @@
  * diagrams, and each diagram is drawn when it comes near the screen. The source stays in the page so
  * diagrams can be redrawn when the theme changes, and is shown as text if drawing fails.
  */
+import { enhance } from "./diagrams";
 import { pageSignal } from "./page";
 
 type Mermaid = typeof import("mermaid").default;
@@ -34,6 +35,7 @@ async function draw(block: HTMLElement) {
     const svgEl = block.querySelector("svg");
     svgEl?.setAttribute("role", "img");
     svgEl?.setAttribute("aria-label", "Diagram");
+    enhance(block);
   } catch {
     block.dataset.state = "error";
     block.innerHTML = "";

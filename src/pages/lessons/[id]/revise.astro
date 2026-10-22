@@ -10,6 +10,7 @@ import { getLessons, knownIds, readNote, type Lesson } from "../../../lib/conten
 import { renderMarkdown, type RenderedDoc } from "../../../lib/markdown";
 import { lessonHasView, lessonPath, withBase, type NoteLevel } from "../../../lib/routes";
 import { codeExamples, findSection, parseQuestions, stripNumber } from "../../../lib/revision";
+import { dwExercises } from "../../../lib/dataweave";
 
 export function getStaticPaths() {
   return getLessons()
@@ -64,6 +65,7 @@ for (const level of ["detailed", "super"] as NoteLevel[]) {
     examples.push({ level, heading: ex.heading, lang: ex.lang, html: (await md(ex.markdown, level)).html });
   }
 }
+const dwCount = dwExercises().filter((e) => e.sid === lesson.id).length;
 const nav = [
   { id: "rv-outline", label: "Outline", on: outline.length > 0 },
   ...blocks.map((b) => ({ id: `rv-${b.key}`, label: b.title, on: true })),
@@ -81,6 +83,13 @@ const nav = [
         <p>Each part below is copied unchanged from the notes, with a link to where it comes from. Read the full notes for explanations and demos.</p>
       </div>
     </div>
+    {dwCount > 0 && (
+      <a class="card card--hover dw-promo" href={withBase(base, `revise/dataweave/?lesson=${lesson.id}`)}>
+        <span class="stat-icon" aria-hidden="true">dw</span>
+        <span><b>Practise DataWeave from this lesson</b><small>{dwCount} {dwCount === 1 ? "exercise" : "exercises"}: predict what each script returns</small></span>
+        <Icon name="right" />
+      </a>
+    )}
     <nav class="chips revise__jump" aria-label="Revision sections">
       {nav.map((n) => <a class="chip" href={`#${n.id}`}>{n.label}</a>)}
     </nav>

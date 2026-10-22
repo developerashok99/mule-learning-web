@@ -116,6 +116,14 @@ for (const sid of sessions) {
   manifest.sessions[sid] = entry;
 }
 
+// practice data from the notes website: DataWeave exercises, per-lesson quizzes and cards (optional)
+const PRACTICE = path.join(src, "website-code", "data");
+if (fs.existsSync(path.join(PRACTICE, "dataweave.json"))) copy(path.join(PRACTICE, "dataweave.json"), path.join(OUT_TMP, "practice", "dataweave.json"));
+else warnings.push("website-code/data/dataweave.json not found: no DataWeave practice");
+if (fs.existsSync(path.join(PRACTICE, "study"))) {
+  for (const f of fs.readdirSync(path.join(PRACTICE, "study"))) if (f.endsWith(".json")) copy(path.join(PRACTICE, "study", f), path.join(OUT_TMP, "practice", "study", f));
+}
+
 // thumbnails: only (re)build when missing or older than the source image; drop ones whose source is gone
 const wanted = new Set(thumbJobs.map(([, out]) => out));
 let built = 0;

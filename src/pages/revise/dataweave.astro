@@ -1,0 +1,122 @@
+---
+/**
+ * DataWeave practice: exercises from the notes (green-c-mule-notes website-code/data/dataweave.json).
+ * Predict the output: read the input and the script, write what it returns, check it (src/lib/dw-check.ts).
+ * Write the script: see the input and the output, write the script, compare it with the model answer yourself
+ * (there is no DataWeave runtime in the browser, so a script can't be run).
+ */
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
+import { getLesson, knownIds } from "../../lib/content";
+import { dwExercises, fenceLang } from "../../lib/dataweave";
+import { outputFormat } from "../../lib/dw-check";
+import { renderMarkdown } from "../../lib/markdown";
+import { lessonPath, withBase } from "../../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const known = knownIds();
+const code = async (text: string, lang: string, sid: string) =>
+  (await renderMarkdown("```" + lang + "\n" + text.replace(/\n+$/, "") + "\n```", { kind: "super", sid, base, known })).html;
+const exercises = await Promise.all(dwExercises().map(async (e) => {
+  const format = outputFormat(e.answer);
+  return {
+    ...e,
+    format,
+    lesson: getLesson(e.sid),
+    inputHtml: await code(e.input, fenceLang(e.inputType), e.sid),
+    scriptHtml: await code(e.answer, "dataweave", e.sid),
+    outputHtml: await code(e.output, fenceLang(format), e.sid),
+  };
+}));
+const LEVELS = ["easy", "medium", "hard"] as const;
+const count = (lv: string) => exercises.filter((e) => e.level === lv).length;
+const lessons = [...new Set(exercises.map((e) => e.sid))].map((id) => getLesson(id)).filter((l) => l != null);
+---
+<Base title="DataWeave practice" nav="revise" description="Predict what a DataWeave script returns, or write the script for a given output, and check yourself.">
+  <div class="page page--read" data-dw-practice>
+    <PageHead eyebrow="Revision studio" title="DataWeave practice" sub="Read the input and the script, then predict the output before you check. Predicting first makes you trace each step, which sticks far better than reading the answer.">
+      <a slot="actions" class="btn btn--sm" href={withBase(base, "revise/")}><Icon name="left" /> Revision studio</a>
+    </PageHead>
+
+    {exercises.length === 0 ? (
+      <p class="empty">No DataWeave exercises were synced from the notes.</p>
+    ) : (
+      <>
+        <div class="card dw-bar">
+          <div class="segmented" role="group" aria-label="Practice mode">
+            <button type="button" data-dw-mode="p" aria-pressed="true">Predict the output</button>
+            <button type="button" data-dw-mode="w" aria-pressed="false">Write the script</button>
+          </div>
+          <div class="chips" role="group" aria-label="Difficulty">
+            <button class="chip" type="button" data-dw-level="" aria-pressed="true">All {exercises.length}</button>
+            {LEVELS.filter(count).map((lv) => <button class="chip" type="button" data-dw-level={lv} aria-pressed="false">{lv[0].toUpperCase() + lv.slice(1)} {count(lv)}</button>)}
+          </div>
+          <label class="dw-bar__lesson"><span class="visually-hidden">Lesson</span>
+            <select class="input" data-dw-lesson aria-label="Lesson">
+              <option value="">All lessons</option>
+              {lessons.map((l) => <option value={l.id}>{l.label}: {l.title}</option>)}
+            </select>
+          </label>
+          <p class="small muted dw-bar__score" data-dw-score aria-live="polite"></p>
+        </div>
+
+        <div class="dw-list">
+          {exercises.map((e, n) => (
+            <article class="card dw" id={e.id} data-dw={e.id} data-level={e.level} data-sid={e.sid} data-format={e.format} data-expected={e.output} aria-labelledby={`${e.id}-h`}>
+              <div class="pill-row">
+                <span class:list={["pill", { "pill--green": e.level === "easy", "pill--blue": e.level === "medium", "pill--amber": e.level === "hard" }]}>{e.level}</span>
+                {e.lesson && <a class="pill" href={withBase(base, lessonPath(e.sid, "super"))}>{e.lesson.label}</a>}
+                <span class="pill" data-dw-pos>Exercise {n + 1} of {exercises.length}</span>
+                <span class="pill pill--green" data-dw-status hidden></span>
+              </div>
+              <h2 id={`${e.id}-h`} class="dw__title">{e.title}</h2>
+              <p class="dw__task">{e.task}</p>
+              <div class="dw__grid">
+                <div class="dw__part"><h3>Input <small>{e.inputType}</small></h3><Fragment set:html={e.inputHtml} /></div>
+                <div class="dw__part" data-dw-script><h3>Script</h3><Fragment set:html={e.scriptHtml} /></div>
+                <div class="dw__part" data-dw-target hidden><h3>Output to produce <small>{e.format}</small></h3><Fragment set:html={e.outputHtml} /></div>
+              </div>
+              <label class="dw__label" for={`${e.id}-a`} data-dw-label>Your predicted output <small>({e.format})</small></label>
+              <textarea class="input dw__answer" id={`${e.id}-a`} data-dw-answer rows="6" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+              <div class="btn-row">
+                <button class="btn btn--primary" type="button" data-dw-check>Check</button>
+                <button class="btn btn--ghost" type="button" data-dw-show>Show the answer</button>
+              </div>
+              <div class="dw__result" data-dw-result hidden tabindex="-1">
+                <p class="dw__verdict" data-dw-verdict></p>
+                <div class="dw__part" data-dw-expected-view><h3>Expected output</h3><Fragment set:html={e.outputHtml} /></div>
+                <div class="dw__part" data-dw-model hidden><h3>Model script</h3><Fragment set:html={e.scriptHtml} /></div>
+                <p class="dw__explain"><b>Why:</b> {e.explain}</p>
+                <div class="btn-row" data-dw-self hidden role="group" aria-label="Did your script do the same thing?">
+                  <button class="btn" type="button" data-dw-grade="right"><Icon name="check" /> Mine does the same</button>
+                  <button class="btn" type="button" data-dw-grade="wrong">Not yet</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p class="empty" data-dw-empty hidden>No exercises match. Choose another difficulty or lesson.</p>
+        <nav class="btn-row dw-nav" aria-label="Exercises" data-dw-nav hidden>
+          <button class="btn" type="button" data-dw-prev><Icon name="left" /> Previous</button>
+          <button class="btn" type="button" data-dw-next>Next <Icon name="right" /></button>
+          <button class="btn btn--soft" type="button" data-dw-unsolved>Next unsolved</button>
+        </nav>
+
+        <details class="card dw-index">
+          <summary>All exercises <span class="small muted" data-dw-index-count></span></summary>
+          <ol class="study-list">
+            {exercises.map((e) => (
+              <li data-dw-item={e.id}>
+                <span class="done-mark" aria-hidden="true"><Icon name="check" /></span>
+                <a href={`#${e.id}`} data-dw-go={e.id}><b>{e.title}</b></a>
+                <small>{e.level} · {e.lesson?.label ?? e.sid}</small>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </>
+    )}
+  </div>
+</Base>

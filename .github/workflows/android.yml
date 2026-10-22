@@ -37,6 +37,7 @@ jobs:
             slides
             transcripts
             transcripts-cleaned
+            website-code/data
 
       - uses: actions/setup-node@v7
         with:

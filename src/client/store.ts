@@ -16,6 +16,7 @@ export const KEYS = {
   searches: "mls.searches", // string[] recent search queries, newest first
   srs: "mls.srs", // Record<cardId, CardState> flashcard review schedule (src/lib/srs.ts)
   srsNew: "mls.srsNew", // { day: "YYYY-MM-DD", n } new flashcards started today
+  dw: "mls.dw", // Record<exerciseId, DwResult> DataWeave practice results (src/client/dataweave.ts)
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
 
@@ -194,6 +195,17 @@ export function timeAgo(at: number): string {
 }
 
 // ---- flashcard review schedule ----
+/** a DataWeave exercise's last result in each mode: p = predict the output, w = write the script */
+export interface DwResult {
+  p?: "right" | "wrong";
+  w?: "right" | "wrong";
+}
+export const dwResults = () => read<Record<string, DwResult>>(KEYS.dw, {});
+export function saveDwResult(id: string, mode: "p" | "w", result: "right" | "wrong") {
+  const all = dwResults();
+  write(KEYS.dw, { ...all, [id]: { ...all[id], [mode]: result } });
+}
+
 export const srsStates = () => read<Record<string, CardState>>(KEYS.srs, {});
 export function saveCardState(id: string, state: CardState) {
   write(KEYS.srs, { ...srsStates(), [id]: state });

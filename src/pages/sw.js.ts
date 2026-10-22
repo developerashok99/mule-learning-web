@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 
 /**
- * Service worker: makes visited pages, styles, scripts and slide images available offline.
+ * Service worker: makes visited pages, styles, scripts, slide images and the glossary (diagram explanations) available offline.
  * Audio and video are never cached (large files, range requests); they always stream from the network.
  */
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
@@ -49,7 +49,7 @@ self.addEventListener("fetch", (e) => {
     })));
     return;
   }
-  if (url.pathname.startsWith(BASE + "notes-assets/")) {
+  if (url.pathname.startsWith(BASE + "notes-assets/") || url.pathname === BASE + "glossary.json") {
     // stale-while-revalidate: instant from cache, refreshed in the background so updated slides appear on the next visit
     e.respondWith(caches.open(IMAGES).then(async (c) => {
       const cached = await c.match(req);

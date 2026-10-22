@@ -54,14 +54,18 @@ function remarkBlocks(hl: Highlighter, counter: { mermaid: number }) {
       if (node.type !== "code") return;
       const code = node as Code;
       const raw = (code.lang ?? "").toLowerCase();
-      if (raw === "mermaid") {
+      if (raw === "mermaid" && parent && index != null) {
         counter.mermaid++;
-        code.data = {
-          hName: "div",
-          hProperties: { className: ["mermaid-block"], "data-mermaid": "" },
-          hChildren: [{ type: "element", tagName: "pre", properties: { className: ["mermaid-src"] }, children: [{ type: "text", value: code.value }] }],
-        };
-        return;
+        // a node of its own: a "code" node would be wrapped in <pre>, and the diagram's controls aren't code
+        parent.children[index] = {
+          type: "mermaidBlock",
+          data: {
+            hName: "div",
+            hProperties: { className: ["mermaid-block"], "data-mermaid": "" },
+            hChildren: [{ type: "element", tagName: "pre", properties: { className: ["mermaid-src"] }, children: [{ type: "text", value: code.value }] }],
+          },
+        } as never;
+        return SKIP;
       }
       const lang = ALIAS[raw] ?? raw;
       const use = loaded.has(lang) ? lang : "text";

@@ -13,6 +13,7 @@ import { setupMyStudy } from "./mystudy";
 import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
 import { setupFlashcards } from "./flashcards";
+import { setupDataweave } from "./dataweave";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
@@ -386,6 +387,7 @@ document.addEventListener("astro:page-load", () => {
   setupMyStudy();
   setupSearch();
   setupFlashcards();
+  setupDataweave();
   setupPreferences();
 });
 window.addEventListener("mls:store", markDone);
