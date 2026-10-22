@@ -1222,7 +1222,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .cmap-bar [hidden] { display: none; }
 .cmap-search { display: flex; gap: 0.5rem; flex: 1 1 16rem; min-width: 0; }
 .cmap-search input { flex: 1; min-width: 0; }
-.cmap-layout { display: grid; gap: 1rem; }
+.cmap-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 @media (min-width: 1100px) { .cmap-layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; } .cmap-panel { position: sticky; top: 5rem; max-height: calc(100vh - 6rem); overflow-y: auto; } }
 .cmap-canvas-card { position: relative; padding: 0.5rem; }
 .cmap-canvas { height: min(62vh, 560px); min-height: 320px; border-radius: var(--radius-sm); background: var(--bg-sunk); touch-action: none; }
@@ -1233,7 +1233,8 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .cmap-key--focus { background: var(--accent); }
 .cmap-key--uses { background: var(--success); }
 .cmap-key--used { background: var(--warn); }
-.cmap-panel { display: grid; gap: 0.9rem; align-content: start; }
+.cmap-panel { display: grid; gap: 0.9rem; align-content: start; min-width: 0; overflow-wrap: anywhere; }
+.cmap-panel .chip { white-space: normal; text-align: left; height: auto; }
 .cmap-panel h2 { margin: 0.35rem 0 0; font-size: 1.35rem; }
 .cmap-panel h2:focus { outline: none; }
 .cmap-panel h3 { margin: 0 0 0.4rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
