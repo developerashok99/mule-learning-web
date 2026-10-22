@@ -14,6 +14,7 @@ import { setupLists } from "./lists";
 import { setupSlides } from "./slides";
 import { setupFlashcards } from "./flashcards";
 import { setupDataweave } from "./dataweave";
+import { setupConceptMap } from "./conceptmap";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
@@ -388,6 +389,7 @@ document.addEventListener("astro:page-load", () => {
   setupSearch();
   setupFlashcards();
   setupDataweave();
+  setupConceptMap();
   setupPreferences();
 });
 window.addEventListener("mls:store", markDone);

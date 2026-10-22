@@ -66,13 +66,20 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
       <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span><div><strong>{cards.length}</strong><small>Flashcards</small></div></div><p class="small muted" style="margin:.75rem 0 0">The interview questions, with their answers hidden until you reveal them.</p></li>
       <li class="card"><div class="stat"><span class="stat-icon" aria-hidden="true"><Icon name="check" /></span><div><strong>{withTests}</strong><small>Lesson self-tests</small></div></div><p class="small muted" style="margin:.75rem 0 0">Outline, must-remember points and a self-test for each lesson.</p></li>
     </ul>
-    {dwCount > 0 && (
-      <a class="card card--hover dw-promo" href={withBase(base, "revise/dataweave/")}>
-        <span class="stat-icon" aria-hidden="true">dw</span>
-        <span><b>DataWeave practice</b><small>{dwCount} exercises: predict what a script returns, or write the script for an output</small></span>
+    <div class="grid g2 practice-links">
+      <a class="card card--hover dw-promo" href={withBase(base, "revise/concept-map/")}>
+        <span class="stat-icon" aria-hidden="true"><Icon name="layers" /></span>
+        <span><b>Concept map</b><small>See how the terms connect, then rebuild a term's links from memory</small></span>
         <Icon name="right" />
       </a>
-    )}
+      {dwCount > 0 && (
+        <a class="card card--hover dw-promo" href={withBase(base, "revise/dataweave/")}>
+          <span class="stat-icon" aria-hidden="true">dw</span>
+          <span><b>DataWeave practice</b><small>{dwCount} exercises: predict what a script returns, or write the script for an output</small></span>
+          <Icon name="right" />
+        </a>
+      )}
+    </div>
 
     {cards.length > 0 && (
       <section aria-labelledby="fc-h" data-flashcards>

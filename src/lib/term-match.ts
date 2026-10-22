@@ -19,14 +19,16 @@ const indexes = new WeakMap<Term[], { term: Term; names: string[]; within: strin
 function index(terms: Term[]) {
   let names = indexes.get(terms);
   if (names) return names;
-  names = terms.map((term) => {
-    const whole = [term.t, term.t.replace(/\s*\(.*?\)\s*/g, " ")].map(norm);
-    const parts = term.t.split(/\s*\/\s*|\s*\(.*?\)\s*/).map(norm);
-    const all = [...new Set([...whole, ...parts])].filter((n) => n.length >= 3);
-    return { term, names: all, within: all.filter((n) => n.length >= 4 && (whole.includes(n) || n.includes(" "))) };
-  });
+  names = terms.map((term) => ({ term, ...namesOf(term.t) }));
   indexes.set(terms, names);
   return names;
+}
+/** a term's names (all) and the ones it is also found by inside longer text (within) */
+export function namesOf(t: string) {
+  const whole = [t, t.replace(/\s*\(.*?\)\s*/g, " ")].map(norm);
+  const parts = t.split(/\s*\/\s*|\s*\(.*?\)\s*/).map(norm);
+  const all = [...new Set([...whole, ...parts])].filter((n) => n.length >= 3);
+  return { names: all, within: all.filter((n) => n.length >= 4 && (whole.includes(n) || n.includes(" "))) };
 }
 /** the glossary terms a box's text is about: an exact match, else the (at most two) longest terms it contains */
 export function matchTerms(text: string, terms: Term[]): Term[] {

@@ -1,0 +1,52 @@
+---
+/**
+ * Concept map: the glossary as a network. Explore a term and the terms its definition uses (and the terms that
+ * use it), or rebuild a term's connections from memory, which is scheduled for review like a flashcard.
+ * The drawing is Cytoscape (loaded on this page only); the term panel is the accessible way to move around.
+ */
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
+import { conceptMap } from "../../lib/concept-map";
+import { withBase } from "../../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const map = conceptMap();
+const linked = new Set(map.links.flat());
+const json = JSON.stringify(map).replace(/</g, "\\u003c");
+---
+<Base title="Concept map" nav="revise" description="Explore how the course's terms connect, and rebuild the connections from memory.">
+  <div class="page" data-cmap>
+    <script is:inline type="application/json" data-cmap-data set:html={json} />
+    <PageHead eyebrow="Revision studio" title="Concept map" sub={`${linked.size} of the ${map.terms.length} glossary terms, linked wherever one term's definition uses another (${map.links.length} links). Pick a term to see what it is built on and what builds on it.`}>
+      <a slot="actions" class="btn btn--sm" href={withBase(base, "revise/")}><Icon name="left" /> Revision studio</a>
+    </PageHead>
+
+    <div class="card cmap-bar">
+      <div class="segmented" role="group" aria-label="Mode">
+        <button type="button" data-cmap-mode="explore" aria-pressed="true">Explore</button>
+        <button type="button" data-cmap-mode="rebuild" aria-pressed="false">Rebuild from memory <span data-cmap-due></span></button>
+      </div>
+      <form class="cmap-search" data-cmap-search role="search" aria-label="Find a term">
+        <label class="visually-hidden" for="cmap-q">Find a term</label>
+        <input id="cmap-q" class="input" type="search" list="cmap-terms" placeholder="Find a term, e.g. “Mule event”" autocomplete="off" />
+        <datalist id="cmap-terms">{map.terms.filter((t) => linked.has(t.i)).map((t) => <option value={t.t} />)}</datalist>
+        <button class="btn" type="submit">Show</button>
+      </form>
+      <div class="segmented" role="group" aria-label="How far to look" data-cmap-depth-group>
+        <button type="button" data-cmap-depth="1" aria-pressed="true">Direct links</button>
+        <button type="button" data-cmap-depth="2" aria-pressed="false">Two steps</button>
+      </div>
+    </div>
+
+    <div class="cmap-layout">
+      <div class="card cmap-canvas-card">
+        <div class="cmap-canvas" data-cmap-canvas aria-hidden="true"></div>
+        <p class="cmap-loading small muted" data-cmap-loading>Drawing the map…</p>
+        <p class="cmap-legend small muted" aria-hidden="true"><span class="cmap-key cmap-key--focus"></span> selected <span class="cmap-key cmap-key--uses"></span> it uses <span class="cmap-key cmap-key--used"></span> uses it · drag to move, pinch or scroll to zoom, tap a term to go to it</p>
+      </div>
+      <aside class="card cmap-panel" data-cmap-panel aria-live="polite" aria-label="Selected term"></aside>
+    </div>
+    <noscript><p class="empty">The concept map needs JavaScript. The <a href={withBase(base, "revise/#rv-glossary")}>glossary</a> has every term.</p></noscript>
+  </div>
+</Base>

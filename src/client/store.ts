@@ -16,6 +16,7 @@ export const KEYS = {
   searches: "mls.searches", // string[] recent search queries, newest first
   srs: "mls.srs", // Record<cardId, CardState> flashcard review schedule (src/lib/srs.ts)
   srsNew: "mls.srsNew", // { day: "YYYY-MM-DD", n } new flashcards started today
+  mapSrs: "mls.mapSrs", // Record<term, CardState> concept-map rebuild schedule (src/client/conceptmap.ts), kept apart from flashcards
   dw: "mls.dw", // Record<exerciseId, DwResult> DataWeave practice results (src/client/dataweave.ts)
   prefs: "mls.prefs", // { theme?, width?, scale?, lessonNav?, videoAutoplay?, lastVideo? }
 } as const;
@@ -194,7 +195,7 @@ export function timeAgo(at: number): string {
   return d === 1 ? "yesterday" : `${d} days ago`;
 }
 
-// ---- flashcard review schedule ----
+// ---- DataWeave practice ----
 /** a DataWeave exercise's last result in each mode: p = predict the output, w = write the script */
 export interface DwResult {
   p?: "right" | "wrong";
@@ -206,9 +207,14 @@ export function saveDwResult(id: string, mode: "p" | "w", result: "right" | "wro
   write(KEYS.dw, { ...all, [id]: { ...all[id], [mode]: result } });
 }
 
+// ---- flashcard review schedule ----
 export const srsStates = () => read<Record<string, CardState>>(KEYS.srs, {});
 export function saveCardState(id: string, state: CardState) {
   write(KEYS.srs, { ...srsStates(), [id]: state });
+}
+export const mapStates = () => read<Record<string, CardState>>(KEYS.mapSrs, {});
+export function saveMapState(id: string, state: CardState) {
+  write(KEYS.mapSrs, { ...mapStates(), [id]: state });
 }
 const today = () => new Date().toLocaleDateString("en-CA");
 /** New flashcards started today (resets each day). */

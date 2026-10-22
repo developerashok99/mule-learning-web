@@ -1212,3 +1212,40 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .dw-index summary { cursor: pointer; font-weight: 800; }
 .dw-index .study-list { margin-top: 0.5rem; }
 .dw-index .study-list small { color: var(--text-muted); text-transform: capitalize; }
+
+/* Revision studio practice links */
+.practice-links { margin: 1rem 0 1.25rem; }
+.practice-links .dw-promo { margin: 0; }
+
+/* Concept map (src/pages/revise/concept-map.astro) */
+.cmap-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-bottom: 1rem; }
+.cmap-bar [hidden] { display: none; }
+.cmap-search { display: flex; gap: 0.5rem; flex: 1 1 16rem; min-width: 0; }
+.cmap-search input { flex: 1; min-width: 0; }
+.cmap-layout { display: grid; gap: 1rem; }
+@media (min-width: 1100px) { .cmap-layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; } .cmap-panel { position: sticky; top: 5rem; max-height: calc(100vh - 6rem); overflow-y: auto; } }
+.cmap-canvas-card { position: relative; padding: 0.5rem; }
+.cmap-canvas { height: min(62vh, 560px); min-height: 320px; border-radius: var(--radius-sm); background: var(--bg-sunk); touch-action: none; }
+.cmap-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; pointer-events: none; }
+.cmap-loading[hidden] { display: none; }
+.cmap-legend { margin: 0.5rem 0.25rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.cmap-key { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 50%; margin-left: 0.4rem; }
+.cmap-key--focus { background: var(--accent); }
+.cmap-key--uses { background: var(--success); }
+.cmap-key--used { background: var(--warn); }
+.cmap-panel { display: grid; gap: 0.9rem; align-content: start; }
+.cmap-panel h2 { margin: 0.35rem 0 0; font-size: 1.35rem; }
+.cmap-panel h2:focus { outline: none; }
+.cmap-panel h3 { margin: 0 0 0.4rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.cmap-panel p { margin: 0; }
+.cmap-def { display: grid; gap: 0.4rem; }
+.cmap-links .chips .chip, .cmap-options .chip { min-height: 2.2rem; font-size: 0.8rem; }
+.cmap-options .chip[data-result="hit"] { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+.cmap-options .chip[data-result="miss"] { border: 2px dashed var(--warn); color: var(--warn); }
+.cmap-options .chip[data-result="wrong"] { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); text-decoration: line-through; }
+.cmap-options .chip[disabled] { opacity: 1; cursor: default; }
+.cmap-options .chip[disabled]:not([data-result]), .cmap-options .chip[data-result=""] { opacity: 0.55; }
+.cmap-result { display: grid; gap: 0.6rem; padding: 0.9rem; border-radius: var(--radius-sm); background: var(--bg-soft); }
+.cmap-result[hidden] { display: none; }
+.cmap-verdict { font-weight: 800; }
+.cmap-verdict[data-ok="true"] { color: var(--success); }
