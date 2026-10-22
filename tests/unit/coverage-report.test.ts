@@ -40,7 +40,7 @@ describe.skipIf(!synced)("coverage report", () => {
     const n = cov.length;
     const count = (f: (c: (typeof cov)[number]) => boolean) => cov.filter(f).length;
     const tools: [string, (c: (typeof cov)[number]) => number, string][] = [
-      ["Interactive diagrams", (c) => c.diagrams.filter((d) => d.kind !== "other" && d.parsed).length, "flowchart or sequence diagrams the tools can read"],
+      ["Interactive diagrams", (c) => c.diagrams.filter((d) => d.kind !== "other").length, "flowchart and sequence diagrams (step-through, hide labels and tap-to-explain work on the drawn diagram)"],
       ["Concept map", (c) => c.links, "links touching the lesson's glossary terms"],
       ["Build the flow", (c) => c.flows, "unbranched step chains"],
       ["Mule event", (c) => c.mule.length, "hand-written walkthroughs citing the lesson"],
@@ -55,11 +55,11 @@ describe.skipIf(!synced)("coverage report", () => {
     for (const [name, f, what] of tools) lines.push(`| ${name} | ${count((c) => f(c) > 0)} of ${n} | ${cov.reduce((s, c) => s + f(c), 0)} | ${what} | ${TESTED[name] ?? "none"} |`);
     const map = conceptMap();
     lines.push("", `Concept map: ${map.terms.length} glossary terms, ${new Set(map.links.flat()).size} linked, ${map.links.length} links (a link means one term's definition names the other).`, "");
-    lines.push("## Per lesson", "", "Columns: notes levels (s = simple, d = detailed, x = super-detailed); diagrams (readable / all); glossary terms (first defined here); concept links; flows; Mule event walkthroughs; DataWeave; quiz questions; study cards; interview flashcards.", "");
+    lines.push("## Per lesson", "", "Columns: notes levels (s = simple, d = detailed, x = super-detailed); diagrams (interactive / all; state diagrams are not interactive); glossary terms (first defined here); concept links; flows; Mule event walkthroughs; DataWeave; quiz questions; study cards; interview flashcards.", "");
     lines.push("| Lesson | Notes | Diagrams | Terms | Links | Flows | Mule event | DW | Quiz | Cards | Interview Qs |", "|---|---|---|---|---|---|---|---|---|---|---|");
     for (const c of cov) {
       const notes = `${c.notes.simple ? "s" : "-"}${c.notes.detailed ? "d" : "-"}${c.notes.super ? "x" : "-"}`;
-      const readable = c.diagrams.filter((d) => d.kind !== "other" && d.parsed).length;
+      const readable = c.diagrams.filter((d) => d.kind !== "other").length;
       lines.push(`| ${c.label} | ${notes} | ${readable} / ${c.diagrams.length} | ${c.terms} (${c.termsIntroduced}) | ${c.links} | ${c.flows} | ${c.mule.length} | ${c.dataweave} | ${c.quiz} | ${c.cards} | ${c.flashcards} |`);
     }
     lines.push("", "## Gaps", "");
@@ -73,7 +73,7 @@ describe.skipIf(!synced)("coverage report", () => {
     gap("No quiz", (c) => c.quiz === 0, "");
     gap("No Mule event walkthrough", (c) => c.mule.length === 0, "Expected for most lessons: walkthroughs exist only where the notes describe what components do to the event.");
     lines.push("- DataWeave exercises exist only for lessons that teach DataWeave; their absence elsewhere is not a gap.");
-    lines.push("", "## Diagrams that could not be read safely", "", "Flowcharts the parser rejected (so they get no step-through and no Build-the-flow exercise; the diagram itself still shows):", "");
+    lines.push("", "## Flowcharts the Build-the-flow parser rejected", "", "These can't become ordering exercises (the parser skips anything it can't read fully rather than guess). They are still drawn and still interactive, because step-through works on the drawn diagram:", "");
     for (const c of cov) for (const d of c.diagrams.filter((x) => x.kind === "flowchart" && !x.parsed)) lines.push(`- ${c.label} (${d.level}): \`${d.first.replace(/`/g, "'")}\``);
     const other = cov.flatMap((c) => c.diagrams.filter((d) => d.kind === "other").map(() => c.label));
     lines.push("", `Other diagram types (state diagrams etc., shown but not interactive): ${other.length ? other.join(", ") : "none"}.`);

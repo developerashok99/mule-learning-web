@@ -25,7 +25,8 @@ const degree = new Map<number, number>();
 for (const [a, b] of map.links) for (const x of [a, b]) degree.set(x, (degree.get(x) ?? 0) + 1);
 // the terms a rebuild can be practised on (3+ links), as stored by the concept map
 const mapTerms = map.terms.filter((t) => t.l.includes(lesson.id) && (degree.get(t.i) ?? 0) >= 3).map((t) => t.t);
-const diagramsReadable = cov.diagrams.filter((d) => d.kind !== "other" && d.parsed);
+// step-through, hide labels and tap-to-explain work on every drawn flowchart and sequence diagram
+const diagramsReadable = cov.diagrams.filter((d) => d.kind !== "other");
 // the notes level with the most interactive diagrams
 const levels: NoteLevel[] = ["detailed", "super", "simple"];
 const diagramLevel = levels.map((lv) => [lv, diagramsReadable.filter((d) => d.level === lv).length] as const).sort((a, b) => b[1] - a[1])[0];
