@@ -1306,3 +1306,15 @@ html { scroll-padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) 
 .mev-vars { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; font: 0.84rem/1.5 var(--mono); }
 .mev-vars dt { font-weight: 800; }
 .mev-vars dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Course mind map (src/pages/revise/mind-map.astro) */
+.mm-map-card { position: relative; padding: 0.75rem; }
+.mm-map-tools { margin-bottom: 0.5rem; }
+.mm-map, .mm-map.markmap { --markmap-text-color: var(--text); --markmap-a-color: var(--text); --markmap-a-hover-color: var(--accent); --markmap-circle-open-bg: var(--surface); --markmap-highlight-bg: var(--accent-soft); --markmap-font: 600 13px/1.35 var(--font); display: block; width: 100%; height: min(72vh, 720px); min-height: 360px; border-radius: var(--radius-sm); background: var(--bg-sunk); color: var(--text); }
+@media (max-width: 760px) { .mm-map { height: 58vh; } }
+.mm-map a:hover { text-decoration: underline; }
+.mm-done { color: var(--success); font-weight: 800; }
+.mm-outline { margin-top: 1rem; }
+.mm-outline summary { cursor: pointer; font-weight: 800; }
+.mm-outline ul { margin: 0.25rem 0; padding-left: 1.2rem; }
+.mm-outline li { margin: 0.15rem 0; }

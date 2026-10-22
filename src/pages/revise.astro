@@ -74,6 +74,11 @@ const decks = sections.map((sec) => ({ id: sec.id, title: sec.title, n: cards.fi
         <span><b>Concept map</b><small>See how the terms connect, then rebuild a term's links from memory</small></span>
         <Icon name="right" />
       </a>
+      <a class="card card--hover dw-promo" href={withBase(base, "revise/mind-map/")}>
+        <span class="stat-icon" aria-hidden="true"><Icon name="courses" /></span>
+        <span><b>Course mind map</b><small>The whole course on one page, from sections down to each lesson's topics</small></span>
+        <Icon name="right" />
+      </a>
       <a class="card card--hover dw-promo" href={withBase(base, "revise/mule-event/")}>
         <span class="stat-icon" aria-hidden="true"><Icon name="play" /></span>
         <span><b>Mule event visualiser</b><small>Watch payload, attributes and variables change, component by component</small></span>

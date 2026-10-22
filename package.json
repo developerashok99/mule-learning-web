@@ -39,7 +39,6 @@
     "astro": "^7.3.8",
     "cytoscape": "^3.34.3",
     "github-slugger": "^2.0.0",
-    "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
     "mermaid": "^12.2.0",
     "rehype-autolink-headings": "^7.1.0",

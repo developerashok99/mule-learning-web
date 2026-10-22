@@ -1,0 +1,57 @@
+---
+/**
+ * Course mind map: the whole course on one page, from sections down to each lesson's topics (src/lib/mindmap.ts).
+ * Drawn with markmap (this page only); the outline below is the same tree as a list, for keyboard and screen readers.
+ */
+import Base from "../../layouts/Base.astro";
+import Icon from "../../components/Icon.astro";
+import PageHead from "../../components/PageHead.astro";
+import { mindMap, type MindNode } from "../../lib/mindmap";
+import { withBase } from "../../lib/routes";
+
+const base = import.meta.env.BASE_URL;
+const tree = await mindMap(base);
+const json = JSON.stringify(tree).replace(/</g, "\\u003c");
+const lessons: MindNode[] = tree.flatMap((c) => (c.c ?? []).flatMap((s) => s.c ?? []));
+const topics = lessons.reduce((n, l) => n + (l.c?.length ?? 0), 0);
+---
+<Base title="Course mind map" nav="revise" description="The whole course as a mind map: sections, lessons and each lesson's topics.">
+  <div class="page" data-mindmap>
+    <script is:inline type="application/json" data-mindmap-data set:html={json} />
+    <PageHead eyebrow="Revision studio" title="Course mind map" sub={`The whole course on one page: ${lessons.length} lessons and ${topics} topics. Tap a circle to open or close a branch; tap a name to go there. Completed lessons are ticked.`}>
+      <a slot="actions" class="btn btn--sm" href={withBase(base, "revise/")}><Icon name="left" /> Revision studio</a>
+    </PageHead>
+    <div class="card mm-map-card">
+      <div class="btn-row mm-map-tools">
+        <button class="btn btn--sm" type="button" data-mindmap-level="1">Sections</button>
+        <button class="btn btn--sm" type="button" data-mindmap-level="2">Lessons</button>
+        <button class="btn btn--sm" type="button" data-mindmap-level="9">Everything</button>
+        <button class="btn btn--sm btn--ghost" type="button" data-mindmap-fit>Fit to screen</button>
+      </div>
+      <svg class="mm-map" data-mindmap-svg aria-hidden="true"></svg>
+      <p class="cmap-loading small muted" data-mindmap-loading>Drawing the map…</p>
+    </div>
+    <details class="card mm-outline">
+      <summary>The same map as an outline</summary>
+      {tree.map((course) => (
+        <ul>
+          <li><a href={course.h}>{course.t}</a>
+            <ul>
+              {(course.c ?? []).map((sec) => (
+                <li>{sec.t}
+                  <ul>
+                    {(sec.c ?? []).map((l) => (
+                      <li><a href={l.h}>{l.t}</a>
+                        {l.c?.length ? <ul>{l.c.map((x) => <li><a href={x.h}>{x.t}</a></li>)}</ul> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </li>
+        </ul>
+      ))}
+    </details>
+  </div>
+</Base>

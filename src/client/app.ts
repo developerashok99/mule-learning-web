@@ -17,6 +17,7 @@ import { setupDataweave } from "./dataweave";
 import { setupConceptMap } from "./conceptmap";
 import { setupFlows } from "./flows";
 import { setupMuleEvent } from "./muleevent";
+import { setupMindMap } from "./mindmap";
 import { setupPreferences } from "./preferences";
 import { pageSignal } from "./page";
 import { recommend } from "../lib/progress";
@@ -394,6 +395,7 @@ document.addEventListener("astro:page-load", () => {
   setupConceptMap();
   setupFlows();
   setupMuleEvent();
+  setupMindMap();
   setupPreferences();
 });
 window.addEventListener("mls:store", markDone);
