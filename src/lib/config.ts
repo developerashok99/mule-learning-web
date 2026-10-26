@@ -33,6 +33,9 @@ export interface Episode {
   /** Set when videoUrl is a YouTube link: the video podcast then plays in the YouTube player */
   youtubeId: string | null;
   watchUrl: string | null;
+  /** The cartoon (animated) version of the same video podcast, on YouTube; played first when present */
+  animatedYoutubeId: string | null;
+  animatedWatchUrl: string | null;
   audioUrl: string | null;
   /** size of the audio file in bytes, when known (shown before downloading) */
   audioBytes: number | null;
@@ -44,6 +47,8 @@ export interface MediaConfig {
   podcasts: Episode[];
   /** YouTube playlist id of the video podcasts, if configured */
   podcastPlaylist: string | null;
+  /** YouTube playlist id of the animated video podcasts, if configured */
+  animatedPlaylist: string | null;
 }
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
@@ -147,6 +152,8 @@ export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisod
   // the YouTube playlist that holds the video podcasts ("Open on YouTube" plays inside it)
   const podcastPlaylist = parseYouTubePlaylist(str(raw.podcastPlaylist));
   if (str(raw.podcastPlaylist) && !podcastPlaylist) problems.push(`media.json podcastPlaylist "${raw.podcastPlaylist}" is not a YouTube playlist id or link`);
+  const animatedPlaylist = parseYouTubePlaylist(str(raw.animatedPlaylist));
+  if (str(raw.animatedPlaylist) && !animatedPlaylist) problems.push(`media.json animatedPlaylist "${raw.animatedPlaylist}" is not a YouTube playlist id or link`);
   const showTest = opts.showTestEpisodes ?? raw.showTestEpisodes !== false;
   (Array.isArray(raw.podcasts) ? raw.podcasts : []).forEach((p: unknown, i: number) => {
     const where = `media.json podcasts[${i}]`;
@@ -165,6 +172,10 @@ export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisod
     const isYouTube = /^https?:\/\/([a-z0-9-]+\.)*(youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(video);
     const youtubeId = isYouTube ? parseYouTubeId(video) : null;
     if (isYouTube && !youtubeId) problems.push(`${where} (${id}).videoUrl is a YouTube link without a video id`);
+    // the animated version is always a YouTube link
+    const animated = str(p.animatedVideoUrl);
+    const animatedYoutubeId = animated ? parseYouTubeId(animated) : null;
+    if (animated && !animatedYoutubeId) problems.push(`${where} (${id}).animatedVideoUrl must be a YouTube link or video id`);
     const duration = parseDuration(str(p.duration));
     if (str(p.duration) && duration == null) problems.push(`${where} (${id}).duration "${p.duration}" must look like 12:30`);
     if (p.test === true && !showTest) return;
@@ -177,6 +188,8 @@ export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisod
       videoUrl: video || null,
       youtubeId,
       watchUrl: youtubeId ? watchUrl(youtubeId, parseYouTubeStart(video), podcastPlaylist) : null,
+      animatedYoutubeId,
+      animatedWatchUrl: animatedYoutubeId ? watchUrl(animatedYoutubeId, 0, animatedPlaylist) : null,
       audioUrl: str(p.audioUrl) || null,
       audioBytes: typeof p.audioBytes === "number" && p.audioBytes > 0 ? p.audioBytes : null,
       test: p.test === true,
@@ -184,5 +197,5 @@ export function parseMedia(raw: unknown, known: string[], opts: { showTestEpisod
     });
   });
   if (problems.length) throw new ConfigError(problems);
-  return { lectures, podcasts, podcastPlaylist };
+  return { lectures, podcasts, podcastPlaylist, animatedPlaylist };
 }

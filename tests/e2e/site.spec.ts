@@ -450,9 +450,26 @@ test.describe("revision studio and preferences", () => {
   test("video podcasts open inside the YouTube playlist", async ({ page }) => {
     test.skip(!media.podcastPlaylist, "no podcast playlist configured");
     await page.goto("podcasts/");
-    await expect(page.getByRole("link", { name: "Playlist on YouTube" })).toHaveAttribute("href", `https://www.youtube.com/playlist?list=${media.podcastPlaylist}`);
+    await expect(page.getByRole("link", { name: "Playlist on YouTube", exact: true })).toHaveAttribute("href", `https://www.youtube.com/playlist?list=${media.podcastPlaylist}`);
     await page.goto("podcasts/day40/");
+    await page.getByRole("button", { name: /Slides|Video/ }).click();
     await expect(page.getByRole("link", { name: /Open on YouTube/ })).toHaveAttribute("href", new RegExp(`list=${media.podcastPlaylist}`));
+  });
+
+  test("the animated video plays first, with its own playlist", async ({ page }) => {
+    const ep = (media.podcasts as { id: string; animatedVideoUrl?: string }[]).find((p) => p.animatedVideoUrl);
+    test.skip(!ep || !media.animatedPlaylist, "no animated videos configured");
+    await page.goto("podcasts/");
+    await expect(page.getByRole("link", { name: "Animated playlist on YouTube" })).toHaveAttribute("href", `https://www.youtube.com/playlist?list=${media.animatedPlaylist}`);
+    await page.getByLabel("Format").selectOption("animated");
+    expect(await page.locator(".episode:visible").count()).toBeGreaterThan(0);
+    await page.goto(`podcasts/${ep!.id}/`);
+    await expect(page.getByRole("button", { name: "Animated", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: /Play animated video podcast/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Open the animated video on YouTube/ })).toHaveAttribute("href", new RegExp(`list=${media.animatedPlaylist}`));
+    await page.getByRole("button", { name: "Slides", exact: true }).click();
+    await expect(page.getByRole("button", { name: /Play animated video podcast/ })).toBeHidden();
+    await expect(page.getByRole("button", { name: /Play video podcast/ })).toBeVisible();
   });
 
   test("the website explains that offline downloads are in the app", async ({ page }) => {

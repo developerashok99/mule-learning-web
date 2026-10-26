@@ -137,6 +137,16 @@ describe("config validation", () => {
     expect(parseMedia(raw, known).podcasts).toEqual([]);
   });
 
+  it("reads the animated video and its playlist", () => {
+    const m = parseMedia(
+      { animatedPlaylist: "PLLUMsgplckUY", podcasts: [{ id: "ep1", lessons: [], animatedVideoUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE" }, { id: "ep2", lessons: [] }] },
+      known,
+    );
+    expect(m.animatedPlaylist).toBe("PLLUMsgplckUY");
+    expect(m.podcasts[0]).toMatchObject({ animatedYoutubeId: "M7lc1UVf-VE", animatedWatchUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE&list=PLLUMsgplckUY" });
+    expect(m.podcasts[1]).toMatchObject({ animatedYoutubeId: null, animatedWatchUrl: null });
+    expect(() => parseMedia({ podcasts: [{ id: "e", lessons: [], animatedVideoUrl: "https://example.com/x.mp4" }] }, known)).toThrow(/animatedVideoUrl/);
+  });
   it("hides test episodes when showTestEpisodes is false", () => {
     const m = parseMedia({ showTestEpisodes: false, podcasts: [{ id: "t", title: "T", lessons: [], test: true }] }, known);
     expect(m.podcasts).toEqual([]);

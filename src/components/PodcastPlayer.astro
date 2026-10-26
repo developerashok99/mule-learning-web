@@ -1,5 +1,8 @@
 ---
-/** Both formats of one summary episode: the video podcast (YouTube or <video>) and the same summary as audio. */
+/**
+ * Every format of one summary episode: the animated (cartoon) video when there is one, the slide video podcast
+ * (YouTube or <video>), and the same summary as audio. One format shows at a time; the animated one first.
+ */
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
 import { getLesson } from "../lib/content";
@@ -18,9 +21,10 @@ const H = `h${headingLevel}` as "h2";
 const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
 const EMPTY = !ep.videoUrl;
 const videoType = ep.videoUrl?.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
-// both formats: show one at a time with a switch (video first); otherwise just the one that exists
-const both = !!ep.videoUrl && !!ep.audioUrl;
-const first = ep.videoUrl || !ep.audioUrl ? "video" : "audio";
+const animated = !!ep.animatedYoutubeId;
+// several formats: show one at a time with a switch (animated first, then video); otherwise just the one that exists
+const views = [animated && "animated", ep.videoUrl && "video", ep.audioUrl && "audio"].filter(Boolean) as string[];
+const first = animated ? "animated" : ep.videoUrl || !ep.audioUrl ? "video" : "audio";
 ---
 <section class="card pod" aria-label={`Summary podcast: ${ep.title}`} data-pod data-pod-active={first}>
   <div class="btn-row" style="justify-content: space-between; margin-bottom:.6rem">
@@ -36,10 +40,25 @@ const first = ep.videoUrl || !ep.audioUrl ? "video" : "audio";
   </div>
   {ep.description && <p class="muted" style="margin:0 0 .8rem">{ep.description}</p>}
   {ep.audioUrl && <div class="progress progress--thin pod-progress" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>}
-  {both && (
+  {views.length > 1 && (
     <div class="segmented pod-switch" role="group" aria-label="Format">
-      <button type="button" data-pod-view="video" aria-pressed="true"><Icon name="video" /> Video</button>
-      <button type="button" data-pod-view="audio" aria-pressed="false"><Icon name="podcast" /> Audio</button>
+      {animated && <button type="button" data-pod-view="animated" aria-pressed={first === "animated" ? "true" : "false"}><Icon name="sparkle" /> Animated</button>}
+      {ep.videoUrl && <button type="button" data-pod-view="video" aria-pressed={first === "video" ? "true" : "false"}><Icon name="video" /> {animated ? "Slides" : "Video"}</button>}
+      {ep.audioUrl && <button type="button" data-pod-view="audio" aria-pressed="false"><Icon name="podcast" /> Audio</button>}
+    </div>
+  )}
+
+  {animated && (
+    <div class="pod-panel" id={standalone ? "animated" : undefined} data-pod-panel="animated">
+      <div class="media-frame">
+        <button class="yt-facade" type="button" data-yt={ep.animatedYoutubeId} data-start="0" data-watch={ep.animatedWatchUrl} data-title={`Animated video podcast: ${ep.title}`} aria-label={`Play animated video podcast: ${ep.title}`}>
+          <span class="yt-facade__kicker">Summary podcast · animated</span>
+          <span class="yt-facade__title">{ep.title}</span>
+          <span class="yt-facade__play"><Icon name="play" /></span>
+          <small>Click to play · loads from youtube-nocookie.com</small>
+        </button>
+      </div>
+      <p class="small" style="margin:.4rem 0 0"><a href={ep.animatedWatchUrl} target="_blank" rel="noopener noreferrer">Open the animated video on YouTube <Icon name="external" /></a></p>
     </div>
   )}
 
@@ -68,7 +87,7 @@ const first = ep.videoUrl || !ep.audioUrl ? "video" : "audio";
   <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>
   </div>
 
-  <div class="pod-panel" id={standalone ? "audio" : undefined} data-pod-panel="audio" hidden={both || first !== "audio"}>
+  <div class="pod-panel" id={standalone ? "audio" : undefined} data-pod-panel="audio" hidden={first !== "audio"}>
   <div class:list={["audio-card", { "audio-card--empty": !ep.audioUrl }]}>
     <div class="audio-card__art" aria-hidden="true"><Icon name="podcast" /></div>
     <div class="audio-card__body">

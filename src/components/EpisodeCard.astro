@@ -1,7 +1,7 @@
 ---
 /**
- * One summary podcast episode: what it covers, and its two formats side by side — Watch video (opens the episode)
- * and Play audio (the site-wide audio player). The whole card opens the episode page.
+ * One summary podcast episode: what it covers, and its formats side by side — Watch animated and Watch video (open the
+ * episode) and Play audio (the site-wide audio player). The whole card opens the episode page.
  */
 import Icon from "./Icon.astro";
 import type { Episode } from "../lib/config";
@@ -18,8 +18,8 @@ const { episode: ep, compact = false } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const lessons = ep.lessons.map((id) => getLesson(id)!).filter(Boolean);
 const sections = [...new Set(lessons.map((l) => l.sectionId))].join(" ");
-const available = !!(ep.audioUrl || ep.videoUrl);
-const kinds = [ep.audioUrl && "audio", ep.videoUrl && "video"].filter(Boolean).join(" ");
+const available = !!(ep.audioUrl || ep.videoUrl || ep.animatedYoutubeId);
+const kinds = [ep.audioUrl && "audio", ep.videoUrl && "video", ep.animatedYoutubeId && "animated"].filter(Boolean).join(" ");
 const href = withBase(base, podcastPath(ep.id));
 // "Day 5" → "D5", "Interview Part 1" → "IP1"
 const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w) => (/^\d+$/.test(w) ? w : w[0])).join("").toUpperCase().slice(0, 4);
@@ -38,7 +38,8 @@ const abbr = ep.test ? "T" : (lessons[0]?.label ?? ep.title).split(/\s+/).map((w
     {ep.description && <p class="episode__desc">{ep.description}</p>}
     <div class="progress progress--thin" data-episode-progress={ep.id} hidden role="img" aria-label="0% listened"><span></span></div>
     <div class="episode__actions">
-      {!compact && ep.videoUrl && <a class="btn btn--sm" href={`${href}#video`}><Icon name="video" /> Watch video</a>}
+      {!compact && ep.animatedYoutubeId && <a class="btn btn--sm" href={`${href}#animated`}><Icon name="sparkle" /> Watch animated</a>}
+      {!compact && ep.videoUrl && <a class="btn btn--sm" href={`${href}#video`}><Icon name="video" /> {ep.animatedYoutubeId ? "Slides video" : "Watch video"}</a>}
       {ep.audioUrl
         ? <button class="btn btn--sm audio-btn" type="button" data-play-episode={ep.id} data-label={ep.title} aria-label={`Play audio: ${ep.title}`}><Icon name="play" class="play" /><Icon name="pause" class="pause" /><span class="play">Play audio</span><span class="pause">Pause</span></button>
         : <button class="btn btn--sm" type="button" disabled aria-label={`Audio not available yet: ${ep.title}`}><Icon name="podcast" /> No audio yet</button>}

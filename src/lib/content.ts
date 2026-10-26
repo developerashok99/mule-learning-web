@@ -48,7 +48,7 @@ function readJson<T>(file: string): T {
   return JSON.parse(fs.readFileSync(file, "utf8")) as T;
 }
 
-let cache: { manifest: Manifest; courses: Course[]; lessons: Lesson[]; byId: Map<string, Lesson>; podcasts: Episode[]; podcastPlaylist: string | null } | null = null;
+let cache: { manifest: Manifest; courses: Course[]; lessons: Lesson[]; byId: Map<string, Lesson>; podcasts: Episode[]; podcastPlaylist: string | null; animatedPlaylist: string | null } | null = null;
 
 function load() {
   if (cache) return cache;
@@ -92,7 +92,7 @@ function load() {
     l.prev = lessons[i - 1]?.id ?? null;
     l.next = lessons[i + 1]?.id ?? null;
   });
-  cache = { manifest, courses, lessons, byId: new Map(lessons.map((l) => [l.id, l])), podcasts: media.podcasts, podcastPlaylist: media.podcastPlaylist };
+  cache = { manifest, courses, lessons, byId: new Map(lessons.map((l) => [l.id, l])), podcasts: media.podcasts, podcastPlaylist: media.podcastPlaylist, animatedPlaylist: media.animatedPlaylist };
   return cache;
 }
 
@@ -102,6 +102,7 @@ export const getLesson = (id: string) => load().byId.get(id);
 export const getPodcasts = () => load().podcasts;
 /** YouTube playlist id that holds the video podcasts (null if not configured) */
 export const getPodcastPlaylist = () => load().podcastPlaylist;
+export const getAnimatedPlaylist = () => load().animatedPlaylist;
 export const getManifest = () => load().manifest;
 export const knownIds = () => new Set(load().lessons.map((l) => l.id));
 

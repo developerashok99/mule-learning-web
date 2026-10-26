@@ -325,22 +325,23 @@ function setupCurriculum(nextId?: string) {
   render();
 }
 
-/** Episode pages: Video / Audio switch (one format at a time). Leaving the video pauses it. */
+/** Episode pages: Animated / Video / Audio switch (one format at a time). Leaving a video pauses it. */
 function setupPodcastSwitch() {
   document.querySelectorAll<HTMLElement>("[data-pod]").forEach((pod) => {
     const show = (view: string) => {
       if (!pod.querySelector(`[data-pod-panel="${view}"]`)) return;
       pod.dataset.podActive = view;
-      pod.querySelectorAll<HTMLElement>("[data-pod-panel]").forEach((p) => (p.hidden = p.dataset.podPanel !== view));
-      pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.podView === view)));
-      if (view !== "video") {
-        pod.querySelectorAll("video").forEach((v) => v.pause());
+      pod.querySelectorAll<HTMLElement>("[data-pod-panel]").forEach((p) => {
+        p.hidden = p.dataset.podPanel !== view;
+        if (!p.hidden) return;
+        p.querySelectorAll("video").forEach((v) => v.pause());
         // YouTube players are created with the iframe API, which accepts this command
-        pod.querySelectorAll<HTMLIFrameElement>("iframe").forEach((f) => f.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: [] }), "*"));
-      }
+        p.querySelectorAll<HTMLIFrameElement>("iframe").forEach((f) => f.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: [] }), "*"));
+      });
+      pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.podView === view)));
     };
     pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.addEventListener("click", () => show(b.dataset.podView!), { signal: pageSignal() }));
-    if (location.hash === "#audio") show("audio");
+    if (["#animated", "#video", "#audio"].includes(location.hash)) show(location.hash.slice(1));
   });
 }
 
