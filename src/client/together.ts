@@ -21,8 +21,11 @@ import { requestVideoAutoplay } from "./videos";
 declare global {
   interface Window {
     __mlsTogetherTransport?: "local";
+    /** set to [] by a test to see what the room does */
+    __mlsTogetherLog?: string[];
   }
 }
+const log = (...a: unknown[]) => window.__mlsTogetherLog?.push(`${(performance.now() / 1000).toFixed(1)} ${a.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join(" ")}`);
 
 // ---------- connections ----------
 
@@ -174,7 +177,9 @@ interface Room {
   /** a guest pressed play themselves: once lined up with the others, everyone plays */
   deliberate: boolean;
   /** while holding: the state the player must reach before the hold ends, and the latest the hold may last */
-  goal: { time: number; playing: boolean } | null;
+  goal: { time: number; playing: boolean; at: number } | null;
+  /** when the player was last steered towards the goal */
+  steeredAt: number;
   holdUntil: number;
   /** after steering the player for a message: the one state change that is our echo, not the user's doing */
   expect: { playing: boolean; until: number } | null;
@@ -250,6 +255,7 @@ function apply(target: { time: number; playing: boolean }, ageMs = 150) {
   }
   const s = sample()!;
   const act = matchAction(s, target, ageMs);
+  log("apply", target, "local", s, "->", act);
   if (!act.seekTo && !act.play && !act.pause) return;
   room.expect = { playing: target.playing, until: Date.now() + 2500 };
   room.seekQuietUntil = Date.now() + 1500;
@@ -267,11 +273,26 @@ function apply(target: { time: number; playing: boolean }, ageMs = 150) {
 function settle(target: { time: number; playing: boolean }) {
   if (!room) return;
   if (!room.hold) return apply(target);
-  room.goal = target;
-  room.holdUntil = Date.now() + 8000;
-  apply(target);
+  room.goal = { ...target, at: Date.now() };
+  room.holdUntil = Date.now() + 12000;
+  steer();
+}
+/** where the goal is now: while the others play, their position moves on */
+const goalNow = (g: { time: number; playing: boolean; at: number }) => ({ time: g.time + (g.playing ? (Date.now() - g.at) / 1000 : 0), playing: g.playing });
+/** the player is in the others' state and near their position (YouTube can ignore a seek sent the moment it is ready) */
+function reached(g: { time: number; playing: boolean; at: number }): boolean {
+  const s = sample();
   const st = activeYouTube()?.player.getPlayerState();
-  if ((target.playing && st === 1) || (!target.playing && st === 2)) release();
+  if (!s || !((g.playing && st === 1) || (!g.playing && st === 2))) return false;
+  return Math.abs(s.time - goalNow(g).time) < 2.5;
+}
+/** steer towards the goal again, or end the hold once there */
+function steer() {
+  const r = room;
+  if (!r?.goal) return;
+  if (reached(r.goal)) return release();
+  r.steeredAt = Date.now();
+  apply(goalNow(r.goal), 0);
 }
 function release() {
   if (!room) return;
@@ -312,6 +333,7 @@ function follow(vid: string, target: { time: number; playing: boolean } | null) 
 function onMessage(from: Link, raw: unknown) {
   if (!room) return;
   const m = readMsg(raw);
+  log("msg", m, { hold: room.hold, deliberate: room.deliberate, yt: !!activeYouTube(), vid: room.vid, cur: currentVid() });
   if (!m) return;
   // the host is the hub: what one guest does is passed on to the others
   if (room.role === "host" && ["play", "pause", "seek", "nav", "view"].includes(m.t)) broadcast(m, from);
@@ -402,7 +424,7 @@ function open(role: "host" | "guest", code: string, attempt = 0, autoStart = rol
   ended = "";
   room = { code, role, transport, links: new Set(), connected: false, people: 1, vid: currentVid(), following: null, pending: null,
     // a guest's player is about to start by itself: that isn't a "play" to send until the host's state has been applied
-    hold: role === "guest", autoStart, deliberate: false, goal: null, holdUntil: 0, expect: null, seekQuietUntil: 0, last: null,
+    hold: role === "guest", autoStart, deliberate: false, goal: null, steeredAt: 0, holdUntil: 0, expect: null, seekQuietUntil: 0, last: null,
     status: role === "host" ? "Starting a room…" : "Connecting to your friend…", timers: [] };
   const r = room;
   const handlers: Handlers = {
@@ -433,6 +455,7 @@ function open(role: "host" | "guest", code: string, attempt = 0, autoStart = rol
     if (room !== r || !r.links.size || r.vid !== currentVid()) return;
     const now = sample();
     if (!now) return;
+    if (r.hold && r.goal && Date.now() - r.steeredAt > 1200) steer();
     if (r.hold && r.holdUntil && Date.now() > r.holdUntil) release();
     if (r.last && !r.hold && Date.now() > r.seekQuietUntil && isSeek(r.last, now)) broadcast({ t: "seek", time: now.time, playing: now.playing });
     r.last = now;
@@ -476,8 +499,7 @@ document.addEventListener("mls:yt-state", (e) => {
   if (r.hold) {
     // reached the others' state: hold over. Went the other way (autoplay): steer back, still quietly.
     // (no goal yet: still waiting for the others' state)
-    if (r.goal && r.goal.playing === playing) release();
-    else if (r.goal) apply(r.goal);
+    if (r.goal) steer();
     return;
   }
   r.last = sample();
@@ -492,6 +514,7 @@ document.addEventListener("mls:yt-state", (e) => {
 });
 document.addEventListener("mls:yt-ready", () => {
   const r = room;
+  log("yt-ready", r ? { pending: r.pending, connected: r.connected, hold: r.hold } : null);
   if (!r) return;
   if (r.pending) {
     const target = r.pending;

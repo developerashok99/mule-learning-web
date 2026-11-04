@@ -8,9 +8,9 @@ const ids = Object.entries(media.lectures as Record<string, { youtube?: string }
   .filter(([, l]) => l.youtube?.trim())
   .map(([id]) => id);
 
-async function prepare(page: Page) {
+async function prepare(page: Page, ytDelayMs = 0) {
   await page.addInitScript(() => (window.__mlsTogetherTransport = "local"));
-  await useFakeYouTube(page);
+  await useFakeYouTube(page, ytDelayMs);
 }
 
 test.describe("watch together", () => {
@@ -136,6 +136,32 @@ test.describe("watch together", () => {
     await expect.poll(() => new URL(guest.url()).pathname).toBe(new URL(host.url()).pathname);
     await expect(guest).toHaveURL(/\?room=/);
     await expect(guest.getByRole("region", { name: "Watch together" }).getByText("Watching with 1 friend")).toBeVisible();
+  });
+
+  test("a friend on a slow connection still ends up in sync (late player script, early seeks ignored)", async ({ context }, info) => {
+    test.skip(info.project.name !== "desktop-1440", "timing case: one screen size is enough");
+    test.setTimeout(60_000);
+    const host = await context.newPage();
+    const guest = await context.newPage();
+    await prepare(host);
+    // the player script takes 9 s to arrive (it used to give up after 8 s and show an embed that can't sync),
+    // and the first 1.5 s after "ready" seeks are ignored, as real YouTube can do
+    await prepare(guest, 9000);
+    await guest.addInitScript(() => ((window as unknown as { __fakeIgnoreSeeksMs: number }).__fakeIgnoreSeeksMs = 1500));
+    await host.goto(`videos/${ids[3]}/`);
+    await host.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(host).state()).toBe(1);
+    await yt(host).seek(600);
+    await host.getByRole("button", { name: "Watch together" }).click();
+    const link = await host.getByLabel("Send this link to your friend").inputValue();
+    await guest.goto(link);
+    await expect(host.getByText("Watching with 1 friend")).toBeVisible();
+    await guest.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(guest).state(), { timeout: 20_000 }).toBe(1);
+    await expect.poll(async () => Math.abs((await yt(host).time()) - (await yt(guest).time())), { timeout: 10_000 }).toBeLessThan(2.5);
+    // and a later jump on the host side reaches the friend
+    await yt(host).seek(1500);
+    await expect.poll(async () => Math.round(await yt(guest).time()), { timeout: 10_000 }).toBeGreaterThanOrEqual(1499);
   });
 
   test("a link to a room that no longer exists says so, and offers to try again", async ({ page }) => {

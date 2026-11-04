@@ -44,7 +44,8 @@ function loadYouTubeApi(): Promise<boolean> {
     s.src = "https://www.youtube.com/iframe_api";
     s.onerror = () => resolve(false);
     document.head.append(s);
-    setTimeout(() => resolve(!!window.YT?.Player), 8000);
+    // a slow connection can take a while; only give up (plain embed, no sync or our controls) when it really fails
+    setTimeout(() => resolve(!!window.YT?.Player), 30_000);
   });
   // a failed attempt (e.g. offline) is not remembered, so the next play can try again
   void ytApi.then((ok) => {

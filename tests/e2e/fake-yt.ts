@@ -14,7 +14,8 @@ window.YT = { Player: function (el, opts) {
   const p = {
     playVideo() { if (state !== 1) set(1); },
     pauseVideo() { if (state === 1) set(2); },
-    seekTo(t) { base = Math.max(0, Math.min(DUR, t)); since = Date.now(); },
+    // window.__fakeIgnoreSeeksMs: like real YouTube, which can ignore a seek sent just after it is ready
+    seekTo(t) { if (window.__fakeIgnoreSeeksMs && Date.now() - readyAt < window.__fakeIgnoreSeeksMs) return; base = Math.max(0, Math.min(DUR, t)); since = Date.now(); },
     getCurrentTime: now,
     getPlayerState: () => state,
     getDuration: () => DUR,
@@ -30,18 +31,23 @@ window.YT = { Player: function (el, opts) {
     destroy() { state = -1; div.remove(); },
   };
   const cc = { loaded: false, track: null };
+  let readyAt = 0;
   // window.__fakeAutoCaptions: like a viewer whose YouTube settings turn captions on, they appear when playback starts
   const play0 = p.playVideo;
   p.playVideo = function () { play0(); if (window.__fakeAutoCaptions && !cc.loaded) { cc.loaded = true; cc.track = { languageCode: "te" }; opts.events.onApiChange && opts.events.onApiChange(); } };
   const div = document.createElement("div"); div.className = "fake-yt"; el.replaceWith(div);
   window.__fakeYt = { player: p, id: opts.videoId, vars: opts.playerVars, cc };
-  setTimeout(() => { opts.events.onReady && opts.events.onReady({ target: p });
+  setTimeout(() => { readyAt = Date.now(); opts.events.onReady && opts.events.onReady({ target: p });
     if (opts.playerVars && opts.playerVars.autoplay) setTimeout(() => p.playVideo(), window.__fakeAutoplayDelay || 0); }, 50);
 } };
 window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();`;
 
-export async function useFakeYouTube(page: Page) {
-  await page.route("https://www.youtube.com/iframe_api", (r) => r.fulfill({ body: FAKE_YT, contentType: "text/javascript" }));
+/** `delayMs`: the player script arrives this late (a slow connection) */
+export async function useFakeYouTube(page: Page, delayMs = 0) {
+  await page.route("https://www.youtube.com/iframe_api", async (r) => {
+    if (delayMs) await new Promise((res) => setTimeout(res, delayMs));
+    await r.fulfill({ body: FAKE_YT, contentType: "text/javascript" });
+  });
 }
 
 type Fake = { player: Record<string, (...a: number[]) => number | boolean | void>; id: string; vars: Record<string, unknown> };
