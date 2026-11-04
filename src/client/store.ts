@@ -213,6 +213,9 @@ export interface Prefs {
   nav?: "open" | "collapsed";
   /** Videos tab: the playlist beside the player (default shown) */
   videoPlaylist?: "shown" | "hidden";
+  /** video players: captions off (default), in the video's language, or auto-translated to English; and the last ones used */
+  captions?: "off" | "orig" | "en";
+  captionsLast?: "orig" | "en";
   /** Videos tab: which notes level shows under the video */
   videoNotes?: "simple" | "detailed" | "super";
   /** Revision: new flashcards to introduce per day (default 15) */

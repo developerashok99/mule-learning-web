@@ -22,9 +22,17 @@ window.YT = { Player: function (el, opts) {
     getVolume: () => vol, setVolume(v) { vol = v; },
     isMuted: () => muted, mute() { muted = true; }, unMute() { muted = false; },
     getPlaybackRate: () => rate, setPlaybackRate(r) { base = now(); since = Date.now(); rate = r; },
+    // captions, as YouTube's embed does them: a module that can be loaded / unloaded, and a track option
+    loadModule(m) { if (m === "captions" && !cc.loaded) { cc.loaded = true; setTimeout(() => opts.events.onApiChange && opts.events.onApiChange(), 0); } },
+    unloadModule(m) { if (m === "captions") { cc.loaded = false; cc.track = null; } },
+    setOption(m, k, v) { if (m === "captions" && k === "track" && cc.loaded) cc.track = v; },
   };
+  const cc = { loaded: false, track: null };
+  // window.__fakeAutoCaptions: like a viewer whose YouTube settings turn captions on, they appear when playback starts
+  const play0 = p.playVideo;
+  p.playVideo = function () { play0(); if (window.__fakeAutoCaptions && !cc.loaded) { cc.loaded = true; cc.track = { languageCode: "te" }; opts.events.onApiChange && opts.events.onApiChange(); } };
   const div = document.createElement("div"); div.className = "fake-yt"; el.replaceWith(div);
-  window.__fakeYt = { player: p, id: opts.videoId, vars: opts.playerVars };
+  window.__fakeYt = { player: p, id: opts.videoId, vars: opts.playerVars, cc };
   setTimeout(() => { opts.events.onReady && opts.events.onReady({ target: p });
     if (opts.playerVars && opts.playerVars.autoplay) setTimeout(() => p.playVideo(), window.__fakeAutoplayDelay || 0); }, 50);
 } };
@@ -43,4 +51,6 @@ export const yt = (page: Page) => ({
   call: (m: string) => page.evaluate((x) => (window as unknown as { __fakeYt: Fake }).__fakeYt.player[x](), m),
   vars: () => page.evaluate(() => (window as unknown as { __fakeYt: Fake }).__fakeYt.vars),
   id: () => page.evaluate(() => (window as unknown as { __fakeYt?: Fake }).__fakeYt?.id ?? null),
+  /** what the fake YouTube player is showing as captions: null when off */
+  captions: () => page.evaluate(() => { const c = (window as unknown as { __fakeYt: { cc: { loaded: boolean; track: unknown } } }).__fakeYt.cc; return c.loaded ? c.track : null; }),
 });

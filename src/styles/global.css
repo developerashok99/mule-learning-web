@@ -750,8 +750,31 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 .yt-vol::-webkit-slider-thumb { background: #fff; }
 .yt-range::-moz-range-thumb, .yt-vol::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: #ff3b3b; border: 0; }
 .yt-range:focus-visible, .yt-vol:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+/* captions button and settings menu */
+.yt-cc { position: relative; }
+.yt-cc[aria-pressed="true"] .icon { color: #fff; }
+.yt-cc[aria-pressed="true"]::before { content: ""; position: absolute; left: 25%; right: 25%; bottom: 0.25rem; height: 3px; border-radius: 2px; background: #ff3b3b; }
+.yt-gear { position: relative; }
+.yt-gear[aria-expanded="true"] .icon { transform: rotate(30deg); }
+.yt-gear .icon { transition: transform 0.2s; }
+.yt-gear:not([data-rate=""])[data-rate]::after { content: attr(data-rate); position: absolute; top: 0.05rem; right: -0.1rem; padding: 0 0.2rem; border-radius: 4px; background: #ff3b3b; font-size: 0.6rem; line-height: 1.1rem; }
+.yt-menu {
+  position: absolute; right: 0.75rem; bottom: 3.9rem; z-index: 3; width: 16rem; max-height: calc(100% - 4.8rem); overflow-y: auto; overscroll-behavior: contain;
+  padding: 0.4rem; border-radius: 12px; background: rgba(22, 27, 36, 0.95); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); pointer-events: auto;
+}
+.yt-menu[hidden] { display: none; }
+.yt-menu__group + .yt-menu__group { margin-top: 0.3rem; padding-top: 0.3rem; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.yt-menu__title { margin: 0.3rem 0.55rem 0.2rem; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
+.yt-menu button {
+  display: flex; align-items: center; gap: 0.55rem; width: 100%; min-height: 2.2rem; padding: 0.3rem 0.55rem; border: 0; border-radius: 8px;
+  background: transparent; color: #fff; font: 600 0.86rem inherit; text-align: left; cursor: pointer;
+}
+.yt-menu button:hover, .yt-menu button:focus-visible { background: rgba(255, 255, 255, 0.14); outline: 0; }
+.yt-menu button .icon { width: 1rem; height: 1rem; flex: none; visibility: hidden; }
+.yt-menu button[aria-checked="true"] .icon { visibility: visible; color: #ff6b6b; }
+.video-stage.is-mini .yt-row [data-c="settings"], .video-stage.is-mini .yt-menu { display: none; }
 /* phones: the hardware buttons set the volume, so the slider goes; ±10 s matter most without a keyboard */
-@media (max-width: 560px) { .yt-vol { display: none; } .yt-row button { min-width: 2.15rem; padding: 0 0.2rem; } .yt-time { font-size: 0.75rem; margin-left: 0.2rem; } }
+@media (max-width: 560px) { .yt-vol, .yt-row [data-c="mute"] { display: none; } .yt-row button { min-width: 2.15rem; padding: 0 0.2rem; } .yt-time { font-size: 0.75rem; margin-left: 0.2rem; } }
 .media-frame--empty .media-state { position: static; }
 .media-frame iframe, .media-frame video, .media-frame > .yt-facade { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .yt-facade {
@@ -813,7 +836,7 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
   width: 2.1rem; height: 2.1rem; border: 0; border-radius: 50%; background: rgba(15, 23, 35, 0.8); color: #fff; cursor: pointer;
 }
 .video-stage.is-mini .video-mini-close .icon { width: 1rem; height: 1rem; }
-.video-stage.is-mini .yt-row :is([data-c="back"], [data-c="fwd"], .yt-vol, [data-c="speed"]) { display: none; }
+.video-stage.is-mini .yt-row :is([data-c="back"], [data-c="fwd"], .yt-vol) { display: none; }
 /* phones: the video stays at the top while the notes scroll under it */
 @media (max-width: 800px) {
   .video-stage { position: sticky; top: var(--topbar-h); z-index: 30; width: 100%; }
@@ -821,6 +844,8 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 }
 /* YouTube's own title strip and corner links sit in a margin of the frame that is cut off; the video itself fills the box */
 .media-frame.yt-custom iframe { top: -64px; height: calc(100% + 128px); }
+/* …except with captions on: YouTube draws them at the bottom of its frame, which the crop would hide */
+.media-frame.yt-custom.yt-cc-on iframe { top: 0; height: 100%; }
 .video-info__kicker { margin: 0 0 0.35rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .video-info__text { flex: 999 1 30rem; min-width: 0; }  /* the title takes the line; the buttons move under it when both don't fit */
 .video-info h1 { margin: 0; font-size: clamp(1.15rem, 1rem + 0.7vw, 1.5rem); line-height: 1.25; }

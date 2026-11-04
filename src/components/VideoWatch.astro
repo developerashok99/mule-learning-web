@@ -49,7 +49,7 @@ const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ 
       <div class="video-main">
         <div class="video-stage" data-video-stage>
           <div class="media-frame video-frame">
-            <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${name}`} aria-label={`Play video: ${name}`}>
+            <button class="yt-facade" type="button" data-cc="te" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${name}`} aria-label={`Play video: ${name}`}>
               <span class="yt-facade__kicker">{course.title} · {current.label}</span>
               <span class="yt-facade__title">{current.title}</span>
               <span class="yt-facade__play"><Icon name="play" /></span>

@@ -2,12 +2,14 @@
  * Our own controls for YouTube players (the embed runs with controls=0). YouTube's own hover layer — the big
  * title, the dark gradient, controls that linger — can't be styled from outside its iframe, so a clear shield
  * covers the iframe (YouTube never sees the mouse) and this thin bar does the work:
- * play/pause, ±10 s, seek with buffered range, mute + volume, time, speed and full screen.
+ * play/pause, ±10 s, seek with buffered range, mute + volume, time, captions (CC), a settings menu (speed and
+ * captions) and full screen.
  * The bar hides 1 s after the mouse stops while playing, and the usual YouTube keys work.
  */
 import { formatClock } from "../lib/duration";
 import { pageSignal } from "./page";
-import { keyAction, nextSpeed } from "../lib/player";
+import { SPEEDS, captionChoices, captionTrack, keyAction, nextSpeed, toggledCaptions, type CaptionMode } from "../lib/player";
+import { prefs, setPrefs } from "./store";
 
 /** The player API calls the controls use (all exist on YT.Player). */
 export interface YtControlsPlayer {
@@ -25,6 +27,10 @@ export interface YtControlsPlayer {
   unMute?(): void;
   getPlaybackRate?(): number;
   setPlaybackRate?(r: number): void;
+  /** captions: not in the documented API, but YouTube's own embed uses them and they work */
+  loadModule?(name: string): void;
+  unloadModule?(name: string): void;
+  setOption?(module: string, option: string, value: unknown): void;
 }
 
 /** controls disappear this long after the last mouse movement while the video plays */
@@ -41,11 +47,15 @@ const ICON = {
   muted: svg('<path d="M11 5 6 9H3v6h3l5 4V5Z" fill="currentColor"/><path d="m16 9 5 6M21 9l-5 6"/>'),
   full: svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
   exit: svg('<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>'),
+  cc: svg('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10.5 10.2a2.3 2.3 0 1 0 0 3.6M17 10.2a2.3 2.3 0 1 0 0 3.6"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>'),
+  check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
 };
 
 let current: (() => void) | null = null;
 
-export function attachControls(frame: HTMLElement, player: YtControlsPlayer, title: string) {
+/** `ccLang`: the language of the video's (auto-generated) captions, e.g. "te" for the Telugu lectures. */
+export function attachControls(frame: HTMLElement, player: YtControlsPlayer, title: string, ccLang = "en") {
   current?.(); // only one set of global keys at a time
   const signal = pageSignal();
   frame.classList.add("yt-custom");
@@ -68,8 +78,19 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
         <input class="yt-vol" type="range" min="0" max="100" step="5" value="100" aria-label="Volume" />
         <span class="yt-time" aria-hidden="true">0:00 / 0:00</span>
         <span class="yt-spacer"></span>
-        <button type="button" data-c="speed" class="yt-speed" aria-label="Playback speed 1×" title="Speed (Shift + > / <)">1×</button>
+        <button type="button" data-c="cc" class="yt-cc" aria-pressed="false" aria-label="Captions" title="Captions (c)">${ICON.cc}</button>
+        <button type="button" data-c="settings" class="yt-gear" aria-haspopup="menu" aria-expanded="false" aria-controls="" aria-label="Settings: speed and captions" title="Settings">${ICON.gear}</button>
         <button type="button" data-c="full" aria-label="Full screen" title="Full screen (f)">${ICON.full}</button>
+      </div>
+    </div>
+    <div class="yt-menu" role="menu" aria-label="Settings" hidden>
+      <div class="yt-menu__group" role="group" aria-label="Playback speed">
+        <p class="yt-menu__title" aria-hidden="true">Playback speed</p>
+        ${SPEEDS.map((r) => `<button type="button" role="menuitemradio" aria-checked="false" data-speed="${r}">${ICON.check}<span>${r === 1 ? "Normal" : `${r}×`}</span></button>`).join("")}
+      </div>
+      <div class="yt-menu__group" role="group" aria-label="Captions">
+        <p class="yt-menu__title" aria-hidden="true">Captions</p>
+        ${captionChoices(ccLang).map((c) => `<button type="button" role="menuitemradio" aria-checked="false" data-cc="${c.mode}">${ICON.check}<span>${c.label}</span></button>`).join("")}
       </div>
     </div>`;
   frame.append(ui);
@@ -80,8 +101,12 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   const osd = $<HTMLElement>(".yt-osd");
   const playBtns = [...ui.querySelectorAll<HTMLButtonElement>('[data-c="play"]')];
   const muteBtn = $<HTMLButtonElement>('[data-c="mute"]');
-  const speedBtn = $<HTMLButtonElement>('[data-c="speed"]');
+  const ccBtn = $<HTMLButtonElement>('[data-c="cc"]');
+  const gearBtn = $<HTMLButtonElement>('[data-c="settings"]');
+  const menu = $<HTMLElement>(".yt-menu");
   const fullBtn = $<HTMLButtonElement>('[data-c="full"]');
+  menu.id = `yt-menu-${Math.random().toString(36).slice(2, 8)}`;
+  gearBtn.setAttribute("aria-controls", menu.id);
 
   const playing = () => player.getPlayerState() === 1 || player.getPlayerState() === 3;
   const duration = () => player.getDuration?.() || 0;
@@ -89,8 +114,9 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   let hideTimer = 0;
   let osdTimer = 0;
 
+  const menuOpen = () => !menu.hidden;
   const hide = () => {
-    if (!playing() || dragging) return;
+    if (!playing() || dragging || menuOpen()) return;
     frame.classList.remove("yt-show");
   };
   /** show the controls; while playing they go away again after HIDE_AFTER_MS without movement */
@@ -132,11 +158,52 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     if (isFull()) void document.exitFullscreen?.();
     else void frame.requestFullscreen?.().catch(() => {});
   };
-  const changeSpeed = (dir: number) => {
-    const r = nextSpeed(player.getPlaybackRate?.() || 1, dir);
+  const setSpeed = (r: number) => {
     player.setPlaybackRate?.(r);
-    flash(`Speed ${r}×`);
+    flash(r === 1 ? "Speed normal" : `Speed ${r}×`);
     setTimeout(render, 50);
+  };
+  const changeSpeed = (dir: number) => setSpeed(nextSpeed(player.getPlaybackRate?.() || 1, dir));
+
+  // captions: YouTube may switch its own on (the viewer's YouTube settings); whatever is chosen here is kept
+  const ccMode = (): CaptionMode => {
+    const m = prefs().captions;
+    return m && captionChoices(ccLang).some((c) => c.mode === m) ? m : "off";
+  };
+  const applyCaptions = (load: boolean) => {
+    const track = captionTrack(ccMode(), ccLang);
+    try {
+      if (!track) player.unloadModule?.("captions");
+      else {
+        if (load) player.loadModule?.("captions");
+        player.setOption?.("captions", "track", track);
+      }
+    } catch {
+      /* an older player without the captions module: nothing to do */
+    }
+  };
+  const setCaptions = (mode: CaptionMode) => {
+    setPrefs(mode === "off" ? { captions: "off" } : { captions: mode, captionsLast: mode });
+    applyCaptions(true);
+    flash(mode === "off" ? "Captions off" : `Captions: ${captionChoices(ccLang).find((c) => c.mode === mode)!.label}`);
+    render();
+  };
+  const toggleCaptions = () => setCaptions(toggledCaptions(ccMode(), prefs().captionsLast, ccLang));
+
+  const items = () => [...menu.querySelectorAll<HTMLButtonElement>("[role=menuitemradio]")];
+  const openMenu = () => {
+    menu.hidden = false;
+    gearBtn.setAttribute("aria-expanded", "true");
+    frame.classList.add("yt-show");
+    render();
+    (items().find((b) => b.getAttribute("aria-checked") === "true") ?? items()[0])?.focus();
+  };
+  const closeMenu = (focusGear = false) => {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    gearBtn.setAttribute("aria-expanded", "false");
+    if (focusGear) gearBtn.focus();
+    show();
   };
 
   function render() {
@@ -164,8 +231,13 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     vol.value = String(muted ? 0 : (player.getVolume?.() ?? 100));
     vol.style.setProperty("--p", `${vol.value}%`);
     const rate = player.getPlaybackRate?.() || 1;
-    speedBtn.textContent = `${rate}×`;
-    speedBtn.setAttribute("aria-label", `Playback speed ${rate}×`);
+    menu.querySelectorAll<HTMLElement>("[data-speed]").forEach((b) => b.setAttribute("aria-checked", String(Math.abs(Number(b.dataset.speed) - rate) < 0.01)));
+    const cc = ccMode();
+    menu.querySelectorAll<HTMLElement>("[data-cc]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cc === cc)));
+    ccBtn.setAttribute("aria-pressed", String(cc !== "off"));
+    frame.classList.toggle("yt-cc-on", cc !== "off"); // captions sit at the bottom of YouTube's frame: don't crop it then
+    ccBtn.setAttribute("aria-label", cc === "off" ? "Captions (off)" : "Captions (on)");
+    gearBtn.dataset.rate = rate === 1 ? "" : `${rate}×`;
     fullBtn.innerHTML = isFull() ? ICON.exit : ICON.full;
     fullBtn.setAttribute("aria-label", isFull() ? "Exit full screen" : "Full screen");
     if (!on) frame.classList.add("yt-show"); // paused / ended: keep the controls up
@@ -174,6 +246,11 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   ui.addEventListener("click", (e) => {
     const c = (e.target as Element).closest<HTMLElement>("[data-c]")?.dataset.c;
     if (!c) return;
+    if (c !== "settings" && menuOpen() && !(e.target as Element).closest(".yt-menu")) {
+      // a click anywhere else first closes the settings menu
+      closeMenu();
+      if (c === "shield") return;
+    }
     if (c === "shield") {
       // a tap on a phone first brings the controls back; a click (or a tap with them showing) plays / pauses
       const touch = (e as PointerEvent).pointerType === "touch";
@@ -183,11 +260,35 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     else if (c === "back") seekBy(-10);
     else if (c === "fwd") seekBy(10);
     else if (c === "mute") toggleMute();
-    else if (c === "speed") changeSpeed(1);
+    else if (c === "cc") toggleCaptions();
+    else if (c === "settings") return menuOpen() ? closeMenu(true) : openMenu();
     else if (c === "full") toggleFull();
     show();
     setTimeout(render, 60);
   }, { signal });
+  menu.addEventListener("click", (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>("[role=menuitemradio]");
+    if (!b) return;
+    e.stopPropagation();
+    if (b.dataset.speed) setSpeed(Number(b.dataset.speed));
+    else if (b.dataset.cc) setCaptions(b.dataset.cc as CaptionMode);
+    closeMenu(true);
+  }, { signal });
+  menu.addEventListener("keydown", (e) => {
+    const list = items();
+    const i = list.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === "Escape") closeMenu(true);
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") list[(i + (e.key === "ArrowDown" ? 1 : list.length - 1)) % list.length]?.focus();
+    else if (e.key === "Home") list[0]?.focus();
+    else if (e.key === "End") list.at(-1)?.focus();
+    else if (e.key === "Tab") closeMenu();
+    else return;
+    e.preventDefault();
+    e.stopPropagation();
+  }, { signal });
+  document.addEventListener("pointerdown", (e) => menuOpen() && !frame.contains(e.target as Node) && closeMenu(), { signal });
+  // YouTube (re)loads its captions module when playback starts or when its own settings say so: re-apply ours
+  document.addEventListener("mls:yt-api", () => applyCaptions(false), { signal });
   $<HTMLElement>(".yt-shield").addEventListener("dblclick", toggleFull, { signal });
   frame.addEventListener("pointermove", show, { signal });
   frame.addEventListener("pointerdown", show, { signal });
@@ -214,7 +315,7 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
 
   // the usual YouTube keys: while the player has focus, or nothing in particular does (the page itself)
   const onKey = (e: KeyboardEvent) => {
-    if (!frame.isConnected || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!frame.isConnected || e.ctrlKey || e.metaKey || e.altKey || menuOpen()) return;
     const el = document.activeElement as HTMLElement | null;
     const inFrame = !!el && frame.contains(el);
     const onPage = !el || el === document.body || el === document.documentElement;
@@ -234,6 +335,7 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     else if (a.kind === "mute") toggleMute();
     else if (a.kind === "full") toggleFull();
     else if (a.kind === "speed") changeSpeed(a.value!);
+    else if (a.kind === "captions") toggleCaptions();
     show();
     setTimeout(render, 60);
   };
@@ -245,6 +347,13 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   };
   signal.addEventListener("abort", stop);
   current = stop;
+  applyCaptions(true);
+  // the first time it plays, YouTube may load captions by itself: apply the choice again once playback starts
+  document.addEventListener("mls:yt-state", function once(ev) {
+    if ((ev as CustomEvent<{ state: number }>).detail.state !== 1) return;
+    document.removeEventListener("mls:yt-state", once);
+    setTimeout(() => applyCaptions(false), 300);
+  }, { signal });
   render();
   show();
 }

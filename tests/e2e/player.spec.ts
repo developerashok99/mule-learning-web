@@ -31,13 +31,76 @@ test.describe("video player (our controls over YouTube)", () => {
     const t0 = await yt(page).time();
     await player.getByRole("button", { name: "Forward 10 seconds" }).click();
     expect(await yt(page).time()).toBeGreaterThan(t0 + 9);
-    await player.getByRole("button", { name: "Mute" }).click();
-    expect(await yt(page).call("isMuted")).toBe(true);
-    await player.getByRole("button", { name: /Playback speed 1×/ }).click();
+    // phones hide mute and volume (hardware buttons do that); everywhere else the button mutes
+    if ((page.viewportSize()?.width ?? 0) > 560) {
+      await player.getByRole("button", { name: "Mute" }).click();
+      expect(await yt(page).call("isMuted")).toBe(true);
+    } else await expect(player.getByRole("button", { name: "Mute" })).toBeHidden();
+    // speed from the settings menu
+    await player.getByRole("button", { name: /Settings/ }).click();
+    await player.getByRole("menuitemradio", { name: "1.25×" }).click();
     expect(await yt(page).call("getPlaybackRate")).toBe(1.25);
+    await expect(player.getByRole("menu", { name: "Settings" })).toBeHidden();
     // seeking with the bar
     await player.getByRole("slider", { name: "Seek" }).fill("2500");
     await expect.poll(async () => Math.round(await yt(page).time())).toBeGreaterThanOrEqual(2500);
+  });
+
+  test("captions: off by default even when YouTube turns them on, and switchable from settings, CC and the C key", async ({ page }) => {
+    await page.addInitScript(() => ((window as unknown as { __fakeAutoCaptions: boolean }).__fakeAutoCaptions = true));
+    await page.goto(`videos/${ids[4]}/`);
+    await page.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    // the viewer's YouTube settings switched them on; the default here is off
+    await expect.poll(() => yt(page).captions()).toBeNull();
+    const player = page.getByRole("region", { name: /Video player:/ });
+    await player.hover();
+    await player.getByRole("button", { name: /Settings/ }).click();
+    const menu = player.getByRole("menu", { name: "Settings" });
+    await expect(menu.getByRole("menuitemradio", { name: "Off" })).toHaveAttribute("aria-checked", "true");
+    await menu.getByRole("menuitemradio", { name: "English (auto-translated)" }).click();
+    await expect.poll(() => yt(page).captions()).toEqual({ languageCode: "te", translationLanguage: { languageCode: "en" } });
+    await expect(player.getByRole("button", { name: "Captions (on)" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".video-frame")).toHaveClass(/yt-cc-on/); // not cropped, so the captions at the bottom show
+    // CC turns them off, and the choice is remembered on the next lecture
+    await player.hover();
+    await player.getByRole("button", { name: "Captions (on)" }).click();
+    await expect.poll(() => yt(page).captions()).toBeNull();
+    await expect(page.locator(".video-frame")).not.toHaveClass(/yt-cc-on/);
+    // the C key brings back the last captions used
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("c");
+    await expect.poll(() => yt(page).captions()).toEqual({ languageCode: "te", translationLanguage: { languageCode: "en" } });
+    await page.keyboard.press("c");
+    await page.locator('a[data-video-go="next"]').click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    await expect.poll(() => yt(page).captions()).toBeNull();
+  });
+
+  test("the settings menu works from the keyboard", async ({ page }) => {
+    await page.goto(`videos/${ids[4]}/`);
+    await page.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    const player = page.getByRole("region", { name: /Video player:/ });
+    await player.hover();
+    await player.getByRole("button", { name: /Settings/ }).focus();
+    await page.keyboard.press("Enter");
+    const menu = player.getByRole("menu", { name: "Settings" });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("menuitemradio", { name: "Normal" })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    expect(await yt(page).call("getPlaybackRate")).toBe(1.25);
+    await expect(menu).toBeHidden();
+    await expect(player.getByRole("button", { name: /Settings/ })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(menu).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    // the controls stay up while the menu is open
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(1500);
+    await expect(page.locator(".video-frame")).toHaveClass(/yt-show/);
   });
 
   test("the controls go away one second after the mouse stops, even while hovering", async ({ page }) => {

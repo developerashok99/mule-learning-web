@@ -120,9 +120,11 @@ async function startYouTube(btn: HTMLButtonElement) {
         // watch together (src/client/together.ts) listens for these two
         onReady: (e: { target: YtPlayer }) => {
           active = { player: e.target, id, frame };
-          attachControls(frame, e.target, btn.dataset.title || "Lecture video");
+          attachControls(frame, e.target, btn.dataset.title || "Lecture video", btn.dataset.cc || "en");
           document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id } }));
         },
+        // YouTube loaded or reloaded a module (captions): our controls re-apply the captions choice
+        onApiChange: () => document.dispatchEvent(new CustomEvent("mls:yt-api", { detail: { id } })),
         onStateChange: (e: { data: number }) => {
           document.dispatchEvent(new CustomEvent("mls:yt-state", { detail: { state: e.data, id } }));
           // 0 = ended: the Videos tab can move on to the next video

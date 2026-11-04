@@ -33,3 +33,29 @@ describe("video player keys", () => {
     expect(nextSpeed(1.1, 1)).toBe(1.25); // an unknown speed counts as 1×
   });
 });
+
+import { captionChoices, captionTrack, toggledCaptions } from "../../src/lib/player";
+describe("video player captions", () => {
+  it("offers off, the video's language and the English translation", () => {
+    expect(captionChoices("te").map((c) => c.label)).toEqual(["Off", "Telugu (auto-generated)", "English (auto-translated)"]);
+    expect(captionChoices("en").map((c) => c.mode)).toEqual(["off", "orig"]); // no translating English into English
+  });
+  it("asks YouTube for the right track", () => {
+    expect(captionTrack("off", "te")).toBeNull();
+    expect(captionTrack("orig", "te")).toEqual({ languageCode: "te" });
+    expect(captionTrack("en", "te")).toEqual({ languageCode: "te", translationLanguage: { languageCode: "en" } });
+    expect(captionTrack("en", "en")).toEqual({ languageCode: "en" });
+  });
+  it("toggles between off and the last captions used", () => {
+    expect(toggledCaptions("en", undefined, "te")).toBe("off");
+    expect(toggledCaptions("off", undefined, "te")).toBe("en");
+    expect(toggledCaptions("off", "orig", "te")).toBe("orig");
+    expect(toggledCaptions("off", "en", "en")).toBe("orig");
+    expect(toggledCaptions("off", undefined, "en")).toBe("orig");
+  });
+  it("maps the C key", async () => {
+    const { keyAction } = await import("../../src/lib/player");
+    expect(keyAction("c", false)).toEqual({ kind: "captions" });
+    expect(keyAction("C", true)).toBeNull();
+  });
+});
