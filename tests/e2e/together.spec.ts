@@ -26,7 +26,9 @@ window.YT = { Player: function (el, opts) {
   };
   const div = document.createElement("div"); div.className = "fake-yt"; el.replaceWith(div);
   window.__fakeYt = { player: p, id: opts.videoId };
-  setTimeout(() => { opts.events.onReady && opts.events.onReady({ target: p }); if (opts.playerVars && opts.playerVars.autoplay) p.playVideo(); }, 50);
+  // real YouTube reports "ready" well before autoplay kicks in; __fakeAutoplayDelay reproduces that gap
+  setTimeout(() => { opts.events.onReady && opts.events.onReady({ target: p });
+    if (opts.playerVars && opts.playerVars.autoplay) setTimeout(() => p.playVideo(), window.__fakeAutoplayDelay || 0); }, 50);
 } };
 window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();`;
 
@@ -47,6 +49,8 @@ test.describe("watch together", () => {
     const guest = await context.newPage();
     await prepare(host);
     await prepare(guest);
+    // the friend's player starts by itself late, after the host's state has already arrived (as on the live site)
+    await guest.addInitScript(() => ((window as unknown as { __fakeAutoplayDelay: number }).__fakeAutoplayDelay = 1500));
 
     await host.goto(`videos/${ids[3]}/`);
     await host.getByRole("button", { name: "Watch together" }).click();
@@ -61,7 +65,11 @@ test.describe("watch together", () => {
     await guest.getByRole("button", { name: "Join and watch" }).click();
     await expect(panel.getByText("Watching with 1 friend")).toBeVisible();
     await expect(guest.getByRole("region", { name: "Watch together" }).getByText("Watching with 1 friend")).toBeVisible();
-    // nobody had pressed play: the friend's player waits instead of playing alone
+    // nobody had pressed play: the friend's player waits instead of playing alone…
+    await expect.poll(() => yt(guest).state()).toBe(2);
+    // …and its late autoplay didn't start the host's video either
+    await host.waitForTimeout(2500);
+    await expect(host.getByRole("button", { name: /Play video:/ })).toBeVisible();
     await expect.poll(() => yt(guest).state()).toBe(2);
 
     // host presses play → both play

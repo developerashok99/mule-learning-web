@@ -169,6 +169,9 @@ interface Room {
   pending: { time: number; playing: boolean } | null;
   /** joining or following: the player's own start-up isn't news; nothing is sent until the others' state is applied */
   hold: boolean;
+  /** while holding: the state the player must reach before the hold ends, and the latest the hold may last */
+  goal: { time: number; playing: boolean } | null;
+  holdUntil: number;
   /** after steering the player for a message: the one state change that is our echo, not the user's doing */
   expect: { playing: boolean; until: number } | null;
   /** position jumps before this time are our own seekTo */
@@ -235,6 +238,28 @@ function apply(target: { time: number; playing: boolean }, ageMs = 150) {
   if (act.pause) yt.player.pauseVideo();
 }
 
+/**
+ * While holding (just joined or followed): steer the player to `target` and keep holding until it really
+ * is there. A player that starts by itself (autoplay) while the others are paused gets paused again, quietly.
+ * The hold ends on a playing/paused event that matches, or after a few seconds at the latest.
+ */
+function settle(target: { time: number; playing: boolean }) {
+  if (!room) return;
+  if (!room.hold) return apply(target);
+  room.goal = target;
+  room.holdUntil = Date.now() + 8000;
+  apply(target);
+  const st = activeYouTube()?.player.getPlayerState();
+  if ((target.playing && st === 1) || (!target.playing && st === 2)) release();
+}
+function release() {
+  if (!room) return;
+  room.hold = false;
+  room.goal = null;
+  room.expect = null;
+  room.last = sample();
+}
+
 /** Open the lecture the other side is on; `target` is where to put the player once it loads. */
 function follow(vid: string, target: { time: number; playing: boolean } | null) {
   if (!room) return;
@@ -268,9 +293,7 @@ function onMessage(from: Link, raw: unknown) {
         break;
       }
       // nobody has pressed play yet: wait at the same spot instead of playing alone
-      apply(m.started ? { time: m.time, playing: m.playing } : { time: m.time, playing: false });
-      // joined or followed, and the player is there: from now on what happens in it is the user's doing again
-      if (room && activeYouTube()) room.hold = false;
+      settle(m.started ? { time: m.time, playing: m.playing } : { time: m.time, playing: false });
       break;
     case "nav":
       if (m.vid !== currentVid()) {
@@ -323,7 +346,7 @@ function open(role: "host" | "guest", code: string, attempt = 0) {
   ended = "";
   room = { code, role, transport, links: new Set(), connected: false, people: 1, vid: currentVid(), following: null, pending: null,
     // a guest's player is about to start by itself: that isn't a "play" to send until the host's state has been applied
-    hold: role === "guest", expect: null, seekQuietUntil: 0, last: null,
+    hold: role === "guest", goal: null, holdUntil: 0, expect: null, seekQuietUntil: 0, last: null,
     status: role === "host" ? "Starting a room…" : "Connecting to your friend…", timers: [] };
   const r = room;
   const handlers: Handlers = {
@@ -354,6 +377,7 @@ function open(role: "host" | "guest", code: string, attempt = 0) {
     if (room !== r || !r.links.size || r.vid !== currentVid()) return;
     const now = sample();
     if (!now) return;
+    if (r.hold && r.goal && Date.now() > r.holdUntil) release();
     if (r.last && !r.hold && Date.now() > r.seekQuietUntil && isSeek(r.last, now)) broadcast({ t: "seek", time: now.time, playing: now.playing });
     r.last = now;
   }, 500));
@@ -390,8 +414,14 @@ document.addEventListener("mls:yt-state", (e) => {
   const yt = activeYouTube();
   if (!r || !yt || !r.links.size || r.vid !== currentVid()) return;
   const state = (e as CustomEvent<{ state: number }>).detail.state;
-  if (r.hold || (state !== 1 && state !== 2)) return;
+  if (state !== 1 && state !== 2) return;
   const playing = state === 1;
+  if (r.hold) {
+    // reached the others' state: hold over. Went the other way (autoplay): steer back, still quietly.
+    if (r.goal && r.goal.playing === playing) release();
+    else if (r.goal) apply(r.goal);
+    return;
+  }
   r.last = sample();
   // the change we asked the player for: swallow it once
   if (r.expect && Date.now() < r.expect.until && r.expect.playing === playing) {
@@ -411,8 +441,7 @@ document.addEventListener("mls:yt-ready", () => {
     // the player has just been created: give it a moment to start before steering it
     setTimeout(() => {
       if (room !== r) return;
-      apply(target);
-      r.hold = false;
+      settle(target);
     }, 400);
   } else if (r.role === "guest" && r.connected) r.links.forEach((l) => l.send({ t: "ask" }));
 });
