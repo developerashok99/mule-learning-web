@@ -13,6 +13,7 @@ import { Preferences } from "@capacitor/preferences";
 import { App } from "@capacitor/app";
 import { Network } from "@capacitor/network";
 import { MediaSession } from "@capgo/capacitor-media-session";
+import { ScreenOrientation } from "@capacitor/screen-orientation";
 import { DownloadManager, type Backend, type DownloadRecord } from "../lib/downloads";
 import { formatBytes } from "../lib/duration";
 import { allEpisodes, controls, currentId, getEpisode, isPlaying, refreshSource, setSourceResolver } from "./player";
@@ -300,6 +301,11 @@ async function setupBackup() {
 
 export async function setupNative() {
   if (!Capacitor.isNativePlatform()) return;
+  // the WebView can't turn the screen itself (screen.orientation.lock is "not available"): full-screen video asks here
+  window.mlsOrientation = {
+    landscape: () => ScreenOrientation.lock({ orientation: "landscape" }),
+    release: () => ScreenOrientation.unlock(),
+  };
   document.documentElement.dataset.native = "true";
   // client-side navigation replaces <html>'s attributes; keep the marker
   document.addEventListener("astro:after-swap", () => (document.documentElement.dataset.native = "true"));

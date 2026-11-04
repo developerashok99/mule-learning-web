@@ -11,6 +11,27 @@ import { pageSignal } from "./page";
 import { SPEEDS, captionChoices, captionTrack, keyAction, nextSpeed, qualityLabel, toggledCaptions, type CaptionMode } from "../lib/player";
 import { prefs, setPrefs } from "./store";
 
+declare global {
+  interface Window {
+    /** the Android app (src/client/native.ts): turning the screen for full-screen video, which its WebView can't */
+    mlsOrientation?: { landscape(): Promise<void>; release(): Promise<void> };
+  }
+}
+/** sideways for full screen: the app's native call, else the browser's (phones' Chrome supports it in full screen) */
+function landscape() {
+  if (window.mlsOrientation) return void window.mlsOrientation.landscape().catch(() => {});
+  const o = screen.orientation as ScreenOrientation & { lock?: (x: string) => Promise<void> };
+  void o?.lock?.("landscape").catch(() => {});
+}
+function releaseOrientation() {
+  if (window.mlsOrientation) return void window.mlsOrientation.release().catch(() => {});
+  try {
+    screen.orientation?.unlock?.();
+  } catch {
+    /* not supported */
+  }
+}
+
 /** The player API calls the controls use (all exist on YT.Player). */
 export interface YtControlsPlayer {
   playVideo(): void;
@@ -156,10 +177,16 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   };
 
   const toggle = () => (playing() ? player.pauseVideo() : player.playVideo());
+  // right after a seek YouTube still reports the old position for a moment, so quick presses (+10 +10 +10) build on
+  // the last target instead of all starting from the same place
+  let lastSeek = { to: 0, at: 0, total: 0 };
   const seekBy = (s: number) => {
-    const t = Math.max(0, Math.min(duration() || Infinity, player.getCurrentTime() + s));
+    const quick = Date.now() - lastSeek.at < 1000;
+    const from = quick ? lastSeek.to : player.getCurrentTime();
+    const t = Math.max(0, Math.min(duration() || Infinity, from + s));
     player.seekTo(t, true);
-    flash(`${s > 0 ? "+" : "−"}${Math.abs(s)} s`);
+    lastSeek = { to: t, at: Date.now(), total: (quick ? lastSeek.total : 0) + s };
+    flash(`${lastSeek.total > 0 ? "+" : "−"}${Math.abs(lastSeek.total)} s`);
     render();
   };
   const setVol = (v: number) => {
@@ -177,9 +204,15 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     setTimeout(render, 50);
   };
   const isFull = () => document.fullscreenElement === frame;
+  // phones and tablets: full screen also turns the video sideways (and lets go of that on the way out)
+  const touch = () => window.matchMedia("(pointer: coarse)").matches;
   const toggleFull = () => {
-    if (isFull()) void document.exitFullscreen?.();
-    else void frame.requestFullscreen?.().catch(() => {});
+    if (isFull()) {
+      if (touch()) releaseOrientation();
+      void document.exitFullscreen?.();
+    } else {
+      void frame.requestFullscreen?.().then(() => touch() && landscape()).catch(() => {});
+    }
   };
   const setSpeed = (r: number) => {
     player.setPlaybackRate?.(r);
@@ -339,7 +372,11 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     show();
   }, { signal });
   vol.addEventListener("input", () => setVol(Number(vol.value)), { signal });
-  document.addEventListener("fullscreenchange", () => render(), { signal });
+  document.addEventListener("fullscreenchange", () => {
+    // left full screen another way (back button, Esc): don't stay sideways
+    if (!document.fullscreenElement && touch()) releaseOrientation();
+    render();
+  }, { signal });
   document.addEventListener("mls:yt-state", () => {
     render();
     show();

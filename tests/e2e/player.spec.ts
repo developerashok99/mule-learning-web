@@ -31,6 +31,12 @@ test.describe("video player (our controls over YouTube)", () => {
     const t0 = await yt(page).time();
     await player.getByRole("button", { name: "Forward 10 seconds" }).click();
     expect(await yt(page).time()).toBeGreaterThan(t0 + 9);
+    // quick presses add up, even if the player still reports the old position right after a seek
+    await page.evaluate(() => { const p = (window as unknown as { __fakeYt: { player: { seekTo(t: number): void; getCurrentTime(): number } } }).__fakeYt.player;
+      const real = p.seekTo.bind(p); let lag = 0; p.seekTo = (t: number) => { lag = Date.now(); setTimeout(() => real(t), 300); void lag; }; });
+    const t1 = await yt(page).time();
+    for (let i = 0; i < 3; i++) await player.getByRole("button", { name: "Forward 10 seconds" }).click();
+    await expect.poll(async () => (await yt(page).time()) - t1).toBeGreaterThan(29);
     // phones hide mute and volume (hardware buttons do that); everywhere else the button mutes
     if ((page.viewportSize()?.width ?? 0) > 560) {
       await player.getByRole("button", { name: "Mute" }).click();

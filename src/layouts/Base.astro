@@ -124,6 +124,8 @@ const crumb = nav ? CRUMB[nav] : title;
         </form>
         <div class="header-actions">
           <a class="icon-btn icon-btn--boxed hide-phone" href={`${base}revise/`} aria-label="Revision: glossary and flashcards" title="Revision"><Icon name="edit" /></a>
+          {/* the app's bottom tabs have Review instead of Videos (it works offline), so on phones Videos is up here */}
+          {APP_BUILD && <a class="icon-btn icon-btn--boxed show-phone" href={`${base}videos/`} aria-label="Videos: lectures, notes and watch together" title="Videos" aria-current={nav === "videos" ? "page" : undefined}><Icon name="video" /></a>}
           <button class="icon-btn icon-btn--boxed theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark theme" title="Light / dark theme">
             <Icon name="sun" class="sun" /><Icon name="moon" class="moon" />
           </button>

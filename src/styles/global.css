@@ -196,6 +196,10 @@ kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-strong); border-
   .topbar { gap: 0.6rem; padding: 0 1rem; }
   .topbar__mark { display: grid; width: 2.6rem; height: 2.6rem; }
   .topbar__crumb, .hide-phone { display: none !important; }
+}
+.show-phone { display: none !important; }
+@media (max-width: 800px) {
+  .show-phone { display: inline-grid !important; }
   .header-actions { gap: 0.35rem; }
   .bottom-nav {
     display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));

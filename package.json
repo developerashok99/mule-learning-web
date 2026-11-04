@@ -36,6 +36,7 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
+    "@capacitor/screen-orientation": "^8.0.2",
     "@capgo/capacitor-media-session": "^8.1.5",
     "astro": "^7.3.8",
     "cytoscape": "^3.34.3",

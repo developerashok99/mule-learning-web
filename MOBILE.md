@@ -20,6 +20,9 @@ A personal study app for the MuleSoft course: the same lessons, notes, slides, f
 | | Website | App |
 |---|---|---|
 | Bottom tabs | Home · Courses · Videos · Audio · My Study | Home · Courses · **Review** · Audio · My Study (Review works offline; videos need the internet) |
+| Videos | a bottom tab | a **Videos** button in the top bar on phones (the bottom tabs keep Review) |
+| Full-screen video | turns sideways where the browser allows | turns sideways through the native **Screen Orientation** plugin (the WebView can't) |
+| Watch together | links to the website | links made in the app point to the website, so a friend can join from any browser |
 | Podcast audio | streams | streams, or **downloads** to the phone |
 | Offline pages | pages you opened before (service worker) | everything bundled; no service worker |
 | Study progress | browser localStorage | WebView localStorage, **mirrored to native storage** and restored if the WebView data is cleared |
