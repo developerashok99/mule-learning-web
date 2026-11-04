@@ -8,7 +8,7 @@
  */
 import { formatClock } from "../lib/duration";
 import { pageSignal } from "./page";
-import { SPEEDS, captionChoices, captionTrack, keyAction, nextSpeed, toggledCaptions, type CaptionMode } from "../lib/player";
+import { SPEEDS, captionChoices, captionTrack, keyAction, nextSpeed, qualityLabel, toggledCaptions, type CaptionMode } from "../lib/player";
 import { prefs, setPrefs } from "./store";
 
 /** The player API calls the controls use (all exist on YT.Player). */
@@ -31,6 +31,9 @@ export interface YtControlsPlayer {
   loadModule?(name: string): void;
   unloadModule?(name: string): void;
   setOption?(module: string, option: string, value: unknown): void;
+  /** what YouTube is playing at ("hd720"…); choosing it is no longer allowed from outside YouTube's own controls */
+  getPlaybackQuality?(): string;
+  destroy?(): void;
 }
 
 /** controls disappear this long after the last mouse movement while the video plays */
@@ -54,10 +57,24 @@ const ICON = {
 
 let current: (() => void) | null = null;
 
+/** Removes our controls from a frame (switching to YouTube's own controls). */
+export function detachControls(frame: HTMLElement) {
+  current?.();
+  current = null;
+  frame.querySelector(".yt-ui")?.remove();
+  frame.classList.remove("yt-custom", "yt-show", "yt-paused", "yt-cc-on");
+  frame.removeAttribute("tabindex");
+  frame.removeAttribute("role");
+  frame.removeAttribute("aria-label");
+}
+
 /** `ccLang`: the language of the video's (auto-generated) captions, e.g. "te" for the Telugu lectures. */
-export function attachControls(frame: HTMLElement, player: YtControlsPlayer, title: string, ccLang = "en") {
+export function attachControls(frame: HTMLElement, player: YtControlsPlayer, title: string, ccLang = "en", onChooseQuality?: () => void) {
   current?.(); // only one set of global keys at a time
-  const signal = pageSignal();
+  // everything below stops when the page changes or when these controls are removed
+  const ac = new AbortController();
+  pageSignal().addEventListener("abort", () => ac.abort(), { signal: ac.signal });
+  const signal = ac.signal;
   frame.classList.add("yt-custom");
   frame.tabIndex = 0;
   frame.setAttribute("role", "region");
@@ -87,6 +104,11 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
       <div class="yt-menu__group" role="group" aria-label="Playback speed">
         <p class="yt-menu__title" aria-hidden="true">Playback speed</p>
         ${SPEEDS.map((r) => `<button type="button" role="menuitemradio" aria-checked="false" data-speed="${r}">${ICON.check}<span>${r === 1 ? "Normal" : `${r}×`}</span></button>`).join("")}
+      </div>
+      <div class="yt-menu__group" role="group" aria-label="Quality">
+        <p class="yt-menu__title" aria-hidden="true">Quality</p>
+        <button type="button" role="menuitemradio" aria-checked="true" data-q="auto">${ICON.check}<span>Auto <small class="yt-menu__now" data-q-now></small></span></button>
+        <button type="button" role="menuitem" data-q="choose"><span class="yt-menu__pad"></span><span>720p, 1080p… <small class="yt-menu__now">in YouTube's own controls</small></span></button>
       </div>
       <div class="yt-menu__group" role="group" aria-label="Captions">
         <p class="yt-menu__title" aria-hidden="true">Captions</p>
@@ -190,7 +212,7 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   };
   const toggleCaptions = () => setCaptions(toggledCaptions(ccMode(), prefs().captionsLast, ccLang));
 
-  const items = () => [...menu.querySelectorAll<HTMLButtonElement>("[role=menuitemradio]")];
+  const items = () => [...menu.querySelectorAll<HTMLButtonElement>("[role=menuitemradio], [role=menuitem]")];
   const openMenu = () => {
     menu.hidden = false;
     gearBtn.setAttribute("aria-expanded", "true");
@@ -238,6 +260,8 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     frame.classList.toggle("yt-cc-on", cc !== "off"); // captions sit at the bottom of YouTube's frame: don't crop it then
     ccBtn.setAttribute("aria-label", cc === "off" ? "Captions (off)" : "Captions (on)");
     gearBtn.dataset.rate = rate === 1 ? "" : `${rate}×`;
+    const q = qualityLabel(player.getPlaybackQuality?.());
+    menu.querySelector("[data-q-now]")!.textContent = q ? `· now ${q}` : "";
     fullBtn.innerHTML = isFull() ? ICON.exit : ICON.full;
     fullBtn.setAttribute("aria-label", isFull() ? "Exit full screen" : "Full screen");
     if (!on) frame.classList.add("yt-show"); // paused / ended: keep the controls up
@@ -267,9 +291,16 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     setTimeout(render, 60);
   }, { signal });
   menu.addEventListener("click", (e) => {
-    const b = (e.target as Element).closest<HTMLButtonElement>("[role=menuitemradio]");
+    const b = (e.target as Element).closest<HTMLButtonElement>("[role=menuitemradio], [role=menuitem]");
     if (!b) return;
     e.stopPropagation();
+    if (b.dataset.q === "choose") {
+      // YouTube only lets viewers pick a quality in its own controls: switch to them, same spot
+      closeMenu();
+      onChooseQuality?.();
+      return;
+    }
+    if (b.dataset.q) return closeMenu(true);
     if (b.dataset.speed) setSpeed(Number(b.dataset.speed));
     else if (b.dataset.cc) setCaptions(b.dataset.cc as CaptionMode);
     closeMenu(true);
@@ -343,9 +374,9 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
   const tick = window.setInterval(() => (frame.isConnected ? render() : clearInterval(tick)), 250);
   const stop = () => {
     clearInterval(tick);
-    document.removeEventListener("keydown", onKey);
+    ac.abort();
   };
-  signal.addEventListener("abort", stop);
+  signal.addEventListener("abort", () => clearInterval(tick));
   current = stop;
   applyCaptions(true);
   // the first time it plays, YouTube may load captions by itself: apply the choice again once playback starts

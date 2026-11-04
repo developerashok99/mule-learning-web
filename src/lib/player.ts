@@ -25,6 +25,12 @@ export function nextSpeed(current: number, dir: number): number {
 }
 
 
+/** YouTube's quality names as people know them ("hd720" → "720p"); "" when unknown or auto. */
+export function qualityLabel(q: string | undefined): string {
+  const map: Record<string, string> = { highres: "4K+", hd2160: "2160p", hd1440: "1440p", hd1080: "1080p", hd720: "720p", large: "480p", medium: "360p", small: "240p", tiny: "144p" };
+  return (q && map[q]) || "";
+}
+
 /**
  * Captions. The lectures only have YouTube's auto-generated captions (Telugu), which the player API doesn't list,
  * so the choices are fixed: off, the video's own language, or YouTube's automatic English translation.

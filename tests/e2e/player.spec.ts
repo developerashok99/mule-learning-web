@@ -77,6 +77,45 @@ test.describe("video player (our controls over YouTube)", () => {
     await expect.poll(() => yt(page).captions()).toBeNull();
   });
 
+  test("quality: '720p, 1080p…' switches to YouTube's own controls at the same spot, and the switch brings ours back", async ({ page }) => {
+    await page.goto(`videos/${ids[4]}/`);
+    await page.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    await yt(page).seek(1200);
+    const player = page.getByRole("region", { name: /Video player:/ });
+    await player.hover();
+    await player.getByRole("button", { name: /Settings/ }).click();
+    const menu = player.getByRole("menu", { name: "Settings" });
+    await expect(menu.getByRole("menuitemradio", { name: /Auto/ })).toContainText("now 720p");
+    await menu.getByRole("menuitem", { name: /720p, 1080p/ }).click();
+    // a new player with YouTube's controls (its gear has Quality), same second, still playing
+    await expect.poll(async () => (await yt(page).vars()).controls).toBe(1);
+    await expect.poll(() => yt(page).state()).toBe(1);
+    expect(Math.round(await yt(page).time())).toBeGreaterThanOrEqual(1200);
+    await expect(page.locator(".video-frame .yt-ui")).toHaveCount(0);
+    const sw = page.getByRole("switch", { name: /YouTube's own controls/ });
+    await expect(sw).toBeChecked();
+    // remembered on the next lecture
+    await page.locator('a[data-video-go="next"]').click();
+    await expect.poll(async () => (await yt(page).vars())?.controls).toBe(1);
+    // and back to the simple controls
+    await page.getByRole("switch", { name: /YouTube's own controls/ }).uncheck();
+    await expect.poll(async () => (await yt(page).vars()).controls).toBe(0);
+    await expect(page.getByRole("region", { name: /Video player:/ })).toBeVisible();
+  });
+
+  test("the preferences page switches the controls too", async ({ page }) => {
+    await page.goto("preferences/");
+    const toggle = page.getByRole("switch", { name: "YouTube's own video controls" });
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+    await page.goto(`videos/${ids[2]}/`);
+    await expect(page.getByRole("switch", { name: /YouTube's own controls/ })).toBeChecked();
+    await page.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(async () => (await yt(page).vars())?.controls).toBe(1);
+  });
+
   test("the settings menu works from the keyboard", async ({ page }) => {
     await page.goto(`videos/${ids[4]}/`);
     await page.getByRole("button", { name: /Play video:/ }).click();
@@ -204,12 +243,12 @@ test.describe("videos page: notes, playlist, small player", () => {
     const menu = page.getByRole("navigation", { name: "Main" });
     await page.getByRole("button", { name: "Collapse the menu" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-nav", "collapsed");
-    expect((await page.locator(".sidebar").boundingBox())!.width).toBeLessThan(90);
+    await expect.poll(async () => (await page.locator(".sidebar").boundingBox())!.width).toBeLessThan(90); // after the 0.18 s animation
     await expect(menu.getByRole("link", { name: "Videos" })).toBeVisible(); // still named for screen readers
     await page.goto("lessons/");
     await expect(page.locator("html")).toHaveAttribute("data-nav", "collapsed");
     await page.getByRole("button", { name: "Expand the menu" }).click();
-    expect((await page.locator(".sidebar").boundingBox())!.width).toBeGreaterThan(200);
+    await expect.poll(async () => (await page.locator(".sidebar").boundingBox())!.width).toBeGreaterThan(200);
   });
 
   test("the video page has no accessibility violations with the player running", async ({ page }) => {

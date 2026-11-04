@@ -98,6 +98,7 @@ const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ 
 
         <div class="video-meta">
           <label class="switch"><input type="checkbox" role="switch" data-video-autoplay checked /> Play next automatically</label>
+          <label class="switch" title="YouTube only lets you choose 720p / 1080p in its own controls"><input type="checkbox" role="switch" data-player-youtube /> YouTube's own controls (quality menu)</label>
           <a class="video-meta__item" href={withBase(base, lessonPath(current.id))}><Icon name="notes" /> Lesson page</a>
           {lecture.watchUrl && <a class="video-meta__item" href={lecture.watchUrl} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Open on YouTube</a>}
           <span class="video-keys">Keys: <kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> 5 s · <kbd>J</kbd><kbd>L</kbd> 10 s · <kbd>F</kbd> full screen · <kbd>M</kbd> mute · <kbd>Shift</kbd>+<kbd>N</kbd>/<kbd>P</kbd> next / previous</span>

@@ -17,6 +17,7 @@ export function setupPreferences() {
     press("[data-pref-scale]", (b) => Number(b.dataset.prefScale) === (p.scale ?? 1));
     press("[data-pref-width]", (b) => b.dataset.prefWidth === (p.width === "wide" ? "wide" : "normal"));
     page.querySelector("[data-pref-autoplay]")?.setAttribute("aria-checked", String(p.videoAutoplay !== false));
+    page.querySelector("[data-pref-ytcontrols]")?.setAttribute("aria-checked", String(p.playerControls === "youtube"));
     press("[data-pref-new]", (b) => Number(b.dataset.prefNew) === (p.newPerDay ?? 15));
   };
 
@@ -47,6 +48,10 @@ export function setupPreferences() {
       setPrefs({ newPerDay: Number(b.dataset.prefNew) });
       render();
     }, { signal }));
+  page.querySelector("[data-pref-ytcontrols]")?.addEventListener("click", () => {
+    setPrefs({ playerControls: prefs().playerControls === "youtube" ? "simple" : "youtube" });
+    render();
+  }, { signal: pageSignal() });
   page.querySelector("[data-pref-autoplay]")?.addEventListener("click", () => {
     setPrefs({ videoAutoplay: prefs().videoAutoplay === false });
     render();

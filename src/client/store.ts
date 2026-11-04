@@ -213,6 +213,8 @@ export interface Prefs {
   nav?: "open" | "collapsed";
   /** Videos tab: the playlist beside the player (default shown) */
   videoPlaylist?: "shown" | "hidden";
+  /** video players: our simple controls (default) or YouTube's own (the only place to choose 720p / 1080p) */
+  playerControls?: "simple" | "youtube";
   /** video players: captions off (default), in the video's language, or auto-translated to English; and the last ones used */
   captions?: "off" | "orig" | "en";
   captionsLast?: "orig" | "en";

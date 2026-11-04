@@ -55,6 +55,10 @@ const SCALES = [
           <button class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="pf-auto" data-pref-autoplay></button>
         </div>
         <div class="setting">
+          <div><b id="pf-ytc">YouTube's own video controls</b><span class="small">Off: the site's simple controls (no YouTube title or dimming). On: YouTube's controls, whose settings menu lets you choose the quality (720p, 1080p). YouTube doesn't let websites choose it.</span></div>
+          <button class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="pf-ytc" data-pref-ytcontrols></button>
+        </div>
+        <div class="setting">
           <div><b id="pf-new">New flashcards per day</b><span class="small">How many new cards a review session may start each day. Due cards are always shown.</span></div>
           <div class="segmented" role="group" aria-labelledby="pf-new">
             {[5, 10, 15, 20, 30].map((n) => <button type="button" data-pref-new={n} aria-pressed="false">{n}</button>)}

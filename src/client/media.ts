@@ -3,8 +3,8 @@
  */
 import { formatClock } from "../lib/duration";
 import { pageSignal } from "./page";
-import { mediaProgress, saveMediaProgress } from "./store";
-import { attachControls, type YtControlsPlayer } from "./ytcontrols";
+import { mediaProgress, prefs, saveMediaProgress, setPrefs } from "./store";
+import { attachControls, detachControls, type YtControlsPlayer } from "./ytcontrols";
 
 declare global {
   interface Window {
@@ -84,6 +84,74 @@ function showState(frame: HTMLElement, title: string, text: string, link?: strin
 /** read fresh each time: the connection can drop while a player loads */
 const isOffline = () => navigator.onLine === false;
 
+interface YtConfig {
+  id: string;
+  link: string;
+  title: string;
+  /** language of the video's captions ("te" for the lectures) */
+  cc: string;
+  retry: () => void;
+}
+/** how each frame's player was made, so it can be made again with the other controls */
+const configs = new WeakMap<HTMLElement, YtConfig>();
+
+/**
+ * The YouTube player in `frame`, from `start` seconds. With the simple controls (default) YouTube's own are off and
+ * src/client/ytcontrols.ts draws ours; with YouTube's own controls (Preferences, or "720p, 1080p…" in our settings)
+ * its gear menu offers quality, which no website can set any more.
+ */
+function createPlayer(frame: HTMLElement, cfg: YtConfig, start: number, autoplay: boolean) {
+  configs.set(frame, cfg);
+  const own = prefs().playerControls === "youtube";
+  const host = document.createElement("div");
+  frame.replaceChildren(host);
+  const vars = own
+    ? { autoplay: autoplay ? 1 : 0, rel: 0, start, playsinline: 1, origin: location.origin, controls: 1, iv_load_policy: 3 }
+    : { autoplay: autoplay ? 1 : 0, rel: 0, start, playsinline: 1, origin: location.origin, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1 };
+  new window.YT!.Player(host, {
+    host: "https://www.youtube-nocookie.com",
+    videoId: cfg.id,
+    playerVars: vars,
+    events: {
+      // watch together (src/client/together.ts) listens for these
+      onReady: (e: { target: YtPlayer }) => {
+        active = { player: e.target, id: cfg.id, frame };
+        if (!own) attachControls(frame, e.target, cfg.title, cfg.cc, () => switchPlayerControls("youtube"));
+        document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id: cfg.id } }));
+      },
+      // YouTube loaded or reloaded a module (captions): our controls re-apply the captions choice
+      onApiChange: () => document.dispatchEvent(new CustomEvent("mls:yt-api", { detail: { id: cfg.id } })),
+      onStateChange: (e: { data: number }) => {
+        document.dispatchEvent(new CustomEvent("mls:yt-state", { detail: { state: e.data, id: cfg.id } }));
+        // 0 = ended: the Videos tab can move on to the next video
+        if (e.data === 0) document.dispatchEvent(new CustomEvent("mls:lecture-ended"));
+      },
+      onError: (e: { data: number }) =>
+        showState(frame, "This video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", cfg.link, cfg.retry),
+    },
+  });
+  frame.querySelector("iframe")?.setAttribute("title", cfg.title);
+}
+
+/** Simple controls ↔ YouTube's own (for choosing the quality): remembered, and the playing video is rebuilt at the same second. */
+export function switchPlayerControls(mode: "simple" | "youtube") {
+  setPrefs({ playerControls: mode });
+  document.dispatchEvent(new CustomEvent("mls:controls-mode", { detail: { mode } }));
+  const a = activeYouTube();
+  const cfg = a && configs.get(a.frame);
+  if (!a || !cfg) return;
+  const time = Math.floor(a.player.getCurrentTime() || 0);
+  const playing = [1, 3].includes(a.player.getPlayerState());
+  detachControls(a.frame);
+  try {
+    a.player.destroy?.();
+  } catch {
+    /* already gone */
+  }
+  active = null;
+  createPlayer(a.frame, cfg, time, playing);
+}
+
 async function startYouTube(btn: HTMLButtonElement) {
   const frame = btn.closest<HTMLElement>(".media-frame")!;
   const id = btn.dataset.yt!;
@@ -108,35 +176,11 @@ async function startYouTube(btn: HTMLButtonElement) {
   // the connection dropped while loading, or YouTube can't be reached at all: say so instead of an empty frame
   if (!ok && isOffline()) return offline();
   delete frame.dataset.state;
-  const host = document.createElement("div");
-  frame.replaceChildren(host);
   if (ok && window.YT?.Player) {
-    new window.YT.Player(host, {
-      host: "https://www.youtube-nocookie.com",
-      videoId: id,
-      // YouTube's own controls and hover layer are off: src/client/ytcontrols.ts draws ours (no big title, no dimming)
-      playerVars: { autoplay: 1, rel: 0, start, playsinline: 1, origin: location.origin, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1 },
-      events: {
-        // watch together (src/client/together.ts) listens for these two
-        onReady: (e: { target: YtPlayer }) => {
-          active = { player: e.target, id, frame };
-          attachControls(frame, e.target, btn.dataset.title || "Lecture video", btn.dataset.cc || "en");
-          document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id } }));
-        },
-        // YouTube loaded or reloaded a module (captions): our controls re-apply the captions choice
-        onApiChange: () => document.dispatchEvent(new CustomEvent("mls:yt-api", { detail: { id } })),
-        onStateChange: (e: { data: number }) => {
-          document.dispatchEvent(new CustomEvent("mls:yt-state", { detail: { state: e.data, id } }));
-          // 0 = ended: the Videos tab can move on to the next video
-          if (e.data === 0) document.dispatchEvent(new CustomEvent("mls:lecture-ended"));
-        },
-        onError: (e: { data: number }) =>
-          showState(frame, "This video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", link, retry),
-      },
-    });
-    frame.querySelector("iframe")?.setAttribute("title", btn.dataset.title || "Lecture video");
+    createPlayer(frame, { id, link, title: btn.dataset.title || "Lecture video", cc: btn.dataset.cc || "en", retry }, start, true);
   } else {
     // API blocked (e.g. by an extension): fall back to a plain privacy-enhanced embed.
+    frame.replaceChildren();
     const iframe = document.createElement("iframe");
     iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1${start ? `&start=${start}` : ""}`;
     iframe.title = btn.dataset.title || "Lecture video";

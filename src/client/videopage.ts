@@ -3,7 +3,7 @@
  * the small corner player while reading them, and hiding / showing the playlist.
  */
 import { setupMermaid } from "./mermaid";
-import { activeYouTube } from "./media";
+import { activeYouTube, switchPlayerControls } from "./media";
 import { pageSignal } from "./page";
 import { prefs, setPrefs } from "./store";
 
@@ -148,9 +148,20 @@ function setupPlaylistToggle(page: HTMLElement) {
   render();
 }
 
+/** "YouTube's own controls (quality menu)": the only way to choose 720p / 1080p in an embedded video. */
+function setupControlsSwitch(page: HTMLElement) {
+  const box = page.querySelector<HTMLInputElement>("[data-player-youtube]");
+  if (!box) return;
+  const signal = pageSignal();
+  box.checked = prefs().playerControls === "youtube";
+  box.addEventListener("change", () => switchPlayerControls(box.checked ? "youtube" : "simple"), { signal });
+  document.addEventListener("mls:controls-mode", (e) => (box.checked = (e as CustomEvent<{ mode: string }>).detail.mode === "youtube"), { signal });
+}
+
 export function setupVideoPage() {
   const page = document.querySelector<HTMLElement>("[data-video-page]");
   if (!page) return;
+  setupControlsSwitch(page);
   setupPlaylistToggle(page);
   setupNotes(page);
   setupMini(page);

@@ -26,6 +26,8 @@ window.YT = { Player: function (el, opts) {
     loadModule(m) { if (m === "captions" && !cc.loaded) { cc.loaded = true; setTimeout(() => opts.events.onApiChange && opts.events.onApiChange(), 0); } },
     unloadModule(m) { if (m === "captions") { cc.loaded = false; cc.track = null; } },
     setOption(m, k, v) { if (m === "captions" && k === "track" && cc.loaded) cc.track = v; },
+    getPlaybackQuality: () => "hd720",
+    destroy() { state = -1; div.remove(); },
   };
   const cc = { loaded: false, track: null };
   // window.__fakeAutoCaptions: like a viewer whose YouTube settings turn captions on, they appear when playback starts
