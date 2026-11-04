@@ -23,6 +23,9 @@ function flag(on?: boolean): boolean {
   return false;
 }
 
+/** Start the next Videos page's player without a click (used when watch together follows the other side). */
+export const requestVideoAutoplay = () => void flag(true);
+
 export function setupVideos() {
   const page = document.querySelector<HTMLElement>("[data-video-page]");
   if (!page) return;

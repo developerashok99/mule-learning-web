@@ -12,6 +12,19 @@ declare global {
   }
 }
 
+/** The parts of the YouTube player API that watch together uses. */
+export interface YtPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getCurrentTime(): number;
+  /** -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued */
+  getPlayerState(): number;
+}
+/** The YouTube player on the page, once it is ready (null before play is pressed, or after leaving the page). */
+let active: { player: YtPlayer; id: string; frame: HTMLElement } | null = null;
+export const activeYouTube = () => (active?.frame.isConnected ? active : null);
+
 let ytApi: Promise<boolean> | null = null;
 function loadYouTubeApi(): Promise<boolean> {
   ytApi ??= new Promise<boolean>((resolve) => {
@@ -108,8 +121,16 @@ async function startYouTube(btn: HTMLButtonElement) {
       videoId: id,
       playerVars: { autoplay: 1, rel: 0, start, playsinline: 1, origin: location.origin },
       events: {
-        // 0 = ended: the Videos tab can move on to the next video
-        onStateChange: (e: { data: number }) => e.data === 0 && document.dispatchEvent(new CustomEvent("mls:lecture-ended")),
+        // watch together (src/client/together.ts) listens for these two
+        onReady: (e: { target: YtPlayer }) => {
+          active = { player: e.target, id, frame };
+          document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id } }));
+        },
+        onStateChange: (e: { data: number }) => {
+          document.dispatchEvent(new CustomEvent("mls:yt-state", { detail: { state: e.data, id } }));
+          // 0 = ended: the Videos tab can move on to the next video
+          if (e.data === 0) document.dispatchEvent(new CustomEvent("mls:lecture-ended"));
+        },
         onError: (e: { data: number }) =>
           showState(frame, "This video can't be played here", YT_ERRORS[e.data] ?? "YouTube reported an error.", link, retry),
       },

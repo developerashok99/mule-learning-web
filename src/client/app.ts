@@ -7,6 +7,7 @@ import { setupNotes } from "./notes";
 import { setupMermaid, rerenderMermaid } from "./mermaid";
 import { setupMedia } from "./media";
 import { setupVideos } from "./videos";
+import { setupTogether } from "./together";
 import { setupDashboard } from "./dashboard";
 import { setupSearch } from "./search";
 import { setupMyStudy } from "./mystudy";
@@ -389,6 +390,7 @@ document.addEventListener("astro:page-load", () => {
   setupMermaid();
   setupMedia();
   setupVideos();
+  setupTogether();
   setupSlides();
   setupLists();
   setupDashboard();

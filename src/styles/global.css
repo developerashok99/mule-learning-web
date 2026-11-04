@@ -739,6 +739,20 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 .video-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 @media (max-width: 560px) { .video-actions { width: 100%; } .video-actions .btn { flex: 1; } .video-pager { grid-template-columns: minmax(0, 1fr); } .video-pager .nav-card--next { grid-column: 1; } }
 .video-about .btn-row { margin-top: 0.9rem; }
+/* watch together */
+.together { margin: 0 0 1rem; display: grid; gap: 0.75rem; }
+.together__head { display: flex; gap: 0.7rem; align-items: flex-start; }
+.together__head > .icon { margin-top: 0.15rem; color: var(--link); flex: none; }
+.together__head p { margin: 0.15rem 0 0; }
+.together[data-state="live"] .together__head > .icon { color: var(--success); }
+.together__people { font-weight: 650; }
+.together__share { display: grid; gap: 0.35rem; }
+.together__row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.together__row .input { flex: 1 1 14rem; min-width: 0; }
+.together__hint { margin: 0; }
+.together .btn-row { margin: 0; }
+.together-invite { margin: 0 0 1rem; align-items: center; flex-wrap: wrap; }
+.together-invite > div { flex: 1 1 14rem; min-width: 0; }
 .video-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; margin: 0.75rem 0 0; font-size: 0.86rem; color: var(--text-muted); }
 .video-meta__item { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.5rem; }
 a.video-meta__item { color: var(--link); text-decoration: none; font-weight: 650; }
