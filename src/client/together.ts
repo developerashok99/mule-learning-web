@@ -169,6 +169,10 @@ interface Room {
   pending: { time: number; playing: boolean } | null;
   /** joining or following: the player's own start-up isn't news; nothing is sent until the others' state is applied */
   hold: boolean;
+  /** this side may start its player without a click (it has clicked on the page already: host, follower, Join) */
+  autoStart: boolean;
+  /** a guest pressed play themselves: once lined up with the others, everyone plays */
+  deliberate: boolean;
   /** while holding: the state the player must reach before the hold ends, and the latest the hold may last */
   goal: { time: number; playing: boolean } | null;
   holdUntil: number;
@@ -181,6 +185,8 @@ interface Room {
   timers: number[];
 }
 let room: Room | null = null;
+/** room codes this page has already tried to join automatically */
+const tried = new Set<string>();
 /** shown in the panel after a room ends, until the next one starts */
 let ended = "";
 
@@ -223,8 +229,13 @@ function apply(target: { time: number; playing: boolean }, ageMs = 150) {
   if (!room) return;
   const yt = activeYouTube();
   if (!yt) {
-    room.pending = target;
-    document.querySelector<HTMLButtonElement>("[data-video-page] button[data-yt]")?.click();
+    if (room.autoStart) {
+      room.pending = target;
+      document.querySelector<HTMLButtonElement>("[data-video-page] button[data-yt]")?.click();
+    } else if (!room.deliberate) {
+      // opened the link but hasn't clicked yet: browsers won't start a video with sound before a click
+      setStatus("Connected to your friend. Press play to watch in sync.");
+    }
     return;
   }
   const s = sample()!;
@@ -265,6 +276,7 @@ function follow(vid: string, target: { time: number; playing: boolean } | null) 
   if (!room) return;
   room.following = vid;
   room.pending = target;
+  room.autoStart = true;
   // the player starting by itself on the new page is not news for the others: stay quiet until their state is applied
   room.hold = true;
   requestVideoAutoplay();
@@ -290,6 +302,16 @@ function onMessage(from: Link, raw: unknown) {
     case "state":
       if (m.vid !== currentVid()) {
         follow(m.vid, m.started ? { time: m.time, playing: m.playing } : null);
+        break;
+      }
+      // the friend has pressed play and the player is still loading: it asks again once ready (an older state
+      // applied now would pause it straight back)
+      if (room.deliberate && !activeYouTube()) break;
+      if (room.hold && room.deliberate && activeYouTube()) {
+        // the friend pressed play: start at the others' position, and everyone plays
+        room.deliberate = false;
+        settle({ time: m.time, playing: true });
+        if (!(m.started && m.playing)) broadcast({ t: "play", time: m.time });
         break;
       }
       // nobody has pressed play yet: wait at the same spot instead of playing alone
@@ -323,7 +345,7 @@ function addLink(l: Link) {
   l.onclose = () => {
     if (!room) return;
     room.links.delete(l);
-    if (room.role === "guest") return end("The connection to your friend was lost. Open the link again to rejoin.");
+    if (room.role === "guest") return end("The connection to your friend was lost.", true);
     room.people = room.links.size + 1;
     broadcast({ t: "people", n: room.people });
     setStatus("A friend left the room");
@@ -341,12 +363,12 @@ function addLink(l: Link) {
   }
 }
 
-function open(role: "host" | "guest", code: string, attempt = 0) {
+function open(role: "host" | "guest", code: string, attempt = 0, autoStart = role === "host") {
   const transport = window.__mlsTogetherTransport === "local" ? localTransport() : peerTransport();
   ended = "";
   room = { code, role, transport, links: new Set(), connected: false, people: 1, vid: currentVid(), following: null, pending: null,
     // a guest's player is about to start by itself: that isn't a "play" to send until the host's state has been applied
-    hold: role === "guest", goal: null, holdUntil: 0, expect: null, seekQuietUntil: 0, last: null,
+    hold: role === "guest", autoStart, deliberate: false, goal: null, holdUntil: 0, expect: null, seekQuietUntil: 0, last: null,
     status: role === "host" ? "Starting a room…" : "Connecting to your friend…", timers: [] };
   const r = room;
   const handlers: Handlers = {
@@ -367,7 +389,7 @@ function open(role: "host" | "guest", code: string, attempt = 0) {
       }
       // once people are connected, the introduction server going away (or one friend failing) doesn't end the room
       if (r.links.size) return setStatus(p === "network" ? "The connection service dropped out. You're still in sync; new friends can join once it's back." : PROBLEMS[p]);
-      end(PROBLEMS[p]);
+      end(PROBLEMS[p], true);
     },
   };
   if (role === "host") transport.host(code, handlers);
@@ -377,7 +399,7 @@ function open(role: "host" | "guest", code: string, attempt = 0) {
     if (room !== r || !r.links.size || r.vid !== currentVid()) return;
     const now = sample();
     if (!now) return;
-    if (r.hold && r.goal && Date.now() > r.holdUntil) release();
+    if (r.hold && r.holdUntil && Date.now() > r.holdUntil) release();
     if (r.last && !r.hold && Date.now() > r.seekQuietUntil && isSeek(r.last, now)) broadcast({ t: "seek", time: now.time, playing: now.playing });
     r.last = now;
   }, 500));
@@ -390,14 +412,15 @@ function open(role: "host" | "guest", code: string, attempt = 0) {
   render();
 }
 
-function end(message: string) {
+function end(message: string, keepLink = false) {
   if (!room) return;
   room.timers.forEach(clearInterval);
   room.transport.destroy();
   room = null;
   ended = message;
   // a guest's address keeps ?room= so a reload can rejoin; once the room is over, drop it
-  if (parseRoom(location.search)) history.replaceState(history.state, "", location.pathname + location.hash);
+  // (after a failure it stays, and "Join and watch" offers to try again)
+  if (!keepLink && parseRoom(location.search)) history.replaceState(history.state, "", location.pathname + location.hash);
   render();
 }
 
@@ -418,6 +441,7 @@ document.addEventListener("mls:yt-state", (e) => {
   const playing = state === 1;
   if (r.hold) {
     // reached the others' state: hold over. Went the other way (autoplay): steer back, still quietly.
+    // (no goal yet: still waiting for the others' state)
     if (r.goal && r.goal.playing === playing) release();
     else if (r.goal) apply(r.goal);
     return;
@@ -494,13 +518,29 @@ export function setupTogether() {
     if (room.role === "guest") history.replaceState(history.state, "", `${location.pathname}?room=${room.code}${location.hash}`);
   }
 
+  // opened a friend's link: join straight away (once per code; after a failure, "Join and watch" retries)
+  const code = parseRoom(location.search);
+  if (!room && code && !tried.has(code)) {
+    tried.add(code);
+    open("guest", code);
+  }
+  // pressing play on the video, as anyone would: that's the friend choosing to watch now
+  page.querySelector("button[data-yt]")?.addEventListener("click", () => {
+    if (room?.role !== "guest") return;
+    // forget any earlier "they're paused" target and wait for a fresh state (asked for when the player is ready)
+    room.deliberate = true;
+    room.hold = true;
+    room.goal = null;
+    room.holdUntil = Date.now() + 8000;
+  }, { signal, once: true });
+
   page.querySelector("[data-together-start]")?.addEventListener("click", () => {
     if (!room) open("host", roomCode());
   }, { signal });
   page.querySelector("[data-together-join]")?.addEventListener("click", () => {
     const code = parseRoom(location.search);
     if (!code || room) return;
-    open("guest", code);
+    open("guest", code, 0, true);
     // this click lets the browser start the video with sound; the host's position is applied once connected
     page.querySelector<HTMLButtonElement>("button[data-yt]")?.click();
   }, { signal });

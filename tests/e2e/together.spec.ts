@@ -44,52 +44,59 @@ const yt = (page: Page) => ({
 });
 
 test.describe("watch together", () => {
-  test("two people stay in sync: join, play, pause, seek, next lecture, leave", async ({ context }) => {
+  test("the reported case: host plays and shares, friend opens the link and just presses play, host forwards", async ({ context }) => {
     const host = await context.newPage();
     const guest = await context.newPage();
     await prepare(host);
     await prepare(guest);
-    // the friend's player starts by itself late, after the host's state has already arrived (as on the live site)
+    // the friend's player starts late after its "ready", as real YouTube does over the internet
     await guest.addInitScript(() => ((window as unknown as { __fakeAutoplayDelay: number }).__fakeAutoplayDelay = 1500));
 
+    // host: play first, then Watch together
     await host.goto(`videos/${ids[3]}/`);
+    await host.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(host).state()).toBe(1);
     await host.getByRole("button", { name: "Watch together" }).click();
     const panel = host.getByRole("region", { name: "Watch together" });
     await expect(panel.getByRole("status")).toContainText("Room ready");
     const link = await panel.getByLabel("Send this link to your friend").inputValue();
     expect(link).toMatch(new RegExp(`/videos/${ids[3]}/\\?room=[2-9A-HJKMNP-Z]{6}$`));
 
-    // the friend opens the link and joins
+    // the friend opens the link: joined without any extra button
     await guest.goto(link);
-    await expect(guest.getByText("You're invited to watch this lecture together")).toBeVisible();
-    await guest.getByRole("button", { name: "Join and watch" }).click();
+    const gpanel = guest.getByRole("region", { name: "Watch together" });
     await expect(panel.getByText("Watching with 1 friend")).toBeVisible();
-    await expect(guest.getByRole("region", { name: "Watch together" }).getByText("Watching with 1 friend")).toBeVisible();
-    // nobody had pressed play: the friend's player waits instead of playing alone…
-    await expect.poll(() => yt(guest).state()).toBe(2);
-    // …and its late autoplay didn't start the host's video either
-    await host.waitForTimeout(2500);
-    await expect(host.getByRole("button", { name: /Play video:/ })).toBeVisible();
-    await expect.poll(() => yt(guest).state()).toBe(2);
+    await expect(gpanel.getByText("Watching with 1 friend")).toBeVisible();
+    await expect(gpanel.getByRole("status")).toContainText("Press play to watch in sync");
+    await expect(guest.getByRole("button", { name: "Join and watch" })).toBeHidden();
+    expect(await yt(guest).state()).toBeNull(); // no video starts before the friend clicks
 
-    // host presses play → both play
-    await host.getByRole("button", { name: /Play video:/ }).click();
-    await expect.poll(() => yt(host).state()).toBe(1);
+    // the friend presses the video's own play button → starts at the host's position
+    await host.waitForTimeout(1500);
+    await guest.getByRole("button", { name: /Play video:/ }).click();
     await expect.poll(() => yt(guest).state()).toBe(1);
+    await expect.poll(async () => Math.abs((await yt(host).time()) - (await yt(guest).time()))).toBeLessThan(1);
+    const before = await yt(host).time();
+    await host.waitForTimeout(2500);
+    expect(await yt(host).time()).toBeGreaterThan(before + 2); // the friend's late autoplay didn't pull the host back
+    expect(await yt(host).state()).toBe(1);
 
-    // host pauses in the player → the friend pauses at the same spot
-    await host.waitForTimeout(1200);
+    // host forwards → the friend forwards
+    await yt(host).seek((await yt(host).time()) + 240);
+    await expect.poll(async () => Math.abs((await yt(host).time()) - (await yt(guest).time()))).toBeLessThan(1.5);
+    expect(await yt(guest).time()).toBeGreaterThan(200);
+
+    // host pauses → the friend pauses at the same spot, and the host's own pause isn't echoed back
     await yt(host).run("pauseVideo");
     await expect.poll(() => yt(guest).state()).toBe(2);
-    const [ht, gt] = [await yt(host).time(), await yt(guest).time()];
-    expect(Math.abs(ht - gt)).toBeLessThan(0.6);
-    await expect(host.getByRole("region", { name: "Watch together" }).getByRole("status")).not.toContainText("paused"); // our own action isn't echoed back
+    expect(Math.abs((await yt(host).time()) - (await yt(guest).time()))).toBeLessThan(0.6);
+    await expect(panel.getByRole("status")).not.toContainText("paused");
 
     // the friend jumps ahead and plays → the host follows (control works both ways)
-    await yt(guest).seek(300);
+    await yt(guest).seek(900);
     await yt(guest).run("playVideo");
     await expect.poll(() => yt(host).state()).toBe(1);
-    await expect.poll(async () => Math.round(await yt(host).time())).toBeGreaterThanOrEqual(299);
+    await expect.poll(async () => Math.round(await yt(host).time())).toBeGreaterThanOrEqual(899);
 
     // host goes to the next lecture → the friend follows, still in the room, and plays it too
     await host.locator('a[data-video-go="next"]').click();
@@ -100,7 +107,7 @@ test.describe("watch together", () => {
     await expect.poll(() => yt(guest).state()).toBe(1);
 
     // accessibility of the panel
-    const axe = await new AxeBuilder({ page: host }).include('[data-together]').analyze();
+    const axe = await new AxeBuilder({ page: host }).include("[data-together]").analyze();
     expect(axe.violations).toEqual([]);
 
     // host leaves → the friend is told, and their link no longer claims a room
@@ -110,10 +117,27 @@ test.describe("watch together", () => {
     await expect(host.getByRole("button", { name: "Watch together" })).toBeVisible();
   });
 
-  test("a link to a room that no longer exists says so", async ({ page }) => {
+  test("the friend pressing play while the host hasn't started starts it for both", async ({ context }) => {
+    const host = await context.newPage();
+    const guest = await context.newPage();
+    await prepare(host);
+    await prepare(guest);
+    await host.goto(`videos/${ids[6]}/`);
+    await host.getByRole("button", { name: "Watch together" }).click();
+    const link = await host.getByLabel("Send this link to your friend").inputValue();
+    await guest.goto(link);
+    await expect(host.getByText("Watching with 1 friend")).toBeVisible();
+    await guest.getByRole("button", { name: /Play video:/ }).click();
+    await expect.poll(() => yt(guest).state()).toBe(1);
+    await expect.poll(() => yt(host).state()).toBe(1);
+    await expect.poll(async () => Math.abs((await yt(host).time()) - (await yt(guest).time()))).toBeLessThan(1);
+  });
+
+  test("a link to a room that no longer exists says so, and offers to try again", async ({ page }) => {
     await prepare(page);
     await page.goto(`videos/${ids[0]}/?room=ZZZ999`);
-    await page.getByRole("button", { name: "Join and watch" }).click();
     await expect(page.getByRole("region", { name: "Watch together" }).getByRole("status")).toContainText("room has ended, or the link is wrong");
+    await expect(page.getByRole("button", { name: "Join and watch" })).toBeVisible();
+    await expect(page).toHaveURL(/\?room=ZZZ999$/);
   });
 });
