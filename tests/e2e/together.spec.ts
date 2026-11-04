@@ -103,6 +103,41 @@ test.describe("watch together", () => {
     await expect.poll(async () => Math.abs((await yt(host).time()) - (await yt(guest).time()))).toBeLessThan(1);
   });
 
+  test("podcasts too: format switches and the next episode follow, play and pause stay in sync", async ({ context }) => {
+    const eps = (media.podcasts as { id: string; animatedVideoUrl?: string; videoUrl?: string }[]).filter((e) => e.animatedVideoUrl?.trim() && e.videoUrl?.trim());
+    const ep = eps[3];
+    const host = await context.newPage();
+    const guest = await context.newPage();
+    await prepare(host);
+    await prepare(guest);
+    await host.goto(`podcasts/${ep.id}/`);
+    await host.getByRole("button", { name: "Watch together" }).click();
+    const link = await host.getByLabel("Send this link to your friend").inputValue();
+    expect(link).toMatch(new RegExp(`/podcasts/${ep.id}/\\?room=[2-9A-HJKMNP-Z]{6}$`));
+    await guest.goto(link);
+    await expect(host.getByText("Watching with 1 friend")).toBeVisible();
+
+    // the host plays the animated video; the friend presses play and joins at the same spot
+    await host.getByRole("button", { name: /Play animated video podcast/ }).click();
+    await expect.poll(() => yt(host).state()).toBe(1);
+    await guest.getByRole("button", { name: /Play animated video podcast/ }).click();
+    await expect.poll(() => yt(guest).state()).toBe(1);
+    await yt(host).run("pauseVideo");
+    await expect.poll(() => yt(guest).state()).toBe(2);
+
+    // the host switches to the slides video: the friend's page switches too
+    await host.getByRole("button", { name: "Slides" }).click();
+    await expect(guest.getByRole("button", { name: "Slides" })).toHaveAttribute("aria-pressed", "true");
+    await expect(guest.getByRole("region", { name: "Watch together" }).getByRole("status")).toContainText("slides");
+
+    // the next episode: the friend follows, still in the room
+    await host.getByRole("link", { name: /Next episode/ }).click();
+    await expect(host).not.toHaveURL(new RegExp(`podcasts/${ep.id}/`));
+    await expect.poll(() => new URL(guest.url()).pathname).toBe(new URL(host.url()).pathname);
+    await expect(guest).toHaveURL(/\?room=/);
+    await expect(guest.getByRole("region", { name: "Watch together" }).getByText("Watching with 1 friend")).toBeVisible();
+  });
+
   test("a link to a room that no longer exists says so, and offers to try again", async ({ page }) => {
     await prepare(page);
     await page.goto(`videos/${ids[0]}/?room=ZZZ999`);

@@ -50,6 +50,8 @@ const first = animated ? "animated" : ep.videoUrl || !ep.audioUrl ? "video" : "a
 
   {animated && (
     <div class="pod-panel" id={standalone ? "animated" : undefined} data-pod-panel="animated">
+      {/* the episode page sizes the player like the Videos tab (and can shrink it into the corner while reading) */}
+      <div class:list={[{ "video-stage": standalone }]} data-video-stage={standalone ? "" : undefined}>
       <div class="media-frame">
         <button class="yt-facade" type="button" data-yt={ep.animatedYoutubeId} data-start="0" data-watch={ep.animatedWatchUrl} data-title={`Animated video podcast: ${ep.title}`} aria-label={`Play animated video podcast: ${ep.title}`}>
           <span class="yt-facade__kicker">Summary podcast · animated</span>
@@ -58,11 +60,14 @@ const first = animated ? "animated" : ep.videoUrl || !ep.audioUrl ? "video" : "a
           <small>Click to play · loads from youtube-nocookie.com</small>
         </button>
       </div>
+      {standalone && <button class="video-mini-close" type="button" data-video-mini-close aria-label="Close the small player and scroll back to the video" hidden><Icon name="close" /></button>}
+      </div>
       <p class="small" style="margin:.4rem 0 0"><a href={ep.animatedWatchUrl} target="_blank" rel="noopener noreferrer">Open the animated video on YouTube <Icon name="external" /></a></p>
     </div>
   )}
 
   <div class="pod-panel" id={standalone ? "video" : undefined} data-pod-panel="video" hidden={first !== "video"}>
+  <div class:list={[{ "video-stage": standalone && !EMPTY }]} data-video-stage={standalone && !EMPTY ? "" : undefined}>
   <div class:list={["media-frame", { "media-frame--empty": EMPTY }]}>
     {ep.youtubeId ? (
       <button class="yt-facade" type="button" data-yt={ep.youtubeId} data-start="0" data-watch={ep.watchUrl} data-title={`Video podcast: ${ep.title}`} aria-label={`Play video podcast: ${ep.title}`}>
@@ -82,6 +87,8 @@ const first = animated ? "animated" : ep.videoUrl || !ep.audioUrl ? "video" : "a
         <p>The video version of this summary will play here once its YouTube or MP4 link is added to config/media.json.</p>
       </div>
     )}
+  </div>
+  {standalone && !EMPTY && <button class="video-mini-close" type="button" data-video-mini-close aria-label="Close the small player and scroll back to the video" hidden><Icon name="close" /></button>}
   </div>
   {ep.watchUrl && <p class="small" style="margin:.4rem 0 0"><a href={ep.watchUrl} target="_blank" rel="noopener noreferrer">Open on YouTube <Icon name="external" /></a></p>}
   <p class="small muted" data-video-status={ep.id} aria-live="polite" style="min-height:1.2em;margin:.3rem 0 0"></p>

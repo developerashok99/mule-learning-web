@@ -342,7 +342,11 @@ function setupPodcastSwitch() {
       });
       pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.podView === view)));
     };
-    pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.addEventListener("click", () => show(b.dataset.podView!), { signal: pageSignal() }));
+    pod.querySelectorAll<HTMLButtonElement>("[data-pod-view]").forEach((b) => b.addEventListener("click", () => {
+      show(b.dataset.podView!);
+      // watch together (src/client/together.ts) passes the format on to the others
+      document.dispatchEvent(new CustomEvent("mls:pod-view", { detail: { view: b.dataset.podView } }));
+    }, { signal: pageSignal() }));
     if (["#animated", "#video", "#audio"].includes(location.hash)) show(location.hash.slice(1));
   });
 }

@@ -1,0 +1,33 @@
+---
+/** A lesson's notes under a player (Videos and podcast pages): level tabs, loaded on demand (src/client/videopage.ts). */
+import Icon from "./Icon.astro";
+import type { Lesson } from "../lib/content";
+import { NOTE_LEVELS, lessonHasView, lessonPath, withBase } from "../lib/routes";
+
+interface Props {
+  lesson: Lesson;
+}
+const { lesson } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const noteTabs = NOTE_LEVELS.filter(({ level }) => lesson.notes[level]).map(({ level, short }) => ({ level, short, href: withBase(base, lessonPath(lesson.id, level)) }));
+const notesHref = withBase(base, lessonPath(lesson.id, lessonHasView(lesson, "detailed") ? "detailed" : "lecture"));
+---
+{noteTabs.length > 0 && (
+  <section class="card video-notes" data-video-notes aria-labelledby="video-notes-title">
+    <div class="video-notes__head">
+      <h2 id="video-notes-title">Lesson notes</h2>
+      <div class="segmented" role="tablist" aria-label="Notes level">
+        {noteTabs.map((t) => (
+          <button type="button" role="tab" id={`notes-tab-${t.level}`} aria-controls="video-notes-body" aria-selected="false" data-notes-level={t.level} data-notes-href={t.href}>{t.short}</button>
+        ))}
+      </div>
+      <a class="btn btn--sm btn--ghost" href={notesHref} data-notes-open>Open full page <Icon name="external" /></a>
+    </div>
+    <label class="video-notes__jump" hidden data-notes-jump-wrap><span class="small muted">Jump to</span>
+      <select class="input input--sm" data-notes-jump><option value="">Sections…</option></select>
+    </label>
+    <div class="prose video-notes__body" id="video-notes-body" role="tabpanel" tabindex="-1" data-notes-body>
+      <p class="muted">Loading the notes…</p>
+    </div>
+  </section>
+)}

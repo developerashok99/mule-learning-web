@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CODE_LENGTH, isSeek, matchAction, parseRoom, peerId, peopleText, readMsg, roomCode, shareUrl, targetOf } from "../../src/lib/together";
+import { CODE_LENGTH, isSeek, keyPath, matchAction, parseKey, parseRoom, peerId, peopleText, readMsg, roomCode, shareUrl, targetOf } from "../../src/lib/together";
 
 describe("watch together: rooms and links", () => {
   it("makes codes from unambiguous characters only", () => {
@@ -22,8 +22,21 @@ describe("watch together: rooms and links", () => {
   });
 
   it("builds the share link and the peer id", () => {
-    expect(shareUrl("https://example.org/site/", "gc-day-05", "ABC234")).toBe("https://example.org/site/videos/gc-day-05/?room=ABC234");
+    expect(shareUrl("https://example.org/site/", "video:gc-day-05", "ABC234")).toBe("https://example.org/site/videos/gc-day-05/?room=ABC234");
+    expect(shareUrl("https://example.org/site/", "podcast:day05", "ABC234")).toBe("https://example.org/site/podcasts/day05/?room=ABC234");
+    expect(shareUrl("https://example.org/site/", "day05", "ABC234")).toBe("https://example.org/site/videos/day05/?room=ABC234"); // older rooms
     expect(peerId("ABC234")).toBe("mls-watch-abc234");
+  });
+});
+
+describe("watch together: what is watched", () => {
+  it("reads page keys", () => {
+    expect(parseKey("video:day05")).toEqual({ kind: "video", id: "day05" });
+    expect(parseKey("podcast:interview-part-1")).toEqual({ kind: "podcast", id: "interview-part-1" });
+    expect(parseKey("day05")).toEqual({ kind: "video", id: "day05" });
+    expect(parseKey("lessons:day05")).toBeNull();
+    expect(parseKey("video:../x")).toBeNull();
+    expect(keyPath("podcast:day05")).toBe("podcasts/day05/");
   });
 });
 
@@ -33,6 +46,9 @@ describe("watch together: messages", () => {
     expect(readMsg({ t: "seek", time: 60, playing: false })).toEqual({ t: "seek", time: 60, playing: false });
     expect(readMsg({ t: "state", vid: "gc-day-01", time: 3, playing: true, started: true })).toEqual({ t: "state", vid: "gc-day-01", time: 3, playing: true, started: true });
     expect(readMsg({ t: "nav", vid: "interview-part-1" })).toEqual({ t: "nav", vid: "interview-part-1" });
+    expect(readMsg({ t: "nav", vid: "podcast:day05" })).toEqual({ t: "nav", vid: "podcast:day05" });
+    expect(readMsg({ t: "view", view: "animated" })).toEqual({ t: "view", view: "animated" });
+    expect(readMsg({ t: "state", vid: "podcast:day05", time: 3, playing: false, started: true, view: "video" })).toEqual({ t: "state", vid: "podcast:day05", time: 3, playing: false, started: true, view: "video" });
     expect(readMsg({ t: "people", n: 3 })).toEqual({ t: "people", n: 3 });
     expect(readMsg({ t: "ask", extra: "ignored" })).toEqual({ t: "ask" });
   });
@@ -40,7 +56,7 @@ describe("watch together: messages", () => {
   it("rejects anything else", () => {
     for (const bad of [null, 3, "play", {}, { t: "play" }, { t: "play", time: -1 }, { t: "play", time: Infinity }, { t: "play", time: "5" },
       { t: "seek", time: 1 }, { t: "state", vid: "../x", time: 1, playing: true, started: true }, { t: "nav", vid: "" },
-      { t: "nav", vid: "a/b" }, { t: "people", n: 0 }, { t: "people", n: 1.5 }, { t: "eval", code: "x" }])
+      { t: "nav", vid: "a/b" }, { t: "view", view: "fullscreen" }, { t: "state", vid: "day1", time: 1, playing: true, started: true, view: 3 }, { t: "people", n: 0 }, { t: "people", n: 1.5 }, { t: "eval", code: "x" }])
       expect(readMsg(bad)).toBeNull();
   });
 });

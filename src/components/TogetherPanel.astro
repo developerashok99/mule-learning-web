@@ -1,0 +1,27 @@
+---
+/** Watch together (src/client/together.ts): status, the link to send, people in the room, Leave. */
+import Icon from "./Icon.astro";
+---
+<section class="card together" data-together hidden aria-label="Watch together">
+  <div class="together__head">
+    <Icon name="users" />
+    <div>
+      <strong>Watch together</strong>
+      <p class="small" data-together-status role="status" aria-live="polite"></p>
+      <p class="small together__people" data-together-people hidden></p>
+    </div>
+  </div>
+  <div class="together__share" data-together-share hidden>
+    <label class="small" for="together-link">Send this link to your friend</label>
+    <div class="together__row">
+      <input id="together-link" class="input input--sm" type="text" readonly data-together-link />
+      <button class="btn btn--sm btn--primary" type="button" data-together-copy><Icon name="copy" /><span data-text>Copy link</span></button>
+      <button class="btn btn--sm" type="button" data-together-native hidden><Icon name="share" /><span>Share</span></button>
+    </div>
+  </div>
+  <p class="small muted together__hint">Anyone in the room can play, pause, seek or switch lectures. Use a phone or video call to talk.</p>
+  <div class="btn-row">
+    <button class="btn btn--sm" type="button" data-together-leave hidden>Leave</button>
+    <button class="btn btn--sm" type="button" data-together-close hidden>Close</button>
+  </div>
+</section>

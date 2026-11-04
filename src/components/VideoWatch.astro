@@ -5,9 +5,12 @@
  */
 import Base from "../layouts/Base.astro";
 import Icon from "./Icon.astro";
+import LessonNotes from "./LessonNotes.astro";
+import TogetherInvite from "./TogetherInvite.astro";
+import TogetherPanel from "./TogetherPanel.astro";
 import { getCourses, getLessons, type Lesson } from "../lib/content";
 import { formatLength } from "../lib/duration";
-import { NOTE_LEVELS, lessonHasView, lessonPath, withBase } from "../lib/routes";
+import { lessonPath, withBase } from "../lib/routes";
 
 interface Props {
   /** the video being watched */
@@ -29,22 +32,16 @@ const sections = getCourses()
   .filter((s) => s.videos.length);
 const lecture = current.lecture!;
 const name = `${current.label} — ${current.title}`;
-const notesHref = withBase(base, lessonPath(current.id, lessonHasView(current, "detailed") ? "detailed" : "lecture"));
-// the lesson's notes, read under the video (loaded on demand from the notes pages)
-const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ level, short }) => ({ level, short, href: withBase(base, lessonPath(current.id, level)) }));
+
 ---
 <Base title={`${current.label} video`} nav="videos" description={`Watch ${name}, then go to the next or previous course video.`}>
-  <div class="page page--video" data-video-page={current.id}>
+  <div class="page page--video" data-video-page={current.id} data-watch-page={`video:${current.id}`}>
     {isIndex && (
       <p class="notice video-resume" data-video-resume hidden>
         <Icon name="play" /><span>Continue where you left off: <a data-video-go="pick" href=""></a></span>
       </p>
     )}
-    <div class="notice together-invite" data-together-invite hidden>
-      <Icon name="users" />
-      <div><strong>Your friend's watch-together link</strong><p>Joining didn't work this time. Try again, or ask your friend for a new link.</p></div>
-      <button class="btn btn--primary btn--sm" type="button" data-together-join><Icon name="play" /> Join and watch</button>
-    </div>
+    <TogetherInvite />
     <div class="video-layout" data-video-layout>
       <div class="video-main">
         <div class="video-stage" data-video-stage>
@@ -72,29 +69,7 @@ const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ 
           </div>
         </div>
 
-        <section class="card together" data-together hidden aria-label="Watch together">
-          <div class="together__head">
-            <Icon name="users" />
-            <div>
-              <strong>Watch together</strong>
-              <p class="small" data-together-status role="status" aria-live="polite"></p>
-              <p class="small together__people" data-together-people hidden></p>
-            </div>
-          </div>
-          <div class="together__share" data-together-share hidden>
-            <label class="small" for="together-link">Send this link to your friend</label>
-            <div class="together__row">
-              <input id="together-link" class="input input--sm" type="text" readonly data-together-link />
-              <button class="btn btn--sm btn--primary" type="button" data-together-copy><Icon name="copy" /><span data-text>Copy link</span></button>
-              <button class="btn btn--sm" type="button" data-together-native hidden><Icon name="share" /><span>Share</span></button>
-            </div>
-          </div>
-          <p class="small muted together__hint">Anyone in the room can play, pause, seek or switch lectures. Use a phone or video call to talk.</p>
-          <div class="btn-row">
-            <button class="btn btn--sm" type="button" data-together-leave hidden>Leave</button>
-            <button class="btn btn--sm" type="button" data-together-close hidden>Close</button>
-          </div>
-        </section>
+        <TogetherPanel />
 
         <div class="video-meta">
           <label class="switch"><input type="checkbox" role="switch" data-video-autoplay checked /> Play next automatically</label>
@@ -117,25 +92,7 @@ const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ 
           )}
         </nav>
 
-        {noteTabs.length > 0 && (
-          <section class="card video-notes" data-video-notes aria-labelledby="video-notes-title">
-            <div class="video-notes__head">
-              <h2 id="video-notes-title">Lesson notes</h2>
-              <div class="segmented" role="tablist" aria-label="Notes level">
-                {noteTabs.map((t) => (
-                  <button type="button" role="tab" id={`notes-tab-${t.level}`} aria-controls="video-notes-body" aria-selected="false" data-notes-level={t.level} data-notes-href={t.href}>{t.short}</button>
-                ))}
-              </div>
-              <a class="btn btn--sm btn--ghost" href={notesHref} data-notes-open>Open full page <Icon name="external" /></a>
-            </div>
-            <label class="video-notes__jump" hidden data-notes-jump-wrap><span class="small muted">Jump to</span>
-              <select class="input input--sm" data-notes-jump><option value="">Sections…</option></select>
-            </label>
-            <div class="prose video-notes__body" id="video-notes-body" role="tabpanel" tabindex="-1" data-notes-body>
-              <p class="muted">Loading the notes…</p>
-            </div>
-          </section>
-        )}
+        <LessonNotes lesson={current} />
       </div>
 
       <aside class="card playlist" id="course-playlist" aria-label="Course playlist">

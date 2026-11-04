@@ -1,5 +1,5 @@
 /**
- * Videos tab, around the player: the lesson's notes under the video (loaded on demand from the notes pages),
+ * Videos tab and podcast episodes, around the player: the lesson's notes under the video (loaded on demand from the notes pages),
  * the small corner player while reading them, and hiding / showing the playlist.
  */
 import { setupMermaid } from "./mermaid";
@@ -99,34 +99,46 @@ function setupNotes(page: HTMLElement) {
   signal.addEventListener("abort", () => io.disconnect());
 }
 
-/** While the video plays and the reader scrolls down into the notes, keep it watchable in the corner (wide screens). */
+/**
+ * While the video plays and the reader scrolls down into the notes, keep it watchable in the corner (wide screens).
+ * A podcast page has a stage per format; only the one on screen can go small.
+ */
 function setupMini(page: HTMLElement) {
-  const stage = page.querySelector<HTMLElement>("[data-video-stage]");
-  if (!stage) return;
+  const stages = [...page.querySelectorAll<HTMLElement>("[data-video-stage]")];
+  if (!stages.length) return;
   const signal = pageSignal();
-  const closeBtn = stage.querySelector<HTMLButtonElement>("[data-video-mini-close]")!;
   const wide = window.matchMedia("(min-width: 801px)");
-  let out = false;
+  const out = new Map<HTMLElement, boolean>();
   let dismissed = false;
   const update = () => {
     const yt = activeYouTube();
     const playing = !!yt && [1, 3].includes(yt.player.getPlayerState());
-    const mini = out && wide.matches && !!yt && (playing || stage.classList.contains("is-mini")) && !dismissed && !document.fullscreenElement;
-    stage.classList.toggle("is-mini", mini);
-    closeBtn.hidden = !mini;
+    for (const stage of stages) {
+      const mine = !!yt && stage.contains(yt.frame);
+      const mini = mine && !!out.get(stage) && wide.matches && (playing || stage.classList.contains("is-mini")) && !dismissed && !document.fullscreenElement;
+      stage.classList.toggle("is-mini", mini);
+      const close = stage.querySelector<HTMLButtonElement>("[data-video-mini-close]");
+      if (close) close.hidden = !mini;
+    }
   };
-  const io = new IntersectionObserver(([e]) => {
-    out = e.intersectionRatio < 0.35;
-    if (!out) dismissed = false;
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const stage = e.target as HTMLElement;
+      out.set(stage, e.intersectionRatio < 0.35 && stage.getClientRects().length > 0);
+      if (!out.get(stage)) dismissed = false;
+    }
     update();
   }, { threshold: [0, 0.35, 1] });
-  io.observe(stage);
-  closeBtn.addEventListener("click", () => {
-    dismissed = true;
-    update();
-    stage.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, { signal });
+  stages.forEach((stage) => {
+    io.observe(stage);
+    stage.querySelector("[data-video-mini-close]")?.addEventListener("click", () => {
+      dismissed = true;
+      update();
+      stage.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, { signal });
+  });
   document.addEventListener("mls:yt-state", update, { signal });
+  document.addEventListener("mls:pod-view", () => setTimeout(update), { signal });
   wide.addEventListener("change", update, { signal });
   signal.addEventListener("abort", () => io.disconnect());
 }
@@ -159,9 +171,15 @@ function setupControlsSwitch(page: HTMLElement) {
 }
 
 export function setupVideoPage() {
-  const page = document.querySelector<HTMLElement>("[data-video-page]");
+  const page = document.querySelector<HTMLElement>("[data-video-page], [data-podcast-page]");
   if (!page) return;
   setupControlsSwitch(page);
+  // podcast pages: keep the current episode visible in the list (the Videos tab does this in videos.ts)
+  if (page.dataset.podcastPage) {
+    const list = page.querySelector<HTMLElement>("[data-video-list]");
+    const cur = list?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (list && cur) list.scrollTop = cur.offsetTop - list.offsetTop - list.clientHeight / 3;
+  }
   setupPlaylistToggle(page);
   setupNotes(page);
   setupMini(page);

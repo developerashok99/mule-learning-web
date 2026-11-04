@@ -260,3 +260,42 @@ test.describe("videos page: notes, playlist, small player", () => {
     expect(axe.violations).toEqual([]);
   });
 });
+
+test.describe("podcast episode page", () => {
+  const eps = (media.podcasts as { id: string; animatedVideoUrl?: string }[]).filter((e) => e.animatedVideoUrl?.trim());
+  test.beforeEach(async ({ page }) => {
+    await useFakeYouTube(page);
+  });
+
+  test("is laid out like the Videos tab: wide player with our controls, episodes beside it, notes below", async ({ page }) => {
+    await page.goto(`podcasts/${eps[5].id}/`);
+    await expect(page.locator("h1")).toHaveCount(1);
+    const stage = page.locator('[data-pod-panel="animated"] .video-stage');
+    const vw = page.viewportSize()!.width;
+    if (vw > 1100) expect((await stage.boundingBox())!.width).toBeGreaterThan(vw * 0.5); // no narrow column any more
+    await page.getByRole("button", { name: /Play animated video podcast/ }).click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    await expect(page.getByRole("region", { name: /Video player:/ })).toBeVisible();
+    expect(await yt(page).vars()).toMatchObject({ controls: 0 });
+    await expect(page.getByRole("navigation", { name: "All podcast episodes" }).locator('a[aria-current="page"]')).toHaveCount(1);
+    const notes = page.getByRole("region", { name: "Lesson notes" });
+    if (await notes.count()) await expect(notes.getByRole("tabpanel")).not.toContainText("Loading the notes");
+    const axe = await new AxeBuilder({ page }).include(".video-main").exclude("[data-notes-body]").analyze();
+    expect(axe.violations).toEqual([]);
+  });
+
+  test("keys drive the format on screen, and the episodes list can be hidden", async ({ page, isMobile }) => {
+    await page.goto(`podcasts/${eps[5].id}/`);
+    await page.getByRole("button", { name: /Play animated video podcast/ }).click();
+    await expect.poll(() => yt(page).state()).toBe(1);
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("k");
+    await expect.poll(() => yt(page).state()).toBe(2);
+    if (isMobile || page.viewportSize()!.width <= 800) return;
+    await page.getByRole("button", { name: "Hide playlist" }).click();
+    await expect(page.getByRole("complementary", { name: "All episodes" })).toBeHidden();
+    await page.getByRole("button", { name: "Show playlist" }).click();
+    await expect(page.getByRole("complementary", { name: "All episodes" })).toBeVisible();
+  });
+});
+

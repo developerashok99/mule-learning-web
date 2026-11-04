@@ -24,17 +24,37 @@ export function parseRoom(search: string): string | null {
 /** The host's id on the connection service; the prefix keeps our rooms apart from other PeerJS users. */
 export const peerId = (code: string) => `mls-watch-${code.toLowerCase()}`;
 
-/** Link a friend opens: the same lecture page with the room code. `site` ends with "/". */
-export const shareUrl = (site: string, lessonId: string, code: string) => `${site}videos/${encodeURIComponent(lessonId)}/?room=${code}`;
+/**
+ * What is being watched: a page key, "video:day05" (Videos tab) or "podcast:day05" (a podcast episode).
+ * A plain id is read as a lecture (rooms from before podcasts could be watched together).
+ */
+export type WatchKind = "video" | "podcast";
+export function parseKey(key: string): { kind: WatchKind; id: string } | null {
+  const m = /^(?:(video|podcast):)?([\w-]{1,80})$/.exec(key);
+  return m ? { kind: (m[1] as WatchKind) ?? "video", id: m[2] } : null;
+}
+/** The page for a key, relative to the site root ("videos/day05/", "podcasts/day05/"). */
+export function keyPath(key: string): string | null {
+  const k = parseKey(key);
+  return k ? `${k.kind === "video" ? "videos" : "podcasts"}/${encodeURIComponent(k.id)}/` : null;
+}
+/** Link a friend opens: the same page with the room code. `site` ends with "/". */
+export const shareUrl = (site: string, key: string, code: string) => `${site}${keyPath(key) ?? ""}?room=${code}`;
+
+/** Podcast formats that can be watched together (audio follows along, but only the videos are kept in time). */
+export const VIEWS = ["animated", "video", "audio"] as const;
+export type View = (typeof VIEWS)[number];
 
 export type Msg =
   | { t: "play"; time: number }
   | { t: "pause"; time: number }
   | { t: "seek"; time: number; playing: boolean }
   /** full picture: sent to someone who just joined or switched video, and every few seconds while playing */
-  | { t: "state"; vid: string; time: number; playing: boolean; started: boolean }
-  /** the sender opened another lecture */
+  | { t: "state"; vid: string; time: number; playing: boolean; started: boolean; view?: View }
+  /** the sender opened another lecture or episode */
   | { t: "nav"; vid: string }
+  /** the sender switched the podcast format (Animated / Slides / Audio) */
+  | { t: "view"; view: View }
   /** ask the host for a `state` (after joining or after following a `nav`) */
   | { t: "ask" }
   /** the sender is leaving on purpose (the host leaving ends the room) */
@@ -43,7 +63,8 @@ export type Msg =
   | { t: "people"; n: number };
 
 const num = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1e6;
-const vid = (v: unknown) => typeof v === "string" && /^[\w-]{1,80}$/.test(v);
+const vid = (v: unknown) => typeof v === "string" && parseKey(v) !== null;
+const view = (v: unknown): v is View => typeof v === "string" && (VIEWS as readonly string[]).includes(v);
 
 /** Accepts only well-formed messages: whatever arrives over the connection is untrusted. */
 export function readMsg(m: unknown): Msg | null {
@@ -56,11 +77,13 @@ export function readMsg(m: unknown): Msg | null {
     case "seek":
       return num(o.time) && typeof o.playing === "boolean" ? { t: "seek", time: o.time as number, playing: o.playing } : null;
     case "state":
-      return vid(o.vid) && num(o.time) && typeof o.playing === "boolean" && typeof o.started === "boolean"
-        ? { t: "state", vid: o.vid as string, time: o.time as number, playing: o.playing, started: o.started }
-        : null;
+      if (!(vid(o.vid) && num(o.time) && typeof o.playing === "boolean" && typeof o.started === "boolean")) return null;
+      if (o.view !== undefined && !view(o.view)) return null;
+      return { t: "state", vid: o.vid as string, time: o.time as number, playing: o.playing, started: o.started, ...(o.view ? { view: o.view as View } : {}) };
     case "nav":
       return vid(o.vid) ? { t: "nav", vid: o.vid as string } : null;
+    case "view":
+      return view(o.view) ? { t: "view", view: o.view } : null;
     case "ask":
     case "bye":
       return { t: o.t };

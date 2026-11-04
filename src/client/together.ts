@@ -1,5 +1,5 @@
 /**
- * Watch together (Videos tab): one person starts a room and shares the link, friends open it, and from then on
+ * Watch together (Videos tab and podcast episodes): one person starts a room and shares the link, friends open it, and from then on
  * play, pause, seeking and switching lectures happen for everyone. Anyone in the room can control it.
  *
  * The browsers talk directly over WebRTC (PeerJS). PeerJS's free public server only introduces them; the
@@ -12,7 +12,7 @@
  */
 import { navigate } from "astro:transitions/client";
 import { WEBSITE } from "../lib/routes";
-import { isSeek, matchAction, parseRoom, peerId, peopleText, readMsg, roomCode, shareUrl, targetOf, type Msg, type Sample } from "../lib/together";
+import { isSeek, keyPath, matchAction, parseKey, parseRoom, peerId, peopleText, readMsg, roomCode, shareUrl, targetOf, type Msg, type Sample, type View } from "../lib/together";
 import { formatClock } from "../lib/duration";
 import { activeYouTube } from "./media";
 import { base, pageSignal } from "./page";
@@ -197,7 +197,16 @@ const PROBLEMS: Record<Problem, string> = {
   failed: "Couldn't connect to your friend. Some mobile-data and office networks block direct connections: try both on Wi-Fi.",
 };
 
-const currentVid = () => document.querySelector<HTMLElement>("[data-video-page]")?.dataset.videoPage ?? null;
+/** "video:day05" / "podcast:day05": what this page shows (null on pages that can't be watched together) */
+const norm = (k: string | null | undefined) => {
+  const p = k ? parseKey(k) : null;
+  return p ? `${p.kind}:${p.id}` : null;
+};
+const currentVid = () => norm(document.querySelector<HTMLElement>("[data-watch-page]")?.dataset.watchPage);
+/** the podcast format on screen (Animated / Slides / Audio), when the page has them */
+const currentView = () => document.querySelector<HTMLElement>("[data-watch-page] [data-pod]")?.dataset.podActive as View | undefined;
+/** the play button of the player on screen (a podcast page has one per format) */
+const facade = () => [...document.querySelectorAll<HTMLButtonElement>("[data-watch-page] button[data-yt]")].find((b) => b.getClientRects().length > 0) ?? null;
 // only "playing" moves the position: buffering must not look like the user seeking backwards
 const ytState = (state: number) => state === 1;
 
@@ -215,7 +224,8 @@ function stateMsg(): Msg | null {
   const vid = room?.vid ?? currentVid();
   if (!vid) return null;
   const s = sample();
-  return { t: "state", vid, time: s?.time ?? 0, playing: s?.playing ?? false, started: !!s };
+  const view = currentView();
+  return { t: "state", vid, time: s?.time ?? 0, playing: s?.playing ?? false, started: !!s, ...(view ? { view } : {}) };
 }
 
 function setStatus(text: string) {
@@ -231,7 +241,7 @@ function apply(target: { time: number; playing: boolean }, ageMs = 150) {
   if (!yt) {
     if (room.autoStart) {
       room.pending = target;
-      document.querySelector<HTMLButtonElement>("[data-video-page] button[data-yt]")?.click();
+      facade()?.click();
     } else if (!room.deliberate) {
       // opened the link but hasn't clicked yet: browsers won't start a video with sound before a click
       setStatus("Connected to your friend. Press play to watch in sync.");
@@ -271,6 +281,22 @@ function release() {
   room.last = sample();
 }
 
+/** Show the same podcast format as the other side (without telling them back). */
+let settingView = false;
+function setView(view: View) {
+  const btn = document.querySelector<HTMLButtonElement>(`[data-watch-page] [data-pod-view="${view}"]`);
+  if (!btn || !room) return;
+  settingView = true;
+  btn.click();
+  settingView = false;
+  room.last = null;
+}
+document.addEventListener("mls:pod-view", (e) => {
+  if (!room || settingView || !room.links.size) return;
+  room.last = null;
+  broadcast({ t: "view", view: (e as CustomEvent<{ view: View }>).detail.view });
+});
+
 /** Open the lecture the other side is on; `target` is where to put the player once it loads. */
 function follow(vid: string, target: { time: number; playing: boolean } | null) {
   if (!room) return;
@@ -280,7 +306,7 @@ function follow(vid: string, target: { time: number; playing: boolean } | null) 
   // the player starting by itself on the new page is not news for the others: stay quiet until their state is applied
   room.hold = true;
   requestVideoAutoplay();
-  void navigate(`${base()}videos/${encodeURIComponent(vid)}/`);
+  void navigate(`${base()}${keyPath(vid)}`);
 }
 
 function onMessage(from: Link, raw: unknown) {
@@ -288,7 +314,7 @@ function onMessage(from: Link, raw: unknown) {
   const m = readMsg(raw);
   if (!m) return;
   // the host is the hub: what one guest does is passed on to the others
-  if (room.role === "host" && ["play", "pause", "seek", "nav"].includes(m.t)) broadcast(m, from);
+  if (room.role === "host" && ["play", "pause", "seek", "nav", "view"].includes(m.t)) broadcast(m, from);
   const who = "Your friend";
   switch (m.t) {
     case "play":
@@ -300,10 +326,12 @@ function onMessage(from: Link, raw: unknown) {
       setStatus(m.t === "play" ? `${who} pressed play` : m.t === "pause" ? `${who} paused at ${formatClock(m.time)}` : `${who} jumped to ${formatClock(m.time)}`);
       break;
     case "state":
-      if (m.vid !== currentVid()) {
-        follow(m.vid, m.started ? { time: m.time, playing: m.playing } : null);
+      if (norm(m.vid) !== currentVid()) {
+        follow(norm(m.vid)!, m.started ? { time: m.time, playing: m.playing } : null);
         break;
       }
+      // a podcast in another format on their side: switch to it first
+      if (m.view && m.view !== currentView()) setView(m.view);
       // the friend has pressed play and the player is still loading: it asks again once ready (an older state
       // applied now would pause it straight back)
       if (room.deliberate && !activeYouTube()) break;
@@ -318,9 +346,15 @@ function onMessage(from: Link, raw: unknown) {
       settle(m.started ? { time: m.time, playing: m.playing } : { time: m.time, playing: false });
       break;
     case "nav":
-      if (m.vid !== currentVid()) {
-        follow(m.vid, null);
-        setStatus(`${who} opened another lecture`);
+      if (norm(m.vid) !== currentVid()) {
+        follow(norm(m.vid)!, null);
+        setStatus(`${who} opened another video`);
+      }
+      break;
+    case "view":
+      if (m.view !== currentView()) {
+        setView(m.view);
+        setStatus(`${who} switched to ${m.view === "animated" ? "the animated video" : m.view === "video" ? "the slides video" : "the audio"}`);
       }
       break;
     case "ask": {
@@ -477,7 +511,7 @@ function siteRoot(): string {
 }
 
 function render() {
-  const page = document.querySelector<HTMLElement>("[data-video-page]");
+  const page = document.querySelector<HTMLElement>("[data-watch-page]");
   if (!page) return;
   const panel = page.querySelector<HTMLElement>("[data-together]");
   const startBtn = page.querySelector<HTMLButtonElement>("[data-together-start]");
@@ -501,7 +535,7 @@ function render() {
 }
 
 export function setupTogether() {
-  const page = document.querySelector<HTMLElement>("[data-video-page]");
+  const page = document.querySelector<HTMLElement>("[data-watch-page]");
   if (!page) return;
   const signal = pageSignal();
   const vid = currentVid();
@@ -525,14 +559,14 @@ export function setupTogether() {
     open("guest", code);
   }
   // pressing play on the video, as anyone would: that's the friend choosing to watch now
-  page.querySelector("button[data-yt]")?.addEventListener("click", () => {
+  page.querySelectorAll("button[data-yt]").forEach((b) => b.addEventListener("click", () => {
     if (room?.role !== "guest") return;
     // forget any earlier "they're paused" target and wait for a fresh state (asked for when the player is ready)
     room.deliberate = true;
     room.hold = true;
     room.goal = null;
     room.holdUntil = Date.now() + 8000;
-  }, { signal, once: true });
+  }, { signal, once: true }));
 
   page.querySelector("[data-together-start]")?.addEventListener("click", () => {
     if (!room) open("host", roomCode());
@@ -542,7 +576,7 @@ export function setupTogether() {
     if (!code || room) return;
     open("guest", code, 0, true);
     // this click lets the browser start the video with sound; the host's position is applied once connected
-    page.querySelector<HTMLButtonElement>("button[data-yt]")?.click();
+    facade()?.click();
   }, { signal });
   page.querySelector("[data-together-leave]")?.addEventListener("click", leave, { signal });
   page.querySelector("[data-together-close]")?.addEventListener("click", () => {

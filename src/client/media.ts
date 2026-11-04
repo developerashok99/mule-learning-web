@@ -16,9 +16,20 @@ declare global {
 /** The parts of the YouTube player API that watch together and our controls use. getPlayerState: -1 unstarted,
  * 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued. */
 export type YtPlayer = YtControlsPlayer;
-/** The YouTube player on the page, once it is ready (null before play is pressed, or after leaving the page). */
-let active: { player: YtPlayer; id: string; frame: HTMLElement } | null = null;
-export const activeYouTube = () => (active?.frame.isConnected ? active : null);
+/** Every YouTube player started on the page, newest last (a podcast page has one per format). */
+let players: { player: YtPlayer; id: string; frame: HTMLElement }[] = [];
+/** shown on screen (also as the small corner player): not in a hidden format panel */
+const visible = (el: HTMLElement) => el.isConnected && el.getClientRects().length > 0;
+/** The YouTube player being watched: the newest one that is on screen (null before play is pressed). */
+export function activeYouTube() {
+  players = players.filter((p) => p.frame.isConnected);
+  for (let i = players.length - 1; i >= 0; i--) if (visible(players[i].frame)) return players[i];
+  return null;
+}
+const setActive = (p: { player: YtPlayer; id: string; frame: HTMLElement } | null, frame: HTMLElement) => {
+  players = players.filter((x) => x.frame !== frame);
+  if (p) players.push(p);
+};
 
 let ytApi: Promise<boolean> | null = null;
 function loadYouTubeApi(): Promise<boolean> {
@@ -115,7 +126,7 @@ function createPlayer(frame: HTMLElement, cfg: YtConfig, start: number, autoplay
     events: {
       // watch together (src/client/together.ts) listens for these
       onReady: (e: { target: YtPlayer }) => {
-        active = { player: e.target, id: cfg.id, frame };
+        setActive({ player: e.target, id: cfg.id, frame }, frame);
         if (!own) attachControls(frame, e.target, cfg.title, cfg.cc, () => switchPlayerControls("youtube"));
         document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id: cfg.id } }));
       },
@@ -148,7 +159,7 @@ export function switchPlayerControls(mode: "simple" | "youtube") {
   } catch {
     /* already gone */
   }
-  active = null;
+  setActive(null, a.frame);
   createPlayer(a.frame, cfg, time, playing);
 }
 

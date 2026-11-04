@@ -55,12 +55,13 @@ const ICON = {
   check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
 };
 
-let current: (() => void) | null = null;
+/** each frame's controls, to remove them when switching to YouTube's own controls */
+const stops = new WeakMap<HTMLElement, () => void>();
 
 /** Removes our controls from a frame (switching to YouTube's own controls). */
 export function detachControls(frame: HTMLElement) {
-  current?.();
-  current = null;
+  stops.get(frame)?.();
+  stops.delete(frame);
   frame.querySelector(".yt-ui")?.remove();
   frame.classList.remove("yt-custom", "yt-show", "yt-paused", "yt-cc-on");
   frame.removeAttribute("tabindex");
@@ -70,7 +71,7 @@ export function detachControls(frame: HTMLElement) {
 
 /** `ccLang`: the language of the video's (auto-generated) captions, e.g. "te" for the Telugu lectures. */
 export function attachControls(frame: HTMLElement, player: YtControlsPlayer, title: string, ccLang = "en", onChooseQuality?: () => void) {
-  current?.(); // only one set of global keys at a time
+  stops.get(frame)?.(); // a frame has one set of controls
   // everything below stops when the page changes or when these controls are removed
   const ac = new AbortController();
   pageSignal().addEventListener("abort", () => ac.abort(), { signal: ac.signal });
@@ -346,7 +347,8 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
 
   // the usual YouTube keys: while the player has focus, or nothing in particular does (the page itself)
   const onKey = (e: KeyboardEvent) => {
-    if (!frame.isConnected || e.ctrlKey || e.metaKey || e.altKey || menuOpen()) return;
+    // keys go to the player on screen (a podcast page has one per format, only one shown)
+    if (!frame.isConnected || !frame.getClientRects().length || e.ctrlKey || e.metaKey || e.altKey || menuOpen()) return;
     const el = document.activeElement as HTMLElement | null;
     const inFrame = !!el && frame.contains(el);
     const onPage = !el || el === document.body || el === document.documentElement;
@@ -377,7 +379,7 @@ export function attachControls(frame: HTMLElement, player: YtControlsPlayer, tit
     ac.abort();
   };
   signal.addEventListener("abort", () => clearInterval(tick));
-  current = stop;
+  stops.set(frame, stop);
   applyCaptions(true);
   // the first time it plays, YouTube may load captions by itself: apply the choice again once playback starts
   document.addEventListener("mls:yt-state", function once(ev) {

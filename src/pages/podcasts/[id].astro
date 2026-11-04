@@ -1,30 +1,98 @@
 ---
+/**
+ * One summary podcast, laid out like the Videos tab: the player as big as fits, the episode's actions and
+ * watch together under it, the covered lesson's notes below, and every episode as a list beside it (hideable).
+ */
 import Base from "../../layouts/Base.astro";
 import PodcastPlayer from "../../components/PodcastPlayer.astro";
 import Icon from "../../components/Icon.astro";
-import PageHead from "../../components/PageHead.astro";
-import { getPodcasts } from "../../lib/content";
+import LessonNotes from "../../components/LessonNotes.astro";
+import TogetherInvite from "../../components/TogetherInvite.astro";
+import TogetherPanel from "../../components/TogetherPanel.astro";
+import { getLesson, getPodcasts } from "../../lib/content";
 import type { Episode } from "../../lib/config";
+import { formatLength } from "../../lib/duration";
 import { podcastPath, withBase } from "../../lib/routes";
 
 export function getStaticPaths() {
   const all = getPodcasts();
-  return all.map((episode, i) => ({ params: { id: episode.id }, props: { episode, prev: all[i - 1] ?? null, next: all[i + 1] ?? null } }));
+  return all.map((episode, i) => ({ params: { id: episode.id }, props: { episode, prev: all[i - 1] ?? null, next: all[i + 1] ?? null, all } }));
 }
-const { episode, prev, next } = Astro.props as { episode: Episode; prev: Episode | null; next: Episode | null };
+const { episode, prev, next, all } = Astro.props as { episode: Episode; prev: Episode | null; next: Episode | null; all: Episode[] };
 const base = import.meta.env.BASE_URL;
+const at = all.findIndex((e) => e.id === episode.id);
+const lesson = episode.lessons.map((id) => getLesson(id)).find(Boolean) ?? null;
+const href = (e: Episode) => withBase(base, podcastPath(e.id));
 ---
 <Base title={episode.title} nav="podcasts" description={episode.description || `Summary podcast: ${episode.title}`}>
-  <div class="page page--narrow">
+  <div class="page page--video" data-podcast-page={episode.id} data-watch-page={`podcast:${episode.id}`}>
     <ol class="breadcrumb"><li><a href={withBase(base, "podcasts/")}>Podcasts</a></li><li>{episode.title}</li></ol>
-    {/* Only episodes with media are indexed for search; empty slots would just clutter results. */}
-    <div data-pagefind-body={episode.audioUrl || episode.videoUrl ? "" : undefined} data-pagefind-filter={episode.audioUrl || episode.videoUrl ? "type:Podcast" : undefined}>
-      <PageHead eyebrow="Summary podcast" title={episode.title} sub="Listen or watch while you study: a short summary for revision and on the go." />
-      <PodcastPlayer episode={episode} headingLevel={2} standalone />
+    <TogetherInvite />
+    <div class="video-layout" data-video-layout>
+      <div class="video-main">
+        {/* Only episodes with media are indexed for search; empty slots would just clutter results. */}
+        <div data-pagefind-body={episode.audioUrl || episode.videoUrl ? "" : undefined} data-pagefind-filter={episode.audioUrl || episode.videoUrl ? "type:Podcast" : undefined}>
+          <div class="video-info">
+            <div class="video-info__text">
+              <p class="video-info__kicker"><span class="pill pill--blue">Summary podcast</span> <span class="small muted">Episode {at + 1} of {all.length}{episode.duration != null && <> · {formatLength(episode.duration)}</>}</span></p>
+              <h1>{episode.title}</h1>
+            </div>
+            <div class="video-actions">
+              <button class="btn btn--sm" type="button" data-together-start><Icon name="users" /><span>Watch together</span></button>
+              <button class="btn btn--sm hide-phone" type="button" data-playlist-toggle aria-pressed="true" aria-controls="course-playlist"><Icon name="list" /><span data-text>Hide playlist</span></button>
+            </div>
+          </div>
+          <TogetherPanel />
+          <PodcastPlayer episode={episode} headingLevel={2} standalone />
+        </div>
+
+        <nav class="video-pager" aria-label="Previous and next episode">
+          {prev ? (
+            <a class="nav-card" href={href(prev)} rel="prev"><Icon name="left" /><span class="nav-card__text"><small>Previous episode</small><strong>{prev.title}</strong></span></a>
+          ) : (
+            <span class="nav-card" aria-disabled="true"><Icon name="left" /><span class="nav-card__text"><small>Previous</small><strong>This is the first episode</strong></span></span>
+          )}
+          {next ? (
+            <a class="nav-card nav-card--next" href={href(next)} rel="next"><span class="nav-card__text"><small>Next episode</small><strong>{next.title}</strong></span><Icon name="right" /></a>
+          ) : (
+            <span class="nav-card nav-card--next" aria-disabled="true"><span class="nav-card__text"><small>Next</small><strong>This is the last episode</strong></span><Icon name="right" /></span>
+          )}
+        </nav>
+
+        {lesson && <LessonNotes lesson={lesson} />}
+      </div>
+
+      <aside class="card playlist" id="course-playlist" aria-label="All episodes">
+        <nav class="video-list" aria-label="All podcast episodes" data-filter-scope>
+          <div class="playlist__head">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+              <div><h2>Episodes</h2><span class="small">Summary podcasts · {all.length} episodes</span></div>
+              <span class="pill">{at + 1} / {all.length}</span>
+            </div>
+            <label class="visually-hidden" for="episode-filter">Filter episodes</label>
+            <input id="episode-filter" class="input input--sm" type="search" placeholder="Filter episodes…" autocomplete="off" data-filter-text />
+            <span class="visually-hidden" data-filter-count aria-live="polite"></span>
+          </div>
+          <div class="video-list__scroll" data-video-list>
+            <ol data-filter-group>
+              {all.map((e, i) => (
+                <li data-filter-item={e.title}>
+                  <a href={href(e)} aria-current={e.id === episode.id ? "page" : undefined}>
+                    <span class="pnum" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                    <span class="video-list__text"><strong>{e.title}</strong><small>{e.animatedYoutubeId ? "Animated · " : ""}{e.duration != null ? formatLength(e.duration) : "Summary"}</small></span>
+                    <span class="video-list__mark" aria-hidden="true"><Icon name="play" class="m-play" /></span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+            <p class="video-list__empty" data-filter-empty hidden>No episodes match.</p>
+          </div>
+        </nav>
+        <div class="playlist__foot">
+          <span class="small muted">Every summary podcast</span>
+          <a class="btn btn--sm" href={withBase(base, "podcasts/")}>All podcasts →</a>
+        </div>
+      </aside>
     </div>
-    <nav class="lesson-pager" aria-label="Previous and next episode">
-      {prev && <a class="nav-card" href={withBase(base, podcastPath(prev.id))}><Icon name="left" /><span class="nav-card__text"><small>Previous episode</small><strong>{prev.title}</strong></span></a>}
-      {next && <a class="nav-card nav-card--next" href={withBase(base, podcastPath(next.id))}><span class="nav-card__text"><small>Next episode</small><strong>{next.title}</strong></span><Icon name="right" /></a>}
-    </nav>
   </div>
 </Base>
