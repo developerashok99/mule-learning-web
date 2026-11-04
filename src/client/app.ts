@@ -8,6 +8,7 @@ import { setupMermaid, rerenderMermaid } from "./mermaid";
 import { setupMedia } from "./media";
 import { setupVideos } from "./videos";
 import { setupTogether } from "./together";
+import { setupVideoPage } from "./videopage";
 import { setupDashboard } from "./dashboard";
 import { setupSearch } from "./search";
 import { setupMyStudy } from "./mystudy";
@@ -378,6 +379,24 @@ function setupRevise() {
   all().forEach((d) => d.addEventListener("toggle", render));
 }
 
+/** Wide screens: collapse the left menu to an icon strip, or open it again (remembered in this browser). */
+function setupNavToggle() {
+  const btn = document.querySelector<HTMLButtonElement>("[data-nav-toggle]");
+  if (!btn) return;
+  const render = () => {
+    const collapsed = document.documentElement.dataset.nav === "collapsed";
+    btn.setAttribute("aria-expanded", String(!collapsed));
+    btn.setAttribute("aria-label", collapsed ? "Expand the menu" : "Collapse the menu");
+  };
+  btn.addEventListener("click", () => {
+    const collapsed = document.documentElement.dataset.nav !== "collapsed";
+    document.documentElement.dataset.nav = collapsed ? "collapsed" : "open";
+    setPrefs({ nav: collapsed ? "collapsed" : "open" });
+    render();
+  }, { signal: pageSignal() });
+  render();
+}
+
 document.addEventListener("astro:page-load", () => {
   renderOnline();
   setupRevise();
@@ -391,6 +410,8 @@ document.addEventListener("astro:page-load", () => {
   setupMedia();
   setupVideos();
   setupTogether();
+  setupVideoPage();
+  setupNavToggle();
   setupSlides();
   setupLists();
   setupDashboard();

@@ -1,47 +1,17 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { useFakeYouTube, yt } from "./fake-yt";
 
 const media = JSON.parse(readFileSync(new URL("../../config/media.json", import.meta.url), "utf8"));
 const ids = Object.entries(media.lectures as Record<string, { youtube?: string }>)
   .filter(([, l]) => l.youtube?.trim())
   .map(([id]) => id);
 
-/**
- * A stand-in for the YouTube IFrame API: a player whose clock runs while "playing", with the same
- * methods and events the site uses. window.__fakeYt.player lets a test press play / pause / seek the way a
- * viewer would in YouTube's own controls (those fire onStateChange, like the real player).
- */
-const FAKE_YT = `
-window.YT = { Player: function (el, opts) {
-  let state = -1, base = (opts.playerVars && opts.playerVars.start) || 0, since = 0;
-  const now = () => state === 1 ? base + (Date.now() - since) / 1000 : base;
-  const set = (s) => { base = now(); since = Date.now(); state = s; opts.events.onStateChange && opts.events.onStateChange({ data: s }); };
-  const p = {
-    playVideo() { if (state !== 1) set(1); },
-    pauseVideo() { if (state === 1) set(2); },
-    seekTo(t) { base = t; since = Date.now(); },
-    getCurrentTime: now,
-    getPlayerState: () => state,
-  };
-  const div = document.createElement("div"); div.className = "fake-yt"; el.replaceWith(div);
-  window.__fakeYt = { player: p, id: opts.videoId };
-  // real YouTube reports "ready" well before autoplay kicks in; __fakeAutoplayDelay reproduces that gap
-  setTimeout(() => { opts.events.onReady && opts.events.onReady({ target: p });
-    if (opts.playerVars && opts.playerVars.autoplay) setTimeout(() => p.playVideo(), window.__fakeAutoplayDelay || 0); }, 50);
-} };
-window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();`;
-
 async function prepare(page: Page) {
   await page.addInitScript(() => (window.__mlsTogetherTransport = "local"));
-  await page.route("https://www.youtube.com/iframe_api", (r) => r.fulfill({ body: FAKE_YT, contentType: "text/javascript" }));
+  await useFakeYouTube(page);
 }
-const yt = (page: Page) => ({
-  state: () => page.evaluate(() => (window as unknown as { __fakeYt?: { player: { getPlayerState(): number } } }).__fakeYt?.player.getPlayerState() ?? null),
-  time: () => page.evaluate(() => (window as unknown as { __fakeYt: { player: { getCurrentTime(): number } } }).__fakeYt.player.getCurrentTime()),
-  run: (what: "playVideo" | "pauseVideo") => page.evaluate((w) => (window as unknown as { __fakeYt: { player: Record<string, () => void> } }).__fakeYt.player[w](), what),
-  seek: (t: number) => page.evaluate((s) => (window as unknown as { __fakeYt: { player: { seekTo(t: number): void } } }).__fakeYt.player.seekTo(s), t),
-});
 
 test.describe("watch together", () => {
   test("the reported case: host plays and shares, friend opens the link and just presses play, host forwards", async ({ context }) => {
@@ -102,7 +72,7 @@ test.describe("watch together", () => {
     await host.locator('a[data-video-go="next"]').click();
     await expect(host).toHaveURL(new RegExp(`videos/${ids[4]}/$`));
     await expect(guest).toHaveURL(new RegExp(`videos/${ids[4]}/\\?room=`));
-    const vidOf = (p: Page) => p.evaluate(() => (window as unknown as { __fakeYt?: { id: string } }).__fakeYt?.id);
+    const vidOf = (p: Page) => yt(p).id();
     await expect.poll(async () => (await vidOf(guest)) === (await vidOf(host)) && !!(await vidOf(host))).toBe(true);
     await expect.poll(() => yt(guest).state()).toBe(1);
 

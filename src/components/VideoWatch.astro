@@ -5,10 +5,9 @@
  */
 import Base from "../layouts/Base.astro";
 import Icon from "./Icon.astro";
-import PageHead from "./PageHead.astro";
 import { getCourses, getLessons, type Lesson } from "../lib/content";
 import { formatLength } from "../lib/duration";
-import { lessonHasView, lessonPath, withBase } from "../lib/routes";
+import { NOTE_LEVELS, lessonHasView, lessonPath, withBase } from "../lib/routes";
 
 interface Props {
   /** the video being watched */
@@ -31,15 +30,11 @@ const sections = getCourses()
 const lecture = current.lecture!;
 const name = `${current.label} — ${current.title}`;
 const notesHref = withBase(base, lessonPath(current.id, lessonHasView(current, "detailed") ? "detailed" : "lecture"));
+// the lesson's notes, read under the video (loaded on demand from the notes pages)
+const noteTabs = NOTE_LEVELS.filter(({ level }) => current.notes[level]).map(({ level, short }) => ({ level, short, href: withBase(base, lessonPath(current.id, level)) }));
 ---
 <Base title={`${current.label} video`} nav="videos" description={`Watch ${name}, then go to the next or previous course video.`}>
-  <div class="page" data-video-page={current.id}>
-    <PageHead eyebrow="Watch and learn" title="Lecture library" sub="Study with the lecture, follow the playlist, and mark progress without losing your place.">
-      <Fragment slot="actions">
-        <span class="pill pill--green">● Course playlist</span>
-        <a class="btn" href={notesHref}>Open lesson notes</a>
-      </Fragment>
-    </PageHead>
+  <div class="page page--video" data-video-page={current.id}>
     {isIndex && (
       <p class="notice video-resume" data-video-resume hidden>
         <Icon name="play" /><span>Continue where you left off: <a data-video-go="pick" href=""></a></span>
@@ -50,27 +45,30 @@ const notesHref = withBase(base, lessonPath(current.id, lessonHasView(current, "
       <div><strong>Your friend's watch-together link</strong><p>Joining didn't work this time. Try again, or ask your friend for a new link.</p></div>
       <button class="btn btn--primary btn--sm" type="button" data-together-join><Icon name="play" /> Join and watch</button>
     </div>
-    <div class="video-layout">
+    <div class="video-layout" data-video-layout>
       <div class="video-main">
-        <div class="media-frame video-frame">
-          <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${name}`} aria-label={`Play video: ${name}`}>
-            <span class="yt-facade__kicker">{course.title} · {current.label}</span>
-            <span class="yt-facade__title">{current.title}</span>
-            <span class="yt-facade__play"><Icon name="play" /></span>
-            <small>Click to play · loads from youtube-nocookie.com</small>
-          </button>
+        <div class="video-stage" data-video-stage>
+          <div class="media-frame video-frame">
+            <button class="yt-facade" type="button" data-yt={lecture.youtubeId} data-start={lecture.start} data-watch={lecture.watchUrl} data-title={`Lecture: ${name}`} aria-label={`Play video: ${name}`}>
+              <span class="yt-facade__kicker">{course.title} · {current.label}</span>
+              <span class="yt-facade__title">{current.title}</span>
+              <span class="yt-facade__play"><Icon name="play" /></span>
+              <small>Click to play · loads from youtube-nocookie.com</small>
+            </button>
+          </div>
+          <button class="video-mini-close" type="button" data-video-mini-close aria-label="Close the small player and scroll back to the video" hidden><Icon name="close" /></button>
         </div>
 
         <div class="video-info">
           <div class="video-info__text">
-            <span class="pill pill--blue">{current.label}</span>
-            <h2>{current.title}</h2>
-            <p class="small muted">{current.sectionTitle}{lecture.duration != null && <> · {formatLength(lecture.duration)}</>}</p>
+            <p class="video-info__kicker"><span class="pill pill--blue">{current.label}</span> <span class="small muted">{current.sectionTitle}{lecture.duration != null && <> · {formatLength(lecture.duration)}</>} · Video {at + 1} of {videos.length}</span></p>
+            <h1>{current.title}</h1>
           </div>
           <div class="video-actions">
             <button class="btn btn--sm" type="button" data-video-done aria-pressed="false"><Icon name="check" /><span data-text>Mark complete</span></button>
             <button class="btn btn--sm" type="button" data-video-bookmark aria-pressed="false"><Icon name="bookmark" /><span data-text>Bookmark</span></button>
             <button class="btn btn--sm" type="button" data-together-start><Icon name="users" /><span>Watch together</span></button>
+            <button class="btn btn--sm hide-phone" type="button" data-playlist-toggle aria-pressed="true" aria-controls="course-playlist"><Icon name="list" /><span data-text>Hide playlist</span></button>
           </div>
         </div>
 
@@ -98,6 +96,13 @@ const notesHref = withBase(base, lessonPath(current.id, lessonHasView(current, "
           </div>
         </section>
 
+        <div class="video-meta">
+          <label class="switch"><input type="checkbox" role="switch" data-video-autoplay checked /> Play next automatically</label>
+          <a class="video-meta__item" href={withBase(base, lessonPath(current.id))}><Icon name="notes" /> Lesson page</a>
+          {lecture.watchUrl && <a class="video-meta__item" href={lecture.watchUrl} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Open on YouTube</a>}
+          <span class="video-keys">Keys: <kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> 5 s · <kbd>J</kbd><kbd>L</kbd> 10 s · <kbd>F</kbd> full screen · <kbd>M</kbd> mute · <kbd>Shift</kbd>+<kbd>N</kbd>/<kbd>P</kbd> next / previous</span>
+        </div>
+
         <nav class="video-pager" aria-label="Previous and next video">
           {prev ? (
             <a class="nav-card" href={href(prev)} data-video-go="prev" rel="prev"><Icon name="left" /><span class="nav-card__text"><small>Previous lesson</small><strong>{prev.label} · {prev.title}</strong></span></a>
@@ -111,24 +116,28 @@ const notesHref = withBase(base, lessonPath(current.id, lessonHasView(current, "
           )}
         </nav>
 
-        <div class="section-head"><div><h2>About this lecture</h2><p>Pair video learning with written notes</p></div></div>
-        <section class="card video-about" aria-label="About this lecture">
-          <h3 style="margin:0 0 .3rem;font-size:.98rem">Read the lesson notes</h3>
-          <p class="small muted">Review key ideas, examples and deeper explanations at your own pace.</p>
-          <div class="video-meta">
-            {lecture.duration != null && <span class="video-meta__item"><Icon name="clock" /> {formatLength(lecture.duration)}</span>}
-            <a class="video-meta__item" href={withBase(base, lessonPath(current.id))}><Icon name="notes" /> Lesson page</a>
-            {lecture.watchUrl && <a class="video-meta__item" href={lecture.watchUrl} target="_blank" rel="noopener noreferrer"><Icon name="external" /> Open on YouTube</a>}
-            <label class="switch"><input type="checkbox" role="switch" data-video-autoplay checked /> Play next automatically</label>
-          </div>
-          <p class="video-keys">Keyboard: <kbd>Shift</kbd> + <kbd>P</kbd> previous · <kbd>Shift</kbd> + <kbd>N</kbd> next</p>
-          <div class="btn-row">
-            <a class="btn btn--primary btn--sm" href={notesHref}>Open lesson notes →</a>
-          </div>
-        </section>
+        {noteTabs.length > 0 && (
+          <section class="card video-notes" data-video-notes aria-labelledby="video-notes-title">
+            <div class="video-notes__head">
+              <h2 id="video-notes-title">Lesson notes</h2>
+              <div class="segmented" role="tablist" aria-label="Notes level">
+                {noteTabs.map((t) => (
+                  <button type="button" role="tab" id={`notes-tab-${t.level}`} aria-controls="video-notes-body" aria-selected="false" data-notes-level={t.level} data-notes-href={t.href}>{t.short}</button>
+                ))}
+              </div>
+              <a class="btn btn--sm btn--ghost" href={notesHref} data-notes-open>Open full page <Icon name="external" /></a>
+            </div>
+            <label class="video-notes__jump" hidden data-notes-jump-wrap><span class="small muted">Jump to</span>
+              <select class="input input--sm" data-notes-jump><option value="">Sections…</option></select>
+            </label>
+            <div class="prose video-notes__body" id="video-notes-body" role="tabpanel" tabindex="-1" data-notes-body>
+              <p class="muted">Loading the notes…</p>
+            </div>
+          </section>
+        )}
       </div>
 
-      <aside class="card playlist" aria-label="Course playlist">
+      <aside class="card playlist" id="course-playlist" aria-label="Course playlist">
         <nav class="video-list" aria-label="All course videos" data-filter-scope>
           <div class="playlist__head">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">

@@ -51,8 +51,9 @@ async function draw(block: HTMLElement) {
 let queue = Promise.resolve();
 const enqueue = (block: HTMLElement) => (queue = queue.then(() => draw(block)).catch(() => undefined));
 
-export function setupMermaid() {
-  const blocks = [...document.querySelectorAll<HTMLElement>("[data-mermaid]")];
+/** Draws the diagrams in `root` as they come into view (the page, or notes loaded into the Videos page). */
+export function setupMermaid(root: ParentNode = document) {
+  const blocks = [...root.querySelectorAll<HTMLElement>("[data-mermaid]")];
   if (!blocks.length) return;
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {

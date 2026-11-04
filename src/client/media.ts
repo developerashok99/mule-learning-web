@@ -4,6 +4,7 @@
 import { formatClock } from "../lib/duration";
 import { pageSignal } from "./page";
 import { mediaProgress, saveMediaProgress } from "./store";
+import { attachControls, type YtControlsPlayer } from "./ytcontrols";
 
 declare global {
   interface Window {
@@ -12,15 +13,9 @@ declare global {
   }
 }
 
-/** The parts of the YouTube player API that watch together uses. */
-export interface YtPlayer {
-  playVideo(): void;
-  pauseVideo(): void;
-  seekTo(seconds: number, allowSeekAhead: boolean): void;
-  getCurrentTime(): number;
-  /** -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued */
-  getPlayerState(): number;
-}
+/** The parts of the YouTube player API that watch together and our controls use. getPlayerState: -1 unstarted,
+ * 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued. */
+export type YtPlayer = YtControlsPlayer;
 /** The YouTube player on the page, once it is ready (null before play is pressed, or after leaving the page). */
 let active: { player: YtPlayer; id: string; frame: HTMLElement } | null = null;
 export const activeYouTube = () => (active?.frame.isConnected ? active : null);
@@ -119,11 +114,13 @@ async function startYouTube(btn: HTMLButtonElement) {
     new window.YT.Player(host, {
       host: "https://www.youtube-nocookie.com",
       videoId: id,
-      playerVars: { autoplay: 1, rel: 0, start, playsinline: 1, origin: location.origin },
+      // YouTube's own controls and hover layer are off: src/client/ytcontrols.ts draws ours (no big title, no dimming)
+      playerVars: { autoplay: 1, rel: 0, start, playsinline: 1, origin: location.origin, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1 },
       events: {
         // watch together (src/client/together.ts) listens for these two
         onReady: (e: { target: YtPlayer }) => {
           active = { player: e.target, id, frame };
+          attachControls(frame, e.target, btn.dataset.title || "Lecture video");
           document.dispatchEvent(new CustomEvent("mls:yt-ready", { detail: { id } }));
         },
         onStateChange: (e: { data: number }) => {

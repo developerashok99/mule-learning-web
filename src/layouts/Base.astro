@@ -74,6 +74,8 @@ const crumb = nav ? CRUMB[nav] : title;
           var r = doc.documentElement;
           r.dataset.theme = dark ? "dark" : "light";
           r.dataset.width = p.width === "wide" ? "wide" : "normal";
+          r.dataset.nav = p.nav === "collapsed" ? "collapsed" : "open";
+          r.dataset.playlist = p.videoPlaylist === "hidden" ? "hidden" : "shown";
           if (p.scale) r.style.setProperty("--read-scale", String(p.scale));
         }
         apply(document);
@@ -94,13 +96,13 @@ const crumb = nav ? CRUMB[nav] : title;
         <p class="side-nav__label" aria-hidden="true">Workspace</p>
         <ul>
           {WORKSPACE.map((n) => (
-            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"count" in n && <span class="side-nav__count" aria-hidden="true">{n.count}</span>}</a></li>
+            <li><a href={n.href} data-nav={n.key} title={n.label} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"count" in n && <span class="side-nav__count" aria-hidden="true">{n.count}</span>}</a></li>
           ))}
         </ul>
         <p class="side-nav__label" aria-hidden="true">Study tools</p>
         <ul>
           {TOOLS.map((n) => (
-            <li><a href={n.href} data-nav={n.key} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"bookmarks" in n && <span class="side-nav__count" data-bookmark-count hidden aria-hidden="true"></span>}{n.key === "revise" && <span class="side-nav__count side-nav__count--due" data-due-count hidden title="Flashcards due for review"></span>}</a></li>
+            <li><a href={n.href} data-nav={n.key} title={n.label} aria-current={current === n.key ? "page" : undefined}><Icon name={n.icon} /><span>{n.label}</span>{"bookmarks" in n && <span class="side-nav__count" data-bookmark-count hidden aria-hidden="true"></span>}{n.key === "revise" && <span class="side-nav__count side-nav__count--due" data-due-count hidden title="Flashcards due for review"></span>}</a></li>
           ))}
         </ul>
       </nav>
@@ -112,6 +114,7 @@ const crumb = nav ? CRUMB[nav] : title;
 
     <div class="app-main">
       <header class="topbar">
+        <button class="icon-btn topbar__nav-toggle" type="button" data-nav-toggle aria-expanded="true" aria-label="Collapse the menu" title="Collapse / expand the menu"><Icon name="sidebar" /></button>
         <a class="topbar__mark brand__mark" href={base} aria-label="Mule Learning Hub home">M</a>
         <p class="topbar__crumb"><span>Workspace /</span> <b>{crumb}</b></p>
         <form class="topbar__search" role="search" aria-label="Search the site" action={`${base}search/`} method="get">

@@ -117,7 +117,23 @@ kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-strong); border-
     background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto;
   }
 }
-.app-main { margin-left: var(--sidebar-w); min-width: 0; display: flex; flex-direction: column; min-height: 100vh; }
+.app-main { margin-left: var(--sidebar-w); min-width: 0; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.18s ease; }
+/* the left menu collapsed to an icon strip (toggle in the top bar, remembered) */
+.topbar .topbar__nav-toggle { display: none; margin-left: -0.75rem; }
+@media (min-width: 801px) {
+  .topbar .topbar__nav-toggle { display: inline-grid; }
+  .sidebar { transition: width 0.18s ease, padding 0.18s ease; }
+  :root[data-nav="collapsed"] { --sidebar-w: 4.6rem; }
+  :root[data-nav="collapsed"] .sidebar { padding-inline: 0.55rem; }
+  :root[data-nav="collapsed"] .brand { justify-content: center; padding-inline: 0; }
+  :root[data-nav="collapsed"] :is(.brand__text, .side-nav__label, .side-profile > span:not(.side-profile__avatar)) { display: none; }
+  :root[data-nav="collapsed"] .side-nav a { justify-content: center; padding: 0.5rem; position: relative; }
+  :root[data-nav="collapsed"] .side-nav a > span:not(.side-nav__count) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :root[data-nav="collapsed"] .side-nav__count { position: absolute; top: 0.15rem; right: 0.1rem; padding: 0 0.3rem; font-size: 0.65rem; }
+  :root[data-nav="collapsed"] .side-nav ul + .side-nav__label { display: block; height: 1px; margin: 0.6rem 0.4rem; padding: 0; overflow: hidden; background: var(--border); color: transparent; }
+  :root[data-nav="collapsed"] .side-profile { justify-content: center; padding-inline: 0; }
+  :root[data-nav="collapsed"] .reading-bar { left: var(--sidebar-w); }
+}
 .brand { display: flex; align-items: center; gap: 0.7rem; padding: 0.1rem 0.55rem 1.4rem; color: var(--text); text-decoration: none; }
 .brand:hover { color: var(--text); }
 /* a plain "M" monogram: deliberately not MuleSoft's own logo */
@@ -687,6 +703,55 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 /* ---------- media frames: click-to-load YouTube, <video>, and their states ---------- */
 .media-frame { position: relative; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: #0b1828; border: 1px solid #29435c; }
 .media-frame--empty { aspect-ratio: auto; min-height: 9rem; display: grid; }
+/* our controls for YouTube (src/client/ytcontrols.ts): YouTube's own hover layer never shows */
+.media-frame.yt-custom:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.media-frame:fullscreen { aspect-ratio: auto; width: 100vw; height: 100vh; border-radius: 0; border: 0; }
+.yt-ui { position: absolute; inset: 0; z-index: 2; pointer-events: none; color: #fff; font-size: 0.85rem; }
+.yt-shield { position: absolute; inset: 0; pointer-events: auto; cursor: pointer; }
+.media-frame.yt-custom:not(.yt-show) .yt-shield { cursor: none; }
+.yt-big {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 4.5rem; height: 4.5rem; border-radius: 50%; border: 0;
+  display: none; place-items: center; background: rgba(15, 23, 35, 0.72); color: #fff; pointer-events: auto; cursor: pointer;
+}
+.yt-big .icon { width: 2rem; height: 2rem; margin-left: 0.2rem; }
+.yt-big { z-index: 1; }
+@media (max-width: 560px) { .yt-big { width: 3.2rem; height: 3.2rem; top: 42%; } .yt-big .icon { width: 1.5rem; height: 1.5rem; } }
+.media-frame.yt-paused .yt-big { display: grid; }
+.yt-osd {
+  position: absolute; top: 0.9rem; right: 0.9rem; padding: 0.35rem 0.7rem; border-radius: 8px; background: rgba(15, 23, 35, 0.78);
+  font-weight: 700; opacity: 0; transition: opacity 0.15s;
+}
+.yt-osd.on { opacity: 1; }
+.yt-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 1.4rem 0.75rem 0.45rem; pointer-events: auto;
+  /* only a short fade at the very bottom, so the picture isn't dimmed */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0));
+  opacity: 0; transition: opacity 0.18s; visibility: hidden;
+}
+.media-frame.yt-show .yt-bar { opacity: 1; visibility: visible; }
+.yt-row { display: flex; align-items: center; gap: 0.15rem; }
+.yt-row button {
+  display: inline-grid; place-items: center; min-width: 2.4rem; height: 2.4rem; padding: 0 0.35rem; border: 0; border-radius: 8px;
+  background: transparent; color: #fff; cursor: pointer; font: 700 0.85rem var(--font, inherit);
+}
+.yt-row button:hover, .yt-row button:focus-visible { background: rgba(255, 255, 255, 0.16); outline: 0; }
+.yt-row .icon { width: 1.25rem; height: 1.25rem; }
+.yt-time { margin-left: 0.4rem; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.yt-spacer { flex: 1; }
+.yt-seek { padding: 0 0.35rem 0.2rem; }
+.yt-range, .yt-vol { -webkit-appearance: none; appearance: none; height: 4px; margin: 0; border-radius: 4px; cursor: pointer; background: transparent; }
+.yt-range {
+  width: 100%;
+  background: linear-gradient(to right, #ff3b3b 0 var(--p, 0%), rgba(255, 255, 255, 0.55) var(--p, 0%) var(--b, 0%), rgba(255, 255, 255, 0.28) var(--b, 0%) 100%);
+}
+.yt-range:hover { height: 6px; }
+.yt-vol { width: 4.5rem; background: linear-gradient(to right, #fff 0 var(--p, 100%), rgba(255, 255, 255, 0.3) var(--p, 100%) 100%); }
+.yt-range::-webkit-slider-thumb, .yt-vol::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #ff3b3b; border: 0; }
+.yt-vol::-webkit-slider-thumb { background: #fff; }
+.yt-range::-moz-range-thumb, .yt-vol::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: #ff3b3b; border: 0; }
+.yt-range:focus-visible, .yt-vol:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+/* phones: the hardware buttons set the volume, so the slider goes; ±10 s matter most without a keyboard */
+@media (max-width: 560px) { .yt-vol { display: none; } .yt-row button { min-width: 2.15rem; padding: 0 0.2rem; } .yt-time { font-size: 0.75rem; margin-left: 0.2rem; } }
 .media-frame--empty .media-state { position: static; }
 .media-frame iframe, .media-frame video, .media-frame > .yt-facade { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .yt-facade {
@@ -727,13 +792,50 @@ figure.code pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font: 0.86e
 }
 
 /* ---------- videos: lecture library ---------- */
-.video-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 0.8fr); gap: 1.1rem; align-items: start; }
-@media (max-width: 1100px) { .video-layout { grid-template-columns: minmax(0, 1.3fr) minmax(15.5rem, 0.8fr); } }
-@media (max-width: 800px) { .video-layout { grid-template-columns: minmax(0, 1fr); } }
+.page--video { max-width: none; padding: 1rem 1.5rem 2.5rem; }
+@media (max-width: 800px) { .page--video { padding: 0.75rem 0.75rem 2rem; } }
+.video-layout { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.25rem; align-items: start; }
+:root[data-playlist="hidden"] .video-layout { grid-template-columns: minmax(0, 1fr); }
+:root[data-playlist="hidden"] .video-layout .playlist { display: none; }
+@media (max-width: 1100px) { .video-layout { grid-template-columns: minmax(0, 1fr) 19rem; } }
+@media (max-width: 800px) { .video-layout, :root[data-playlist="hidden"] .video-layout { grid-template-columns: minmax(0, 1fr); } :root[data-playlist="hidden"] .video-layout .playlist { display: block; } }
+/* the player: as big as fits without scrolling (16:9), centred */
+.video-stage { position: relative; width: min(100%, calc((100vh - var(--topbar-h) - 4.5rem - var(--bottom-nav-h)) * 16 / 9)); margin: 0 auto; aspect-ratio: 16 / 9; }
+.video-stage > .media-frame { position: absolute; inset: 0; aspect-ratio: auto; }
+/* scrolled down into the notes (wide screens): the same player, small, in the corner — nothing is reloaded */
+.video-stage.is-mini > .media-frame {
+  position: fixed; inset: auto 1.25rem 1.25rem auto; width: min(26rem, 40vw); height: auto; aspect-ratio: 16 / 9; z-index: 70;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.video-mini-close { display: none; }
+.video-stage.is-mini .video-mini-close {
+  display: grid; place-items: center; position: fixed; z-index: 71; right: 1.6rem; bottom: calc(1.25rem + min(26rem, 40vw) * 9 / 16 - 2.6rem);
+  width: 2.1rem; height: 2.1rem; border: 0; border-radius: 50%; background: rgba(15, 23, 35, 0.8); color: #fff; cursor: pointer;
+}
+.video-stage.is-mini .video-mini-close .icon { width: 1rem; height: 1rem; }
+.video-stage.is-mini .yt-row :is([data-c="back"], [data-c="fwd"], .yt-vol, [data-c="speed"]) { display: none; }
+/* phones: the video stays at the top while the notes scroll under it */
+@media (max-width: 800px) {
+  .video-stage { position: sticky; top: var(--topbar-h); z-index: 30; width: 100%; }
+  .video-stage > .media-frame { border-radius: 10px; }
+}
+/* YouTube's own title strip and corner links sit in a margin of the frame that is cut off; the video itself fills the box */
+.media-frame.yt-custom iframe { top: -64px; height: calc(100% + 128px); }
+.video-info__kicker { margin: 0 0 0.35rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.video-info__text { flex: 999 1 30rem; min-width: 0; }  /* the title takes the line; the buttons move under it when both don't fit */
+.video-info h1 { margin: 0; font-size: clamp(1.15rem, 1rem + 0.7vw, 1.5rem); line-height: 1.25; }
+/* lesson notes under the video */
+.video-notes { margin-top: 1.25rem; padding: 1.25rem 1.5rem 1.75rem; }
+.video-notes__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-bottom: 1rem; }
+.video-notes__head h2 { margin: 0; font-size: 1.15rem; }
+.video-notes__head .btn { margin-left: auto; }
+.video-notes__jump { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 1rem; }
+.video-notes__jump select { max-width: 32rem; }
+.video-notes__body { max-width: none; }
+.video-notes__body:focus { outline: 0; }
+@media (max-width: 800px) { .video-notes { padding: 1rem; } }
 .video-frame { box-shadow: var(--shadow); }
-.video-info { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.9rem 1rem; margin: 1rem 0; }
-.video-info__text { flex: 1 1 15rem; min-width: 0; }
-.video-info h2 { margin: 0.5rem 0 0.35rem; font-size: clamp(1.15rem, 1rem + 0.6vw, 1.35rem); }
+.video-info { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.9rem 1rem; margin: 1rem 0 0.75rem; }
 .video-info p { margin: 0; }
 .video-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .video-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -1026,7 +1128,7 @@ body.has-player { --player-h: 4.8rem; }
 .setting .small { color: var(--text-muted); }
 .segmented { display: inline-flex; padding: 0.2rem; border-radius: 11px; background: var(--bg-soft); gap: 0.15rem; flex: none; }
 .segmented button { min-height: 2.4rem; padding: 0.3rem 0.75rem; border: 0; border-radius: 9px; background: transparent; color: var(--text-muted); font-weight: 800; font-size: 0.8rem; cursor: pointer; }
-.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.segmented button[aria-pressed="true"], .segmented button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 .toggle { position: relative; flex: none; width: 2.9rem; height: 1.65rem; border: 0; border-radius: 999px; background: var(--border-strong); cursor: pointer; padding: 0; transition: background var(--ease); }
 .toggle::after { content: ""; position: absolute; top: 0.2rem; left: 0.2rem; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); transition: transform var(--ease); }
 .toggle[aria-checked="true"] { background: var(--accent); }

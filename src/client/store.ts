@@ -209,6 +209,12 @@ export interface Prefs {
   videoAutoplay?: boolean;
   /** Videos tab: the last video opened, for "continue watching" */
   lastVideo?: string;
+  /** the left menu on wide screens: open (default) or collapsed to icons */
+  nav?: "open" | "collapsed";
+  /** Videos tab: the playlist beside the player (default shown) */
+  videoPlaylist?: "shown" | "hidden";
+  /** Videos tab: which notes level shows under the video */
+  videoNotes?: "simple" | "detailed" | "super";
   /** Revision: new flashcards to introduce per day (default 15) */
   newPerDay?: number;
 }
